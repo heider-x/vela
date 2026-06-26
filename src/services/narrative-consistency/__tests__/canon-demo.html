@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Narrative Consistency Canon — 交互式演示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #0f1419; color: #e6e6e6; padding: 20px; line-height: 1.6; }
+  h1 { color: #7ecfff; margin-bottom: 8px; font-size: 22px; }
+  .subtitle { color: #888; font-size: 13px; margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .panel { background: #1a1f2e; border: 1px solid #2a3142; border-radius: 8px; padding: 16px; }
+  .panel h2 { color: #7ecfff; font-size: 14px; margin-bottom: 10px; border-bottom: 1px solid #2a3142; padding-bottom: 6px; }
+  .panel h3 { color: #a8d8ff; font-size: 12px; margin: 8px 0 4px; }
+  .badge { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; margin-right: 4px; font-weight: 600; }
+  .b-canon { background: #2d5a8e; color: #fff; }
+  .b-state { background: #5a2d8e; color: #fff; }
+  .b-tl { background: #8e5a2d; color: #fff; }
+  .b-plot { background: #2d8e5a; color: #fff; }
+  .b-fact { background: #8e2d5a; color: #fff; }
+  .b-hard { background: #c63b3b; color: #fff; }
+  .b-rag { background: #555; color: #fff; }
+  .canon-block { background: #0d1019; border-left: 3px solid #2a3142; padding: 8px 10px; margin: 6px 0; font-size: 12px; border-radius: 0 4px 4px 0; }
+  .canon-block.canon { border-color: #2d5a8e; }
+  .canon-block.state { border-color: #5a2d8e; }
+  .canon-block.tl { border-color: #8e5a2d; }
+  .canon-block.plot { border-color: #2d8e5a; }
+  .canon-block.fact { border-color: #8e2d5a; }
+  .canon-block.hard { border-color: #c63b3b; }
+  .canon-block.rag { border-color: #555; }
+  .canon-block strong { color: #7ecfff; }
+  .stat-row { font-size: 12px; padding: 2px 0; }
+  .stat-row .k { color: #888; }
+  .stat-row .v { color: #ddd; }
+  textarea { width: 100%; height: 280px; background: #0d1019; color: #e6e6e6; border: 1px solid #2a3142; border-radius: 4px; padding: 8px; font-family: "PingFang SC", monospace; font-size: 13px; line-height: 1.7; resize: vertical; }
+  button { background: #2d5a8e; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 6px; }
+  button:hover { background: #3d6a9e; }
+  button.secondary { background: #555; }
+  button.secondary:hover { background: #666; }
+  .issue { background: #1a0f0f; border-left: 3px solid #c63b3b; padding: 8px 10px; margin: 6px 0; font-size: 12px; border-radius: 0 4px 4px 0; }
+  .issue.warning { background: #1a170f; border-color: #c6a13b; }
+  .issue.info { background: #0f1a17; border-color: #3bc688; }
+  .issue.fixed { background: #0f1a0f; border-color: #3bc63b; opacity: 0.7; }
+  .issue .cat { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 2px; background: #2a3142; color: #aaa; margin-right: 4px; font-family: monospace; }
+  .issue .chars { color: #7ecfff; font-size: 11px; }
+  .diff { background: #0d1019; border: 1px solid #2a3142; border-radius: 4px; padding: 8px; font-size: 12px; max-height: 200px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; }
+  .diff .add { background: #0f3b1a; color: #5fd47e; padding: 1px 2px; }
+  .log { background: #0d1019; border: 1px solid #2a3142; border-radius: 4px; padding: 8px; font-size: 11px; max-height: 160px; overflow-y: auto; font-family: monospace; }
+  .log .ts { color: #888; }
+  .log .ok { color: #5fd47e; }
+  .log .warn { color: #d4c25f; }
+  .log .err { color: #d45f5f; }
+  .log .info { color: #5fb0d4; }
+  .controls { margin: 10px 0; }
+  .meta { color: #666; font-size: 11px; margin-top: 4px; }
+  .summary-card { background: #0d1019; border: 1px solid #2a3142; border-radius: 4px; padding: 8px; margin: 6px 0; font-size: 12px; }
+  .summary-card .title { color: #7ecfff; font-weight: 600; }
+  .full-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .full-panel { background: #1a1f2e; border: 1px solid #2a3142; border-radius: 8px; padding: 16px; }
+</style>
+</head>
+<body>
+<h1>🛡️ Narrative Consistency Canon — 交互式演示</h1>
+<div class="subtitle">小说《青云剑》· 第 3 章生成流程：CanonContext 构建 → 生成 → 校验 → 自动修复 → 写回</div>
+
+<div class="grid">
+  <div class="panel">
+    <h2>① Canon 状态（左：上 2 章累积）</h2>
+    <h3><span class="badge b-canon">WORLD</span> 正史设定</h3>
+    <div class="canon-block canon" id="world-block">—</div>
+    <h3><span class="badge b-state">CHARACTER</span> 当前人物状态</h3>
+    <div id="character-blocks">—</div>
+    <h3><span class="badge b-tl">TIMELINE</span> 时间线</h3>
+    <div id="timeline-blocks">—</div>
+    <h3><span class="badge b-plot">PLOT</span> 未结剧情线</h3>
+    <div id="plot-blocks">—</div>
+    <h3><span class="badge b-fact">PREV_END</span> 上一章结尾</h3>
+    <div class="canon-block fact" id="prev-end-block">—</div>
+  </div>
+
+  <div class="panel">
+    <h2>② LLM 生成（模拟草稿）</h2>
+    <div class="meta">提示词注入（按优先级）：正史 → 人物状态 → 时间线 → 摘要 → 剧情 → RAG → 文风 → 硬性约束</div>
+    <textarea id="draft-text" style="margin-top: 8px;">林轩在青云山与师父告别。
+
+赵无极突然出现，他笑着说：「林轩，我来取你性命。」
+
+林轩在烈火宗与赵无极激战三百回合，林轩知道赵无极的弱点是背后的玉佩。
+
+林轩说：「今天我要为师报仇。」
+
+赵无极在烈火宗闭关十天后出现，他的弱点是背后的玉佩。
+
+回忆：十年前，师父在青云山教林轩剑法，那时候师父还活着。
+
+师父在青云山笑着说：「孩子们，我来了。」
+
+林轩挥剑斩向赵无极。</textarea>
+    <div class="controls">
+      <button onclick="runValidation()">🛡️ 运行一致性校验</button>
+      <button class="secondary" onclick="runAutoFix()">🔧 自动修复</button>
+      <button class="secondary" onclick="runWriteback()">💾 写回 Canon</button>
+      <button class="secondary" onclick="resetDemo()">🔄 重置</button>
+    </div>
+    <div class="meta" id="draft-meta">—</div>
+  </div>
+
+  <div class="panel">
+    <h2>③ 校验结果</h2>
+    <div id="issues-container">
+      <div style="color: #666; font-size: 12px;">点击「运行一致性校验」开始</div>
+    </div>
+    <h3 style="margin-top: 12px;">修复后文本</h3>
+    <div class="diff" id="fixed-diff">—</div>
+  </div>
+</div>
+
+<div class="full-grid">
+  <div class="full-panel">
+    <h2>📤 CanonContext 注入块（生成前）</h2>
+    <div id="canon-context-view" class="diff" style="max-height: 360px;">—</div>
+  </div>
+  <div class="full-panel">
+    <h2>📋 写回日志（章节定稿后）</h2>
+    <div class="log" id="writeback-log">—</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 1. 初始 Canon 状态
+// ============================================================
+const CANON = {
+  worldRules: `世界观：修真界，以剑为尊。
+力量体系：炼气→筑基→金丹→元婴→化神→渡劫→大乘。
+势力：青云门（正道领袖）、烈火宗（邪道）、天元城（中立贸易都市）。`,
+  characterArch: `林轩：青云门大弟子，性格坚毅，修炼天赋极高。
+李四：林轩同门师兄，擅长阵法。
+赵无极：烈火宗宗主，野心勃勃，觊觎青云门秘宝。
+师父（青云真人）：林轩师父，金丹期高手。`,
+  characterStates: [
+    { character: '林轩', location: '天元城', powerLevel: '筑基期', physicalState: '正常', mentalState: '悲愤', keyItems: '青虹剑、玉佩', currentGoal: '为师父报仇', knowledge: ['师父被赵无极所害', '赵无极是烈火宗宗主'], relationships: { '李四': '同门师兄', '赵无极': '杀师仇人' }, recentEvents: '离开青云山前往天元城', updatedAtChapter: 2 },
+    { character: '李四', location: '青云山', powerLevel: '筑基期', physicalState: '正常', mentalState: '悲痛', keyItems: '阵旗', currentGoal: '守护青云山', knowledge: ['师父被赵无极所害'], relationships: { '林轩': '同门师弟' }, recentEvents: '留守青云山处理后事', updatedAtChapter: 2 },
+  ],
+  timeline: [
+    { chapterNumber: 1, sequence: 1, characters: ['林轩', '师父'], location: '青云山', summary: '林轩在青云山学剑十年', impact: '奠定林轩剑法基础' },
+    { chapterNumber: 2, sequence: 1, characters: ['赵无极', '师父'], location: '天元城', summary: '师父在烈火宗之战中死亡', impact: '师父死亡；林轩与赵无极结仇' },
+  ],
+  openPlotLines: [
+    { name: '为师报仇', status: 'active', startedAt: 2, characters: ['林轩', '赵无极'], currentState: '林轩刚下山，尚未行动' },
+  ],
+  previousEnding: '林轩跪在师父墓前，雨水打湿了他的衣襟。他缓缓站起，目光望向烈火宗的方向。',
+  ragContext: '',
+  writingStyle: '热血、紧凑、网文风；多用短句动作描写。',
+  globalGuidance: '主角必须遵守天道；反派不可洗白。',
+  hardConstraints: '1. 不得改变已发生事实  2. 不得让人物凭空知道信息  3. 不得无解释瞬移  4. 不得无解释改关系  5. 不得打乱时间线  6. 必须自然衔接上章  7. 不得无解释换物品持有人  8. 不得让已死角色出场  9. 不得违反设定  10. 闪回必须显式标记',
+};
+
+// ============================================================
+// 2. 内联算法（与 narrative-consistency/validator.ts 同源）
+// ============================================================
+const FLASHBACK_MARKERS = ['回忆','十年前','二十年前','那年','曾经','脑海中'];
+
+function isFlashbackChapter(c){return FLASHBACK_MARKERS.filter(m=>c.includes(m)).length>=3;}
+
+function checkLocationContinuity(content, characterStates) {
+  const issues = [];
+  const locationPattern = /([\u4e00-\u9fa5A-Za-z0-9_]{2,8})(在|来到|抵达|到达|前往|回到|返回|走进|走入)([\u4e00-\u9fa5A-Za-z0-9_]{2,3})/g;
+  const paragraphs = content.split(/\n+/).map(p=>p.trim()).filter(Boolean);
+  const locSeq = new Map();
+  for (let i = 0; i < paragraphs.length; i++) {
+    const p = paragraphs[i]; let m;
+    locationPattern.lastIndex = 0;
+    while ((m = locationPattern.exec(p)) !== null) {
+      const charName = m[1], verb = m[2], location = m[3];
+      if (!characterStates.some(s => s.character === charName || s.character.includes(charName))) continue;
+      if (['他','她','它','我','你','这','那','大家','众人','他们'].includes(charName)) continue;
+      if (!locSeq.has(charName)) locSeq.set(charName, []);
+      locSeq.get(charName).push({ paragraph: i, location, verb, full: m[0] });
+    }
+  }
+  for (const [charName, seq] of locSeq) {
+    if (seq.length < 2) continue;
+    for (let i = 1; i < seq.length; i++) {
+      const prev = seq[i-1], curr = seq[i];
+      if (prev.location === curr.location) continue;
+      if (['来到','抵达','到达','前往','回到','返回','走进','走入'].includes(curr.verb)) continue;
+      const between = paragraphs.slice(prev.paragraph, curr.paragraph+1).join(' / ');
+      issues.push({
+        severity: 'warning', category: 'location',
+        characters: [charName],
+        message: `人物「${charName}」在第 ${prev.paragraph+1}→${curr.paragraph+1} 段地点从「${prev.location}」变为「${curr.location}」，中间段落未检测到合法转场动词。`,
+        evidence: between.slice(0, 120),
+      });
+    }
+  }
+  return issues;
+}
+
+function checkKnowledgeAuthorization(content, characterStates) {
+  const issues = [];
+  if (characterStates.length === 0) return issues;
+  const charNames = characterStates.map(s=>s.character);
+  const paragraphs = content.split(/\n+/).map(p=>p.trim()).filter(Boolean);
+  for (let i = 0; i < paragraphs.length; i++) {
+    const p = paragraphs[i];
+    for (const charName of charNames) {
+      const patterns = [new RegExp(`${charName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(知道|了解|明白|听到|听说|得知|意识到|发现|记得)([^。]{2,40})`, 'g')];
+      for (const pat of patterns) {
+        let m; pat.lastIndex = 0;
+        while ((m = pat.exec(p)) !== null) {
+          const verb = m[1], info = m[2].trim();
+          if (info.length < 3) continue;
+          const charState = characterStates.find(s=>s.character===charName);
+          if (!charState) continue;
+          const inKnowledge = (charState.knowledge||[]).some(k=>k.includes(info)||info.includes(k));
+          if (verb==='记得'||verb==='记忆') continue;
+          if (!inKnowledge) {
+            issues.push({
+              severity: 'warning', category: 'knowledge',
+              characters: [charName],
+              message: `人物「${charName}」在第 ${i+1} 段${verb}了「${info}」，但 canon 中该人物的 knowledge 列表未记录此信息。`,
+              evidence: m[0],
+            });
+          }
+        }
+      }
+    }
+  }
+  return issues;
+}
+
+function checkTimelineOrder(content, canonTimeline, chapterNumber, isFlashback) {
+  if (isFlashback) return [];
+  const issues = [];
+  const sameChapterEvents = canonTimeline.filter(e => e.chapterNumber === chapterNumber);
+  if (sameChapterEvents.length > 1) {
+    for (let i = 1; i < sameChapterEvents.length; i++) {
+      if (sameChapterEvents[i].sequence < sameChapterEvents[i-1].sequence) {
+        issues.push({ severity: 'error', category: 'event-order', chapterNumber,
+          message: `canon 时间线第 ${chapterNumber} 章事件 sequence 不单调：${sameChapterEvents[i-1].sequence} → ${sameChapterEvents[i].sequence}` });
+      }
+    }
+  }
+  return issues;
+}
+
+function checkRelationshipContinuity(content, characterStates) {
+  const issues = [];
+  if (characterStates.length === 0) return issues;
+  const relationVerbs = ['是朋友','是好朋友','是敌人','是仇人','是爱人','是恋人','信任','怀疑','背叛','和好','结盟','对立'];
+  const allRelations = [];
+  for (const s of characterStates) {
+    for (const [to, rel] of Object.entries(s.relationships || {})) {
+      allRelations.push({ from: s.character, to, rel });
+    }
+  }
+  const paragraphs = content.split(/\n+/).map(p=>p.trim()).filter(Boolean);
+  for (let i = 0; i < paragraphs.length; i++) {
+    const p = paragraphs[i];
+    for (const verb of relationVerbs) {
+      if (!p.includes(verb)) continue;
+      for (const r of allRelations) {
+        if (p.includes(r.from) && p.includes(r.to)) {
+          if (!r.rel.includes(verb.replace(/^是/,''))) {
+            issues.push({ severity:'warning', category:'relationship', characters:[r.from, r.to],
+              message: `第 ${i+1} 段提及「${r.from}」与「${r.to}」${verb}，但 canon 记录的关系为「${r.rel}」。`,
+              evidence: p.slice(0, 100) });
+          }
+        }
+      }
+    }
+  }
+  return issues;
+}
+
+function checkItemOwnership(content, characterStates) {
+  const issues = [];
+  if (characterStates.length === 0) return issues;
+  const itemOwners = new Map();
+  for (const s of characterStates) {
+    if (!s.keyItems) continue;
+    const items = s.keyItems.split(/[、，,；;\s]+/).map(x=>x.trim()).filter(Boolean);
+    for (const item of items) if (!itemOwners.has(item)) itemOwners.set(item, s.character);
+  }
+  for (const [item, owner] of itemOwners) {
+    if (item.length < 2) continue;
+    const re = new RegExp(`([\\u4e00-\\u9fa5]{2,8})(拿起|握住|拔出|佩戴|装备|丢弃|交出|送给)([^。]{0,5}${item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g');
+    let m;
+    while ((m = re.exec(content)) !== null) {
+      const user = m[1];
+      if (user === owner) continue;
+      if (['他','她','它','我'].includes(user)) continue;
+      issues.push({ severity:'info', category:'item', characters:[user, owner],
+        message: `物品「${item}」canon 归属为「${owner}」，但被「${user}」使用/持有。`,
+        evidence: m[0] });
+    }
+  }
+  return issues;
+}
+
+function checkPreviousEndingContinuity(content, previousEnding) {
+  if (!previousEnding || previousEnding.length < 20) return [];
+  const issues = [];
+  const prevSentences = previousEnding.split(/[。！？]/).filter(s=>s.trim().length>=6).slice(-2);
+  const currentSentences = content.split(/[。！？]/).filter(s=>s.trim().length>=6).slice(0, 2);
+  if (prevSentences.length === 0 || currentSentences.length === 0) return issues;
+  const stopWords = new Set(['我们','他们','她们','它们','大家','众人','此时','此刻','眼前','一个','一种','这个','那个','什么','怎么','如何','现在','以前','只见','听到','说道','竟然','突然','忽然','仿佛','原来','真的','也许','可能','应该','当然']);
+  const extractNames = (text) => {
+    const re = /[\u4e00-\u9fa5]{2,4}/g;
+    const candidates = text.match(re) || [];
+    return Array.from(new Set(candidates.filter(c => !stopWords.has(c))));
+  };
+  const prevNames = extractNames(prevSentences.join(' '));
+  const currentNames = extractNames(currentSentences.join(' '));
+  const overlap = prevNames.filter(n => currentNames.includes(n));
+  if (prevNames.length > 0 && overlap.length === 0) {
+    issues.push({ severity: 'info', category: 'continuity',
+      message: `上一章结尾出现人物 ${prevNames.slice(0, 3).join('、')}，但本章开头前两句未提及其中任何一人，可能存在场景/视角跳跃。` });
+  }
+  return issues;
+}
+
+function checkRewriteFactSafety(content, timeline) {
+  const issues = [];
+  for (const ev of timeline) {
+    const summary = ev.summary || '', impact = ev.impact || '';
+    const deathSignals = ['死亡','牺牲','身亡','阵亡','殒命'];
+    if (!deathSignals.some(s => summary.includes(s) || impact.includes(s))) continue;
+    for (const char of ev.characters || []) {
+      if (char.length < 2) continue;
+      const lines = content.split(/\n+/);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.includes(char)) continue;
+        const window = lines.slice(Math.max(0, i-2), i+3).join(' / ');
+        if (FLASHBACK_MARKERS.some(m => window.includes(m))) continue;
+        if (deathSignals.some(s => line.includes(s + '的') || line.includes(s + '已'))) continue;
+        const LIVING_VERBS = ['笑','说','想','走','跑','打','拿','看','睁','站','坐','起','握','出','回','挥'];
+        if (LIVING_VERBS.some(v => line.includes(v))) {
+          issues.push({ severity: 'error', category: 'continuity', characters: [char],
+            message: `Rewrite 内容让已死亡人物「${char}」呈现存活行为，可能破坏了 canon 已确立的事实。`,
+            evidence: line.slice(0, 100) });
+        }
+      }
+    }
+  }
+  return issues;
+}
+
+function validateChapter({ chapterNumber, chapterContent, canon, isRewrite = false }) {
+  const isFlashback = isFlashbackChapter(chapterContent);
+  let issues = [];
+  issues = issues.concat(checkLocationContinuity(chapterContent, canon.characterStates));
+  issues = issues.concat(checkKnowledgeAuthorization(chapterContent, canon.characterStates));
+  issues = issues.concat(checkTimelineOrder(chapterContent, canon.timeline, chapterNumber, isFlashback));
+  issues = issues.concat(checkRelationshipContinuity(chapterContent, canon.characterStates));
+  issues = issues.concat(checkItemOwnership(chapterContent, canon.characterStates));
+  if (chapterNumber > 1) issues = issues.concat(checkPreviousEndingContinuity(chapterContent, canon.previousEnding));
+  if (isRewrite) issues = issues.concat(checkRewriteFactSafety(chapterContent, canon.timeline));
+  return issues;
+}
+
+function tryAutoFix(content, issues) {
+  let working = content;
+  const fixed = [];
+  const remaining = [];
+  for (const issue of issues) {
+    if (issue.severity === 'error') { remaining.push(issue); continue; }
+    if (issue.category === 'knowledge' && issue.evidence) {
+      const idx = working.indexOf(issue.evidence);
+      if (idx >= 0) {
+        const before = working.slice(0, idx), after = working.slice(idx);
+        if (!before.endsWith('（据前文线索）') && !before.endsWith('（回忆中）')) {
+          working = before + '（据前文线索）' + after;
+          fixed.push(issue);
+          continue;
+        }
+      }
+    }
+    remaining.push(issue);
+  }
+  return { content: working, fixedIssues: fixed, remainingIssues: remaining, modified: fixed.length > 0 };
+}
+
+// ============================================================
+// 3. 渲染
+// ============================================================
+function renderCanon() {
+  document.getElementById('world-block').innerHTML = CANON.worldRules.replace(/\n/g, '<br>');
+  document.getElementById('character-blocks').innerHTML = CANON.characterStates.map(s => `
+    <div class="canon-block state">
+      <strong>${s.character}</strong> · ${s.role||'角色'}<br>
+      <span class="k">地点：</span><span class="v">${s.location}</span> · <span class="k">境界：</span><span class="v">${s.powerLevel}</span><br>
+      <span class="k">身体：</span><span class="v">${s.physicalState}</span> · <span class="k">心理：</span><span class="v">${s.mentalState}</span><br>
+      <span class="k">道具：</span><span class="v">${s.keyItems}</span> · <span class="k">目标：</span><span class="v">${s.currentGoal}</span><br>
+      <span class="k">已知：</span><span class="v">${(s.knowledge||[]).join('；')}</span><br>
+      <span class="k">关系：</span><span class="v">${Object.entries(s.relationships||{}).map(([k,v])=>k+'→'+v).join('；')}</span><br>
+      <span class="k">最近：</span><span class="v">第 ${s.updatedAtChapter} 章 ${s.recentEvents}</span>
+    </div>
+  `).join('');
+  document.getElementById('timeline-blocks').innerHTML = CANON.timeline.map(e => `
+    <div class="canon-block tl">
+      [第${e.chapterNumber}章·#${e.sequence}] <strong>${e.characters.join('、')}</strong> 在「${e.location}」：${e.summary}${e.impact?`（影响：${e.impact}）`:''}
+    </div>
+  `).join('');
+  document.getElementById('plot-blocks').innerHTML = CANON.openPlotLines.map(l => `
+    <div class="canon-block plot">
+      [${l.status}] <strong>${l.name}</strong>（起始第${l.startedAt}章）：${l.currentState} | 涉及：${l.characters.join('、')}
+    </div>
+  `).join('');
+  document.getElementById('prev-end-block').textContent = CANON.previousEnding;
+
+  // CanonContext 注入视图
+  const ctx = [
+    '【正史设定（不可违背）】', CANON.worldRules,
+    '【人物群像（静态设定）】', CANON.characterArch,
+    '【当前人物状态（最高优先级 · 生成时不得推翻）】',
+    CANON.characterStates.map(s => `- ${s.character} | 地点：${s.location} | 境界：${s.powerLevel} | 身体：${s.physicalState} | 心理：${s.mentalState} | 道具：${s.keyItems} | 目标：${s.currentGoal} | 已知：${(s.knowledge||[]).join('；')} | 关系：${Object.entries(s.relationships||{}).map(([k,v])=>k+'→'+v).join('；')}`).join('\n'),
+    '【已发生事件时间线（严格单向 · 按章节+顺序排列）】',
+    CANON.timeline.map(e => `[第${e.chapterNumber}章·#${e.sequence}] ${e.characters.join('、')} 在「${e.location}」：${e.summary}${e.impact?`（影响：${e.impact}）`:''}`).join('\n'),
+    '【未结剧情线（必须在写作时考虑推进或避免冲突）】',
+    CANON.openPlotLines.map(l => `- [${l.status}] ${l.name}（起始第${l.startedAt}章）：${l.currentState} | 涉及：${l.characters.join('、')}`).join('\n'),
+    '【上一章结尾（必须自然衔接）】', CANON.previousEnding,
+    '【本章写作目标】', '第 3 章：天元城\n林轩在天元城与李四会合，得知赵无极已闭关。',
+    '【知识库参考（最低优先级）】', CANON.ragContext || '（无）',
+    '【文风要求】', CANON.writingStyle,
+    '【全局行文指导】', CANON.globalGuidance,
+    '【硬性约束（必须严格遵守）】', CANON.hardConstraints,
+  ].join('\n\n');
+  document.getElementById('canon-context-view').textContent = ctx;
+}
+
+let lastIssues = [];
+let lastAutoFixResult = null;
+
+function runValidation() {
+  const text = document.getElementById('draft-text').value;
+  const issues = validateChapter({ chapterNumber: 3, chapterContent: text, canon: CANON });
+  lastIssues = issues;
+  renderIssues(issues, null);
+  document.getElementById('fixed-diff').textContent = '—';
+  const errorCount = issues.filter(i=>i.severity==='error').length;
+  const warnCount = issues.filter(i=>i.severity==='warning').length;
+  const infoCount = issues.filter(i=>i.severity==='info').length;
+  document.getElementById('draft-meta').innerHTML = `字数：${text.length}　|　错误：<span style="color:#d45f5f">${errorCount}</span>　|　警告：<span style="color:#d4c25f">${warnCount}</span>　|　提示：<span style="color:#5fb0d4">${infoCount}</span>`;
+}
+
+function runAutoFix() {
+  if (lastIssues.length === 0) runValidation();
+  const text = document.getElementById('draft-text').value;
+  const result = tryAutoFix(text, lastIssues);
+  lastAutoFixResult = result;
+  renderIssues(lastIssues, result);
+
+  // 显示 diff
+  const before = text;
+  const after = result.content;
+  let diffHtml = '';
+  if (result.modified) {
+    // 找到插入位置并高亮
+    for (const issue of result.fixedIssues) {
+      if (issue.evidence && after.includes('（据前文线索）' + issue.evidence)) {
+        const parts = after.split('（据前文线索）' + issue.evidence);
+        diffHtml = parts.map((p, i) => {
+          if (i < parts.length - 1) {
+            return escapeHtml(p) + '<span class="add">（据前文线索）</span>' + escapeHtml(issue.evidence);
+          }
+          return escapeHtml(p);
+        }).join('');
+        break;
+      }
+    }
+    if (!diffHtml) diffHtml = escapeHtml(after);
+  } else {
+    diffHtml = '<span style="color:#888">（无可修复项，未修改）</span>';
+  }
+  document.getElementById('fixed-diff').innerHTML = diffHtml;
+}
+
+function renderIssues(issues, autoFixResult) {
+  const container = document.getElementById('issues-container');
+  if (issues.length === 0) {
+    container.innerHTML = '<div style="color:#5fd47e;font-size:13px;padding:8px;">✅ 一致性检查通过：未发现任何问题</div>';
+    return;
+  }
+  const fixed = autoFixResult?.fixedIssues || [];
+  const fixedIds = new Set(fixed);
+  let html = '';
+  for (const issue of issues) {
+    const isFixed = fixedIds.has(issue);
+    const sev = issue.severity === 'error' ? 'error' : issue.severity === 'warning' ? 'warning' : 'info';
+    const sevIcon = isFixed ? 'fixed' : sev;
+    const sevLabel = isFixed ? '已自动修复' : (issue.severity==='error'?'❌ error':issue.severity==='warning'?'⚠️ warning':'ℹ️ info');
+    html += `<div class="issue ${sevIcon}">
+      <div>
+        <span class="cat">${issue.category}</span>
+        <strong style="color:${isFixed?'#5fd47e':sev==='error'?'#d45f5f':sev==='warning'?'#d4c25f':'#5fb0d4'}">${sevLabel}</strong>
+        ${issue.characters&&issue.characters.length?`<span class="chars"> [${issue.characters.join(' / ')}]</span>`:''}
+      </div>
+      <div style="margin-top:4px;">${escapeHtml(issue.message)}</div>
+      ${issue.evidence?`<div style="margin-top:4px;color:#888;font-size:11px;">证据：${escapeHtml(issue.evidence)}</div>`:''}
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function runWriteback() {
+  const log = document.getElementById('writeback-log');
+  const text = document.getElementById('draft-text').value;
+  const ts = () => new Date().toLocaleTimeString();
+  const lines = [];
+  lines.push(`<span class="ts">[${ts()}]</span> <span class="info">▸</span> Canon writeback 启动（第 3 章）`);
+  lines.push(`<span class="ts">[${ts()}]</span> <span class="ok">✓</span> 章节摘要已写入 canon_chapter_summaries`);
+  lines.push(`<span class="ts">[${ts()}]</span> <span class="ok">✓</span> 提取事件 ×${Math.max(1, Math.floor(text.length/80))} → canon_timeline_events`);
+
+  // 模拟角色 delta
+  const newLoc = text.match(/在([\u4e00-\u9fa5A-Za-z0-9_]{2,3})/g);
+  if (newLoc) {
+    const lastLoc = newLoc[newLoc.length-1].replace('在','');
+    lines.push(`<span class="ts">[${ts()}]</span> <span class="ok">✓</span> 林轩.location: 天元城 → ${lastLoc}（写入 canon_character_state）`);
+  }
+  lines.push(`<span class="ts">[${ts()}]</span> <span class="ok">✓</span> 林轩.relationships: 保持（与 canon 一致）`);
+  lines.push(`<span class="ts">[${ts()}]</span> <span class="ok">✓</span> 剧情线「为师报仇」已 advanced（第 2 → 第 3 章）`);
+  lines.push(`<span class="ts">[${ts()}]</span> <span class="ok">✓</span> 事实 ×2 → canon_facts（身份类、地点类）`);
+
+  if (lastAutoFixResult?.modified) {
+    lines.push(`<span class="ts">[${ts()}]</span> <span class="ok">✓</span> 修复后的正文已落库 db:draft-create（v${Date.now()%1000}）`);
+  } else {
+    lines.push(`<span class="ts">[${ts()}]</span> <span class="info">▸</span> 草稿未做自动修复，原文已落库`);
+  }
+  lines.push(`<span class="ts">[${ts()}]</span> <span class="ok">✓</span> 全局事件已广播 → 下一章 buildCanonContext() 将读取新状态`);
+  log.innerHTML = lines.join('<br>');
+}
+
+function resetDemo() {
+  document.getElementById('draft-text').value = `林轩在青云山与师父告别。
+
+赵无极突然出现，他笑着说：「林轩，我来取你性命。」
+
+林轩在烈火宗与赵无极激战三百回合，林轩知道赵无极的弱点是背后的玉佩。
+
+林轩说：「今天我要为师报仇。」
+
+赵无极在烈火宗闭关十天后出现，他的弱点是背后的玉佩。
+
+回忆：十年前，师父在青云山教林轩剑法，那时候师父还活着。
+
+师父在青云山笑着说：「孩子们，我来了。」
+
+林轩挥剑斩向赵无极。`;
+  lastIssues = [];
+  lastAutoFixResult = null;
+  document.getElementById('issues-container').innerHTML = '<div style="color: #666; font-size: 12px;">点击「运行一致性校验」开始</div>';
+  document.getElementById('fixed-diff').textContent = '—';
+  document.getElementById('writeback-log').textContent = '—';
+  document.getElementById('draft-meta').textContent = '—';
+}
+
+renderCanon();
+</script>
+</body>
+</html>

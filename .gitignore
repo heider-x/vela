@@ -35,3 +35,18 @@ Thumbs.db
 *.local
 dist-ssr
 tailwind.config.js.bak
+
+# Backup / debug artifacts (审计过程产物)
+*.orig
+debug-*.mjs
+adversarial-verify.mjs
+adversarial-verify-2.mjs
+adversarial-verify-3.mjs
+adversarial-verify-4.mjs
+verify-patches.mjs
+benchmark-validate.mjs
+perf-compare.mjs
+realistic-benchmark.mjs
+stress-test.mjs
+ci-validate.sh
+

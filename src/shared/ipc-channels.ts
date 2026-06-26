@@ -292,7 +292,161 @@ export interface DatabaseChannels {
   'db:get-llm-history': { args: [limit?: number]; return: unknown[] }
   'db:save-summary-snapshot': { args: [chapterNumber: number, characterStates: string]; return: { success: boolean } }
   'db:get-latest-summary': { args: []; return: { characterStates: string; chapterNumber: number } | null }
+
+  // ===== Canon Store (叙事一致性) =====
+  'db:canon-timeline-get': { args: [maxChapter: number, includeFlashback?: boolean]; return: CanonTimelineEvent[] }
+  'db:canon-timeline-get-chapter': { args: [chapterNumber: number]; return: CanonTimelineEvent[] }
+  'db:canon-timeline-append': { args: [event: CanonTimelineEventInput]; return: { success: boolean; id?: number; error?: string } }
+  'db:canon-timeline-clear-chapter': { args: [chapterNumber: number]; return: { success: boolean } }
+  'db:canon-character-state-get-all': { args: []; return: CanonCharacterStateSnapshot[] }
+  'db:canon-character-state-get': { args: [character: string]; return: CanonCharacterStateSnapshot | null }
+  'db:canon-character-state-upsert': { args: [snapshot: CanonCharacterStateSnapshot]; return: { success: boolean; error?: string } }
+  'db:canon-plot-list': { args: [status?: 'active' | 'resolved' | 'paused']; return: CanonPlotLine[] }
+  'db:canon-plot-add': { args: [line: CanonPlotLineInput]; return: { success: boolean; id?: number; error?: string } }
+  'db:canon-plot-advance': { args: [id: number, currentState: string, lastAdvancedAt: number]; return: { success: boolean } }
+  'db:canon-plot-resolve': { args: [id: number, chapterNumber: number]; return: { success: boolean } }
+  'db:canon-fact-list': { args: []; return: CanonFact[] }
+  'db:canon-fact-add': { args: [fact: CanonFactInput]; return: { success: boolean; id?: number; error?: string } }
+  'db:canon-fact-clear-chapter': { args: [chapterNumber: number]; return: { success: boolean } }
+  'db:canon-summary-get': { args: [chapterNumber: number]; return: CanonChapterSummary | null }
+  'db:canon-summary-list-recent': { args: [limit?: number]; return: CanonChapterSummary[] }
+  'db:canon-summary-upsert': { args: [summary: CanonChapterSummary]; return: { success: boolean; error?: string } }
+
+  // 原子写回（推荐路径：单次事务）
+  'db:canon-writeback-atomic': {
+    args: [payload: CanonWritebackPayload]
+    return: { success: boolean; error?: string; timelineIds?: number[]; characterStatesWritten?: number; plotIds?: number[]; factIds?: number[] }
+  }
 }
+
+// CanonWritebackPayload 与主进程 CanonRepository.writebackAtomically 入参兼容
+export interface CanonWritebackPayload {
+  chapterNumber: number
+  newEvents: Array<{
+    chapterNumber: number
+    sequence: number
+    characters: string[]
+    location: string
+    timeFlow: 'sequential' | 'flashback'
+    summary: string
+    impact: string
+  }>
+  characterDeltas: Array<{
+    character: string
+    chapterNumber: number
+    after: {
+      location?: string
+      powerLevel?: string
+      physicalState?: string
+      mentalState?: string
+      keyItems?: string
+      currentGoal?: string
+      knowledge?: string[]
+      relationships?: Record<string, string>
+      recentEvents?: string
+    }
+  }>
+  plotLineChanges?: {
+    added?: Array<{
+      name: string
+      status: 'active' | 'resolved' | 'paused'
+      startedAt: number
+      lastAdvancedAt: number
+      resolvedAt?: number
+      characters: string[]
+      currentState: string
+      description: string
+    }>
+    advanced?: Array<{ id: number; currentState: string; lastAdvancedAt: number }>
+    resolved?: number[]
+  }
+  newFacts: Array<{
+    category: 'world' | 'location' | 'item' | 'event' | 'relationship' | 'identity'
+    statement: string
+    introducedAt: number
+    characters: string[]
+    evidence?: string
+  }>
+}
+
+// ===== Canon Store 类型别名（避免 ipc-channels.ts 直接依赖 narrative-consistency） =====
+export interface CanonTimelineEvent {
+  id?: number
+  chapterNumber: number
+  sequence: number
+  characters: string[]
+  location: string
+  timeFlow: 'sequential' | 'flashback'
+  summary: string
+  impact: string
+  createdAt?: string
+}
+export interface CanonTimelineEventInput {
+  chapterNumber: number
+  sequence: number
+  characters: string[]
+  location: string
+  timeFlow: 'sequential' | 'flashback'
+  summary: string
+  impact: string
+}
+export interface CanonCharacterStateSnapshot {
+  character: string
+  location: string
+  powerLevel: string
+  physicalState: string
+  mentalState: string
+  keyItems: string
+  currentGoal: string
+  knowledge: string[]
+  relationships: Record<string, string>
+  recentEvents: string
+  updatedAtChapter: number
+  updatedAt: string
+}
+export interface CanonPlotLine {
+  id?: number
+  name: string
+  status: 'active' | 'resolved' | 'paused'
+  startedAt: number
+  lastAdvancedAt: number
+  resolvedAt?: number
+  characters: string[]
+  currentState: string
+  description: string
+}
+export interface CanonPlotLineInput {
+  name: string
+  status: 'active' | 'resolved' | 'paused'
+  startedAt: number
+  lastAdvancedAt: number
+  resolvedAt?: number
+  characters: string[]
+  currentState: string
+  description: string
+}
+export interface CanonFact {
+  id?: number
+  category: 'world' | 'location' | 'item' | 'event' | 'relationship' | 'identity'
+  statement: string
+  introducedAt: number
+  characters: string[]
+  evidence?: string
+}
+export interface CanonFactInput {
+  category: 'world' | 'location' | 'item' | 'event' | 'relationship' | 'identity'
+  statement: string
+  introducedAt: number
+  characters: string[]
+  evidence?: string
+}
+export interface CanonChapterSummary {
+  chapterNumber: number
+  title: string
+  summary: string
+  createdAt: string
+}
+
 
 // ===== 知识库频道 =====
 export interface KnowledgeBaseChannels {

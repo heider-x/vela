@@ -7,6 +7,11 @@ import {
   DIR_PROMPTS
 } from '../../../shared/project-paths'
 import type { ChapterInfo } from '../chapter-workflow'
+import {
+  buildCanonContext,
+  renderCanonContext,
+  runConsistencyGate,
+} from '../../narrative-consistency'
 
 export class GenerateDraftCommand extends BaseWorkflowCommand {
 
@@ -25,6 +30,7 @@ export class GenerateDraftCommand extends BaseWorkflowCommand {
     const mergedGuidance = [project.novelConfig.globalGuidance || '', projectPrompts].filter(Boolean).join('\n\n')
 
     const characterState = await this.readCharacterStates(project.path)
+    const allCharacters = await ipc.invoke('db:character-get-all').catch(() => [] as Array<{ name: string; role: string; currentState?: { location?: string; powerLevel?: string; physicalState?: string; mentalState?: string; keyItems?: string; recentEvents?: string; updatedAtChapter?: number } }>)
     let futureBlueprintsStr = '（无后续蓝图）'
     try {
       const { loadDirectoryBlueprints } = await import('../directory-workflow')
@@ -37,6 +43,39 @@ export class GenerateDraftCommand extends BaseWorkflowCommand {
       }
     } catch { /* 忽略 */ }
 
+    // ==========================================
+    // [Canon] 构造叙事一致性 Canon Context（所有生成路径都强制经过此闸门）
+    // ==========================================
+    let canonRendered = ''
+    let canonForValidation: import('../../narrative-consistency').CanonContext | null = null
+    try {
+      const core = await ipc.invoke('db:project-core-get').catch(() => null as null | { premise?: string; charactersArch?: string; worldbuilding?: string; synopsis?: string })
+      // 拆解 architecture 字符串回填到结构化字段（architecture 由 readArchitecture 按 premise/charactersArch/worldbuilding/synopsis 顺序拼装）
+      const archParts = (architecture || '').split(/\n\n---\n\n/)
+      canonForValidation = await buildCanonContext({
+        chapterNumber: this.chapterInfo.chapterNumber,
+        architecture: {
+          premise: core?.premise ?? archParts[0] ?? '',
+          charactersArch: core?.charactersArch ?? archParts[1] ?? '',
+          worldbuilding: core?.worldbuilding ?? archParts[1] ?? '',
+          synopsis: core?.synopsis ?? archParts[3] ?? '',
+        },
+        characters: (allCharacters || []).map(c => ({
+          name: c.name,
+          role: c.role,
+          currentState: c.currentState,
+        })),
+        chapterGoal: typeof this.chapterInfo === 'object' ? JSON.stringify(this.chapterInfo) : String(this.chapterInfo),
+        previousEnding: '', // 下面在非首章分支填充
+        ragContext: '',     // 下面在非首章分支填充
+        writingStyle: project.novelConfig.writingStyle || '',
+        globalGuidance: mergedGuidance,
+      })
+      canonRendered = renderCanonContext(canonForValidation)
+      callbacks.log(`  🛡️ 已注入 Canon 上下文（时间线 ${canonForValidation.timeline.length} 条 / 角色状态 ${canonForValidation.characterStates.length} 条 / 剧情线 ${canonForValidation.openPlotLines.length} 条）`)
+    } catch (e) {
+      callbacks.log(`  ⚠️ Canon 上下文构造失败，继续以基础上下文生成：${String(e)}`)
+    }
     const isFirstChapter = this.chapterInfo.chapterNumber === 1
     const templateKey = isFirstChapter ? 'first_chapter_draft' : 'next_chapter_draft'
     const template = getPromptTemplate(templateKey)
@@ -96,6 +135,18 @@ export class GenerateDraftCommand extends BaseWorkflowCommand {
         .withFilteredContext(filteredContext)
         .withShortSummary('')
         .withUserGuidance(this.chapterInfo.userGuidance?.trim() || '（无微操指导）')
+
+      // [Canon] 二次注入：在 RAG 与上一章结尾就绪后，把它们写回 Canon 并重渲染
+      if (canonForValidation) {
+        canonForValidation.previousEnding = previousEnding || '（无前文）'
+        canonForValidation.ragContext = filteredContext || '（无 RAG 检索结果）'
+        canonRendered = renderCanonContext(canonForValidation)
+      }
+    }
+
+    // [Canon] 注入叙事一致性上下文（强制最高优先级）
+    if (canonRendered) {
+      promptBuilder.withCanonContext(canonRendered)
     }
 
     // Token 预算管控：中文约 1.5 字符/token，预留 4K 给输出
@@ -111,20 +162,56 @@ export class GenerateDraftCommand extends BaseWorkflowCommand {
     const draftText = await this.callLLMWithBuilder(promptBuilder, callbacks)
     const cleanDraftText = this.stripThinkingTags(draftText)
 
+    // ==========================================
+    // [Canon] 生成后一致性 Gate + 自动修复
+    // ==========================================
+    let finalDraft = cleanDraftText
+    if (canonForValidation) {
+      try {
+        const gateResult = await runConsistencyGate({
+          chapterNumber: this.chapterInfo.chapterNumber,
+          chapterContent: cleanDraftText,
+          canon: canonForValidation,
+        })
+        callbacks.log(`  🛡️ [Gate] ${gateResult.verdict}: ${gateResult.report}`)
+        if (gateResult.verdict === 'BLOCK') {
+          throw new Error(`生成草稿被叙事一致性 Gate 阻止：${gateResult.blockingReasons.join('；')}`)
+        }
+        if (gateResult.verdict === 'REPAIR' && gateResult.repairedContent) {
+          finalDraft = gateResult.repairedContent
+          callbacks.log(`  🛡️ [Canon] 自动修复 ${gateResult.repairAttempts} 轮后保存修复稿`)
+        }
+        if (gateResult.issues.length === 0) {
+          callbacks.log(`  ✅ [Canon] 一致性检查通过`)
+        }
+        const remaining = gateResult.issues.map(i => i.issue)
+        if (remaining.length > 0) context.data.consistencyWarnings = remaining
+        context.data.consistencyReport = {
+          verdict: gateResult.verdict,
+          totalIssues: gateResult.issues.length,
+          repairAttempts: gateResult.repairAttempts,
+          remaining: gateResult.issues.length,
+        }
+      } catch (e) {
+        callbacks.log(`  ❌ [Canon] Gate 异常：${String(e)}`)
+        throw e
+      }
+    }
+
     // 落于数据库
     const nextVersion: number = await ipc.invoke('db:draft-next-version', this.chapterInfo.chapterNumber)
     const createResult = await ipc.invoke('db:draft-create', {
       chapterNumber: this.chapterInfo.chapterNumber,
       version: nextVersion,
       source: 'write',
-      content: cleanDraftText,
-      wordCount: cleanDraftText.length,
+      content: finalDraft,
+      wordCount: finalDraft.length,
     })
 
     const pseudoPath = createResult.id ? `vela://draft/${createResult.id}` : `vela://draft/ch${this.chapterInfo.chapterNumber}/v${nextVersion}`
 
-    context.data.draft = cleanDraftText
-    context.data.draftContent = cleanDraftText
+    context.data.draft = finalDraft
+    context.data.draftContent = finalDraft
     context.data.draftPath = pseudoPath
     context.data.chapterNumber = this.chapterInfo.chapterNumber
     context.data.chapterInfo = this.chapterInfo

@@ -3,6 +3,7 @@ import { useProjectStore } from '../../../stores/project-store'
 import { getPromptTemplate } from '../../prompt-templates'
 import { ReviewPromptBuilder } from '../../prompts/prompt-builder'
 import { ipc } from '../../ipc-client'
+import { buildCanonContext, renderCanonContext } from '../../narrative-consistency'
 
 
 export interface ReviewChapterParams {
@@ -50,12 +51,48 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
     const template = getPromptTemplate('consistency_check')
     if (!template) throw new Error('未找到审稿模板')
 
-    const promptBuilder = new ReviewPromptBuilder(template)
+        // ==========================================
+    // [Canon] 注入叙事一致性上下文 — 审稿员交叉验证事实基线
+    // ==========================================
+    let promptBuilder: ReviewPromptBuilder;
+    try {
+      const [core, allCharacters] = await Promise.all([
+        ipc.invoke("db:project-core-get").catch(() => null as null | { premise?: string; charactersArch?: string; worldbuilding?: string; synopsis?: string }),
+        ipc.invoke("db:character-get-all").catch(() => [] as Array<Record<string, unknown>>),
+      ]);
+      const canon = await buildCanonContext({
+        chapterNumber: this.params.chapterNumber,
+        architecture: {
+          premise: core?.premise || "",
+          charactersArch: core?.charactersArch || "",
+          worldbuilding: core?.worldbuilding || "",
+          synopsis: core?.synopsis || "",
+        },
+        characters: (allCharacters || []).map(c => ({
+          name: c.name as string,
+          role: c.role as string,
+          currentState: c.currentState as { location?: string; powerLevel?: string; physicalState?: string; mentalState?: string; keyItems?: string; recentEvents?: string; updatedAtChapter?: number } | undefined,
+        })),
+        chapterGoal: `第${this.params.chapterNumber}章审稿`,
+        previousEnding: "",
+        ragContext: "",
+        writingStyle: project.novelConfig.writingStyle || "",
+        globalGuidance: project.novelConfig.globalGuidance || "",
+      });
+      promptBuilder = new ReviewPromptBuilder(template);
+      promptBuilder.withCanonContext(renderCanonContext(canon));
+      callbacks.log(`  🛡️ [Canon] 审稿已注入事实基线（时间线 ${canon.timeline.length} / 角色 ${canon.characterStates.length}）`);
+    } catch (e) {
+      promptBuilder = new ReviewPromptBuilder(template);
+      callbacks.log(`  ⚠️ [Canon] 审稿上下文构造失败：${String(e)}`);
+    }
+
+    promptBuilder
       .withChapterContent(draft)
       .withCharacterStates(characterState)
       .withGlobalSummary(contextSummary)
       .withWorldBuilding(worldBuilding)
-      .withReviewFocus(this.params.reviewFocus || '')
+      .withReviewFocus(this.params.reviewFocus || '');
 
     callbacks.log('调用 AI 审查员对本章进行多维度扫描...')
 

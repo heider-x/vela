@@ -13,6 +13,23 @@ import { PostProcessRepository } from '../repositories/post-process-repository'
 // 沿用的旧表
 import { LLMHistoryRepository } from '../repositories/llm-repository'
 import { SummaryRepository } from '../repositories/summary-repository'
+import { CanonRepository } from '../repositories/canon-repository'
+import {
+  safeValidate,
+  validateCanonTimelineEventInput,
+  validateCanonFactInput,
+  validateCanonPlotLineInput,
+  validateCanonCharacterStateSnapshot,
+  validateCanonChapterSummary,
+  validateCanonWritebackPayload,
+} from '../ipc-validation'
+import type {
+  TimelineEvent,
+  CharacterStateSnapshot,
+  PlotLine,
+  Fact,
+  ChapterSummary,
+} from '../../src/services/narrative-consistency/types'
 
 export function registerDatabaseController() {
   ipcMain.handle('db:close', async () => {
@@ -342,5 +359,132 @@ ipcMain.handle('db:revision-create', async (_event, params: {
 
   ipcMain.handle('db:get-latest-summary', async () => {
     return SummaryRepository.getLatestSnapshot()
+  })
+
+  // ============================================================
+  // Canon Store —— 叙事一致性持久化
+  // ============================================================
+
+  // 时间线
+  ipcMain.handle('db:canon-timeline-get', async (_event, maxChapter: number, includeFlashback?: boolean) => {
+    return CanonRepository.getTimelineUpTo(maxChapter, includeFlashback !== false)
+  })
+  ipcMain.handle('db:canon-timeline-get-chapter', async (_event, chapterNumber: number) => {
+    return CanonRepository.getTimelineByChapter(chapterNumber)
+  })
+  ipcMain.handle('db:canon-timeline-append', async (_event, event: Omit<TimelineEvent, 'id' | 'createdAt'>) => {
+    const v = safeValidate(validateCanonTimelineEventInput, event)
+    if (!v.ok) return { success: false, error: v.error }
+    try {
+      const id = CanonRepository.appendTimelineEvent(v.data)
+      return { success: true, id }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+  ipcMain.handle('db:canon-timeline-clear-chapter', async (_event, chapterNumber: number) => {
+    CanonRepository.clearChapterTimeline(chapterNumber)
+    return { success: true }
+  })
+
+  // 角色状态
+  ipcMain.handle('db:canon-character-state-get-all', async () => {
+    return CanonRepository.getAllCharacterStates()
+  })
+  ipcMain.handle('db:canon-character-state-get', async (_event, character: string) => {
+    return CanonRepository.getCharacterState(character)
+  })
+  ipcMain.handle('db:canon-character-state-upsert', async (_event, snapshot: CharacterStateSnapshot) => {
+    const v = safeValidate(validateCanonCharacterStateSnapshot, snapshot)
+    if (!v.ok) return { success: false, error: v.error }
+    try {
+      CanonRepository.upsertCharacterState(v.data)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+
+  // 剧情线
+  ipcMain.handle('db:canon-plot-list', async (_event, status?: PlotLine['status']) => {
+    return CanonRepository.getPlotLines(status ? { status } : undefined)
+  })
+  ipcMain.handle('db:canon-plot-add', async (_event, line: Omit<PlotLine, 'id'>) => {
+    const v = safeValidate(validateCanonPlotLineInput, line)
+    if (!v.ok) return { success: false, error: v.error }
+    try {
+      const id = CanonRepository.addPlotLine(v.data)
+      return { success: true, id }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+  ipcMain.handle('db:canon-plot-advance', async (_event, id: number, currentState: string, lastAdvancedAt: number) => {
+    CanonRepository.advancePlotLine(id, currentState, lastAdvancedAt)
+    return { success: true }
+  })
+  ipcMain.handle('db:canon-plot-resolve', async (_event, id: number, chapterNumber: number) => {
+    CanonRepository.resolvePlotLine(id, chapterNumber)
+    return { success: true }
+  })
+
+  // 事实
+  ipcMain.handle('db:canon-fact-list', async () => {
+    return CanonRepository.getFacts()
+  })
+  ipcMain.handle('db:canon-fact-add', async (_event, fact: Omit<Fact, 'id'>) => {
+    const v = safeValidate(validateCanonFactInput, fact)
+    if (!v.ok) return { success: false, error: v.error }
+    try {
+      const id = CanonRepository.addFact(v.data)
+      return { success: true, id }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+  ipcMain.handle('db:canon-fact-clear-chapter', async (_event, chapterNumber: number) => {
+    CanonRepository.clearChapterFacts(chapterNumber)
+    return { success: true }
+  })
+
+  // 章节摘要
+  ipcMain.handle('db:canon-summary-get', async (_event, chapterNumber: number) => {
+    return CanonRepository.getSummary(chapterNumber)
+  })
+  ipcMain.handle('db:canon-summary-list-recent', async (_event, limit?: number) => {
+    return CanonRepository.getRecentSummaries(limit ?? 5)
+  })
+  ipcMain.handle('db:canon-summary-upsert', async (_event, summary: ChapterSummary) => {
+    const v = safeValidate(validateCanonChapterSummary, summary)
+    if (!v.ok) return { success: false, error: v.error }
+    try {
+      CanonRepository.upsertSummary(v.data)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+
+  // 原子写回（推荐路径：单次事务）
+  ipcMain.handle('db:canon-writeback-atomic', async (_event, payload: {
+    chapterNumber: number
+    newEvents: Omit<TimelineEvent, 'id' | 'createdAt'>[]
+    characterDeltas: Array<{ character: string; after: Partial<CharacterStateSnapshot>; chapterNumber: number }>
+    plotLineChanges?: {
+      added?: Omit<PlotLine, 'id'>[]
+      advanced?: Array<{ id: number; currentState: string; lastAdvancedAt: number }>
+      resolved?: number[]
+    }
+    newFacts: Omit<Fact, 'id'>[]
+  }) => {
+    const v = safeValidate(validateCanonWritebackPayload, payload)
+    if (!v.ok) return { success: false, error: v.error }
+    try {
+      const result = CanonRepository.writebackAtomically(v.data)
+      return { success: true, ...result }
+    } catch (err) {
+      console.error('[db:canon-writeback-atomic] failed:', err)
+      return { success: false, error: String(err) }
+    }
   })
 }

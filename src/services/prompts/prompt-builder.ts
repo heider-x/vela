@@ -9,6 +9,14 @@ export class BasePromptBuilder {
   protected template: PromptTemplate;
   protected variables: Record<string, string> = {};
 
+  /**
+   * 注入叙事一致性 Canon 上下文，所有 Builder 子类均可使用。模板应预留 {{canon_context}} 变量。
+   */
+  withCanonContext(renderedCanon: string) {
+    this.variables.canon_context = renderedCanon;
+    return this;
+  }
+
   constructor(template: PromptTemplate) {
     this.template = template;
   }
@@ -21,9 +29,12 @@ export class BasePromptBuilder {
   /** 打包输出最终经过所有合法性替换的字符串 */
   public build(): string {
     let result = this.template.content
+    // 修复：转义 value 中的 {{xxx}}，防止再次被 replaceAll 替换（prompt injection）
+    const escapeTemplateVars = (v: string) =>
+      (v || '').toString().replace(/\{\{/g, '⦃⦃').replace(/\}\}/g, '⦄⦄')
     for (const [key, value] of Object.entries(this.variables)) {
       // 使用 replaceAll 避免正则注入风险，安全替换所有匹配项
-      const safeValue = value || ''
+      const safeValue = escapeTemplateVars(value)
       result = result.replaceAll(`{{${key}}}`, safeValue)
     }
 
@@ -33,7 +44,7 @@ export class BasePromptBuilder {
     if (suffix) {
       let renderedSuffix = suffix
       for (const [key, value] of Object.entries(this.variables)) {
-        renderedSuffix = renderedSuffix.replaceAll(`{{${key}}}`, value)
+        renderedSuffix = renderedSuffix.replaceAll(`{{${key}}}`, escapeTemplateVars(value))
       }
       result = result + '\n\n' + renderedSuffix
     }
@@ -149,6 +160,7 @@ export class ChapterPromptBuilder extends BasePromptBuilder {
     this.variables.knowledge_query_hint = hint;
     return this;
   }
+
 }
 
 /**
