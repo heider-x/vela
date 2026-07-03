@@ -217,15 +217,31 @@ export function createCharacterExtractSteps(_projectPath: string, characterDynam
         const jsonStr = cleanedCards.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
         const parsedData = JSON.parse(jsonStr)
 
-        // 兼容两种格式：直接数组 或 { characters: [...] }
-        const parsedCards: Array<Record<string, unknown>> = Array.isArray(parsedData)
-          ? parsedData
-          : (parsedData && typeof parsedData === 'object' && Array.isArray((parsedData as Record<string, unknown>).characters))
-            ? (parsedData as Record<string, unknown>).characters as Array<Record<string, unknown>>
-            : []
+        // 兼容多种格式：直接数组、{ characters: [...] }、或其他包含数组的对象
+        let parsedCards: Array<Record<string, unknown>> = []
+        if (Array.isArray(parsedData)) {
+          // 直接返回数组 [...]
+          parsedCards = parsedData as Array<Record<string, unknown>>
+        } else if (parsedData && typeof parsedData === 'object') {
+          const obj = parsedData as Record<string, unknown>
+          // 优先查找 characters 字段
+          if (Array.isArray(obj.characters)) {
+            parsedCards = obj.characters as Array<Record<string, unknown>>
+          } else {
+            // 回退：查找对象中第一个包含对象的数组字段
+            for (const value of Object.values(obj)) {
+              if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+                parsedCards = value as Array<Record<string, unknown>>
+                break
+              }
+            }
+          }
+        }
 
         if (parsedCards.length === 0) {
-          throw new Error('AI 返回的角色数据格式不正确，未提取到有效角色')
+          // 输出原始内容前 500 字符用于调试
+          const preview = cleanedCards.slice(0, 500)
+          throw new Error(`AI 返回的角色数据格式不正确，未提取到有效角色。原始内容预览: ${preview}`)
         }
 
         // 构建角色卡数据列表
