@@ -16,7 +16,16 @@ export async function embedOpenAI(
   model: { baseUrl: string; apiKey: string; modelName?: string },
 ): Promise<number[][]> {
   const embeddingModel = model.modelName || 'text-embedding-3-small'
-  const url = model.baseUrl.replace(/\/$/, '') + '/embeddings'
+  // 智能构建 embedding URL，兼容多种 baseUrl 格式
+  const base = model.baseUrl.replace(/\/$/, '')
+  let url: string
+  if (base.endsWith('/embeddings')) {
+    url = base
+  } else if (/\/v\d+$/.test(base)) {
+    url = `${base}/embeddings`
+  } else {
+    url = `${base}/v1/embeddings`
+  }
   const res = await fetch(url, {
     method: 'POST',
     headers: {
