@@ -976,34 +976,37 @@ severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致�
 4. role 字段仅限以下取值：protagonist（主角）、antagonist（反派）、supporting（配角）、minor（龙套）。
 5. currentState 是角色的初始状态（故事开始时），updatedAtChapter 固定为 0。
 
-【输出格式（JSON 数组）】
-[
-  {
-    "name": "角色名",
-    "role": "protagonist",
-    "gender": "性别",
-    "age": "年龄或年龄段",
-    "appearance": "外貌特征",
-    "personality": "性格特点",
-    "background": "背景故事",
-    "abilities": "能力/技能/修为",
-    "motivation": "核心动机与渴望",
-    "relationships": "与其他角色的关系",
-    "arc": "预期的角色弧光/成长轨迹",
-    "notes": "其他补充说明",
-    "currentState": {
-      "location": "初始位置",
-      "powerLevel": "初始境界/能力等级",
-      "physicalState": "初始身体状态",
-      "mentalState": "初始心理状态",
-      "keyItems": "初始持有道具",
-      "recentEvents": "故事开始前的背景事件",
-      "updatedAtChapter": 0
+【输出格式】
+必须返回一个 JSON 对象，格式如下（characters 数组包含所有角色）：
+{
+  "characters": [
+    {
+      "name": "角色名",
+      "role": "protagonist",
+      "gender": "性别",
+      "age": "年龄或年龄段",
+      "appearance": "外貌特征",
+      "personality": "性格特点",
+      "background": "背景故事",
+      "abilities": "能力/技能/修为",
+      "motivation": "核心动机与渴望",
+      "relationships": "与其他角色的关系",
+      "arc": "预期的角色弧光/成长轨迹",
+      "notes": "其他补充说明",
+      "currentState": {
+        "location": "初始位置",
+        "powerLevel": "初始境界/能力等级",
+        "physicalState": "初始身体状态",
+        "mentalState": "初始心理状态",
+        "keyItems": "初始持有道具",
+        "recentEvents": "故事开始前的背景事件",
+        "updatedAtChapter": 0
+      }
     }
-  }
-]
+  ]
+}
 
-如果图谱中没有任何可提取的角色，返回空数组 []。`,
+如果图谱中没有任何可提取的角色，返回 {"characters": []}。`,
   },
 
   // ================================================================

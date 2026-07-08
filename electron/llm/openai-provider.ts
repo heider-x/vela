@@ -4,11 +4,19 @@ import { ModelProfile } from '../../src/shared/ipc-channels'
 export class OpenAIProvider implements ILLMProvider {
   private buildUrl(baseUrl: string): string {
     const base = baseUrl.replace(/\/$/, '')
-    // 如果 baseUrl 已经带了完整 /v1/chat 路径，直接用
-    if (base.endsWith('/v1/chat')) {
+    // 已包含完整路径
+    if (base.endsWith('/chat/completions')) {
+      return base
+    }
+    // 已包含 /chat 但缺 /completions
+    if (base.endsWith('/chat')) {
       return `${base}/completions`
     }
-    // 否则补全完整路径
+    // 已包含版本号路径（/v1, /v4 等），直接补全 chat/completions
+    if (/\/v\d+$/.test(base)) {
+      return `${base}/chat/completions`
+    }
+    // 无版本号路径，补全 /v1/chat/completions
     return `${base}/v1/chat/completions`
   }
 
