@@ -1,0 +1,47 @@
+{
+  "titleBar": {
+    "unsavedChanges": "Unsaved changes",
+    "zoomOut": "Zoom Out (⌘+-)",
+    "zoomOutCtrl": "Zoom Out (Ctrl+-)",
+    "resetZoom": "Reset Zoom (⌘+0)",
+    "resetZoomCtrl": "Reset Zoom (Ctrl+0)",
+    "zoomIn": "Zoom In (⌘+=)",
+    "zoomInCtrl": "Zoom In (Ctrl+=)",
+    "settings": "Settings",
+    "themeGalaxy": "Galaxy",
+    "themePaper": "Paper",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "themeLabel": "Theme: {{theme}}"
+  },
+  "statusBar": {
+    "supportAuthor": "❤️ Support the Author",
+    "sponsorTooltip": "Business & Sponsorship",
+    "currentModel": "Current model: {{name}}",
+    "clickToConfigModel": "Click to configure model",
+    "noModel": "No model configured",
+    "taskComplete": " Complete",
+    "tasksRunning": "{{count}} task(s) running...",
+    "viewTaskProgress": "Click to view task progress",
+    "viewAIDetails": "Click to view AI output details",
+    "tasksLabel": "Tasks"
+  },
+  "activityBar": {
+    "home": "Home",
+    "project": "Project",
+    "knowledge": "Knowledge Base",
+    "characters": "Characters",
+    "settings": "Settings",
+    "agent": "AI Assistant",
+    "projectManagement": "Project Management",
+    "currentProject": "Current Project",
+    "newProject": "New Project",
+    "openProject": "Open Project...",
+    "closeProject": "Close Current Project",
+    "recentProjects": "Recent Projects",
+    "noOtherRecent": "No other recent projects",
+    "closeProjectTitle": "Close Project",
+    "discardAndClose": "Discard & Close",
+    "unsavedConfirm": "The following files have unsaved changes:\n{{names}}\n\nAre you sure you want to close the project? Unsaved changes will be lost."
+  }
+}

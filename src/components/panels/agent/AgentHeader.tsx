@@ -1,4 +1,5 @@
 import { Plus, MoreHorizontal, X, Server, Sparkles, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAgentStore } from '../../../stores/agent-store'
 import { useLayoutStore } from '../../../stores/layout-store'
 import { useMCPStore } from '../../../stores/mcp-store'
@@ -13,6 +14,7 @@ import { useOutsideClick } from '../../../hooks/useOutsideClick'
  * Agent 面板顶部工具栏
  */
 export default function AgentHeader() {
+  const { t } = useTranslation('panels')
   const { createConversation, toggleHistory, showHistory, getActiveConversation } = useAgentStore()
   const toggleAIPanel = useLayoutStore(s => s.toggleAIPanel)
   const [showMore, setShowMore] = useState(false)
@@ -64,7 +66,7 @@ export default function AgentHeader() {
 
         {/* 新建对话按钮 */}
         <IconBtn
-          title={isCurrentEmpty ? '当前对话为空，请先发送消息' : '新建对话'}
+          title={isCurrentEmpty ? t('agent.emptyConversationHint') : t('agent.newConversation')}
           disabled={isCurrentEmpty}
           onClick={handleNew}
           size={18}
@@ -74,7 +76,7 @@ export default function AgentHeader() {
 
         {/* 历史记录按钮 */}
         <IconBtn
-          title="历史对话"
+          title={t('agent.historyConversation')}
           onClick={toggleHistory}
           active={showHistory}
           size={18}
@@ -99,7 +101,7 @@ export default function AgentHeader() {
         {/* 更多菜单 */}
         <div className="relative" ref={moreRef}>
           <IconBtn
-            title="更多选项"
+            title={t('agent.moreOptions')}
             onClick={() => { setShowMore(v => !v); setSubView('main') }}
             active={showMore}
             size={18}
@@ -123,26 +125,26 @@ export default function AgentHeader() {
               {subView === 'main' && (
                 <>
                   <MenuItem
-                    label="MCP 服务器"
+                    label={t('agent.mcpServers')}
                     icon={<Server size={13} />}
-                    shortcut={connectedCount > 0 ? `${connectedCount} 在线` : ''}
+                    shortcut={connectedCount > 0 ? t('agent.onlineCount', { connected: connectedCount, total: mcpServers.length }) : ''}
                     onClick={() => setSubView('mcp')}
                   />
                   <MenuItem
-                    label="技能列表"
+                    label={t('agent.skillList')}
                     icon={<Sparkles size={13} />}
-                    shortcut={skills.length > 0 ? `${skills.length} 个` : ''}
+                    shortcut={skills.length > 0 ? t('agent.skillCount', { count: skills.length }) : ''}
                     onClick={() => setSubView('skills')}
                   />
                   <div style={{ height: 1, backgroundColor: 'var(--color-border)', margin: '4px 0' }} />
                   <MenuItem
-                    label="清空所有对话"
+                    label={t('agent.clearAllConversations')}
                     danger
                     onClick={async () => {
                       setShowMore(false)
-                      const ok = await confirm('确定要清空所有对话记录？\n此操作不可撤销。', {
-                        title: '清空对话记录',
-                        confirmText: '确认清空',
+                      const ok = await confirm(t('agent.confirmClearMessage'), {
+                        title: t('agent.confirmClearTitle'),
+                        confirmText: t('agent.confirmClearBtn'),
                         danger: true,
                       })
                       if (ok) useAgentStore.getState().clearAll()
@@ -172,7 +174,7 @@ export default function AgentHeader() {
         </div>
 
         {/* 关闭面板按钮 */}
-        <IconBtn title="关闭 Agent 面板" onClick={handleClose} size={18}>
+        <IconBtn title={t('agent.closeAgentPanel')} onClick={handleClose} size={18}>
           <X size={15} strokeWidth={1.5} />
         </IconBtn>
       </div>
@@ -191,6 +193,7 @@ function MCPSubView({
   toolCount: number
   onBack: () => void
 }) {
+  const { t } = useTranslation('panels')
   const connectedCount = servers.filter(s => s.status === 'connected').length
 
   return (
@@ -204,9 +207,9 @@ function MCPSubView({
         onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
       >
         <ChevronRight size={12} style={{ transform: 'rotate(180deg)' }} />
-        <span className="font-medium">MCP 服务器</span>
+        <span className="font-medium">{t('agent.mcpServers')}</span>
         <span className="ml-auto text-[0.68rem] opacity-50">
-          {connectedCount}/{servers.length} 在线
+          {t('agent.onlineCount', { connected: connectedCount, total: servers.length })}
         </span>
       </button>
 
@@ -215,9 +218,9 @@ function MCPSubView({
       {/* 服务器列表 */}
       {servers.length === 0 ? (
         <div className="px-3 py-3 text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>
-          <div className="mb-1">暂无 MCP 服务器</div>
+          <div className="mb-1">{t('agent.noMcpServers')}</div>
           <div className="text-[0.68rem] opacity-60">
-            在 ~/.vela/mcp_config.json 中配置
+            {t('agent.mcpConfigHint')}
           </div>
         </div>
       ) : (
@@ -251,7 +254,7 @@ function MCPSubView({
               )}
               {server.status === 'error' && (
                 <span className="text-[0.65rem] text-red-400 truncate max-w-[80px]" title={server.error}>
-                  错误
+                  {t('agent.error')}
                 </span>
               )}
             </div>
@@ -264,7 +267,7 @@ function MCPSubView({
         <>
           <div style={{ height: 1, backgroundColor: 'var(--color-border)', margin: '2px 0' }} />
           <div className="px-3 py-1.5 text-[0.68rem]" style={{ color: 'var(--color-text-muted)' }}>
-            共 {toolCount} 个 MCP 工具已注册
+            {t('agent.mcpToolsRegistered', { count: toolCount })}
           </div>
         </>
       )}
@@ -281,12 +284,14 @@ function SkillSubView({
   skills: LoadedSkill[]
   onBack: () => void
 }) {
+  const { t } = useTranslation('panels')
+
   /** 来源徽章颜色 */
   const sourceBadge = (source: string) => {
     switch (source) {
-      case 'builtin': return { bg: 'rgba(59,130,246,0.12)', color: '#3b82f6', label: '内置' }
-      case 'user': return { bg: 'rgba(168,85,247,0.12)', color: '#a855f7', label: '用户' }
-      case 'project': return { bg: 'rgba(34,197,94,0.12)', color: '#22c55e', label: '项目' }
+      case 'builtin': return { bg: 'rgba(59,130,246,0.12)', color: '#3b82f6', label: t('agent.builtin') }
+      case 'user': return { bg: 'rgba(168,85,247,0.12)', color: '#a855f7', label: t('agent.userScope') }
+      case 'project': return { bg: 'rgba(34,197,94,0.12)', color: '#22c55e', label: t('agent.projectScope') }
       default: return { bg: 'var(--color-hover)', color: 'var(--color-text-muted)', label: source }
     }
   }
@@ -302,9 +307,9 @@ function SkillSubView({
         onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
       >
         <ChevronRight size={12} style={{ transform: 'rotate(180deg)' }} />
-        <span className="font-medium">技能列表</span>
+        <span className="font-medium">{t('agent.skillList')}</span>
         <span className="ml-auto text-[0.68rem] opacity-50">
-          {skills.length} 个技能
+          {t('agent.skillCount', { count: skills.length })}
         </span>
       </button>
 
@@ -313,9 +318,9 @@ function SkillSubView({
       {/* Skill 列表 */}
       {skills.length === 0 ? (
         <div className="px-3 py-3 text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>
-          <div className="mb-1">暂无可用技能</div>
+          <div className="mb-1">{t('agent.noAvailableSkills')}</div>
           <div className="text-[0.68rem] opacity-60">
-            在 ~/.vela/skills/ 目录放入 SKILL.md 文件
+            {t('agent.skillsDirHint')}
           </div>
         </div>
       ) : (
@@ -356,7 +361,7 @@ function SkillSubView({
       {/* 底部提示 */}
       <div style={{ height: 1, backgroundColor: 'var(--color-border)', margin: '2px 0' }} />
       <div className="px-3 py-1.5 text-[0.68rem]" style={{ color: 'var(--color-text-muted)' }}>
-        输入 <code className="px-0.5 rounded" style={{ backgroundColor: 'var(--color-hover)', color: 'var(--color-accent)' }}>/</code> 可快速调用技能
+        {t('agent.skillSlashHint')}
       </div>
     </>
   )

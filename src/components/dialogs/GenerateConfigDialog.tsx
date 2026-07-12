@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Sparkles, Hash, FileText } from 'lucide-react'
 import { useLLMStore } from '../../stores/llm-store'
 import { useWorkflowStore } from '../../stores/workflow-store'
@@ -24,6 +25,7 @@ interface Props {
 
 /** AI 生成配置对话框 — 用户输入脑洞，AI 自动生成所有配置字段 */
 export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: Props) {
+  const { t } = useTranslation('dialogs')
   const defaultModelId = useLLMStore(s => s.defaultModelId)
   // ✅ 用 getState() 获取 action，不订阅 workflow store 的 globalLogs 高频更新
   const addLog = useWorkflowStore.getState().addLog
@@ -67,7 +69,7 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
   const handleGenerate = async () => {
     if (!idea.trim() || isSubmittingRef.current) return
     if (!defaultModelId) {
-      addLog('error', '⚠️ 请先在设置中配置 AI 模型')
+      addLog('error', t('generateConfig.needModel'))
       return
     }
 
@@ -77,19 +79,19 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
       // 检测已填写的核心字段，提示用户确认覆盖
       const cfg = currentProject?.novelConfig
       const filledFields: string[] = []
-      if (cfg?.coreOutline?.trim()) filledFields.push('核心大纲')
-      if (cfg?.worldSetting?.trim()) filledFields.push('世界观设定')
-      if (cfg?.goldenFinger?.trim()) filledFields.push('金手指体系')
-      if (cfg?.protagonistProfile?.trim()) filledFields.push('主角人设')
-      if (cfg?.globalGuidance?.trim()) filledFields.push('全局写作要求')
-      if (cfg?.subGenre?.trim()) filledFields.push('细分类型')
+      if (cfg?.coreOutline?.trim()) filledFields.push(t('generateConfig.fields.outline'))
+      if (cfg?.worldSetting?.trim()) filledFields.push(t('generateConfig.fields.worldbuilding'))
+      if (cfg?.goldenFinger?.trim()) filledFields.push(t('generateConfig.fields.goldenFinger'))
+      if (cfg?.protagonistProfile?.trim()) filledFields.push(t('generateConfig.fields.protagonist'))
+      if (cfg?.globalGuidance?.trim()) filledFields.push(t('generateConfig.fields.writingRequirements'))
+      if (cfg?.subGenre?.trim()) filledFields.push(t('generateConfig.fields.subGenre'))
 
       if (filledFields.length > 0) {
         setConfirming(true)
         const fieldList = filledFields.map(f => `• ${f}`).join('\n')
         const ok = await confirm(
-          `以下字段已有内容，继续生成将覆盖：\n\n${fieldList}\n\n确定要重新生成吗？`,
-          { title: '配置已存在', confirmText: '继续覆盖', cancelText: '取消' }
+          t('generateConfig.overwriteConfirm', { fields: fieldList }),
+          { title: t('generateConfig.configExists'), confirmText: t('common.override', { ns: 'common' }), cancelText: t('common.cancel', { ns: 'common' }) }
         )
         setConfirming(false)
         if (!ok) return
@@ -97,8 +99,8 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
 
       // 覆盖确认通过后，立即关闭弹窗
       onClose()
-      toast.info('✨ 正在根据脑洞生成小说配置...')
-      addLog('info', `🤖 正在根据创作脑洞生成小说配置（规模：${totalChapters} 章 / ${wordsPerChapter} 字/章）...`)
+      toast.info(t('generateConfig.generating'))
+      addLog('info', t('generateConfig.generatingLog', { chapters: totalChapters, words: wordsPerChapter }))
 
       // 后台执行 LLM 调用（由 WorkflowEngine 接管并显示全局状态面板）
       startWorkflow(
@@ -136,10 +138,10 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles size={16} className="text-[var(--color-accent)]" />
-            AI 一键生成小说配置
+            {t('generateConfig.title')}
           </DialogTitle>
           <DialogDescription>
-            输入你的创作脑洞，AI 将严格按照下方规模参数生成匹配的节奏规划与设定。
+            {t('generateConfig.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -157,14 +159,14 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
                   color: 'var(--color-text-muted)',
                 }}
               >
-                规模参数
+                {t('generateConfig.scaleParams')}
               </span>
               <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                全书约{' '}
+                {t('generateConfig.totalApprox')}{' '}
                 <strong style={{ color: 'var(--color-text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
                   {((Number(totalChapters) || 0) * (Number(wordsPerChapter) || 0)).toLocaleString()}
                 </strong>{' '}
-                字
+                {t('generateConfig.wordsUnit')}
               </span>
             </div>
 
@@ -182,7 +184,7 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
                   }}
                 >
                   <Hash size={11} />
-                  总章数
+                  {t('generateConfig.totalChaptersLabel')}
                 </label>
               <Input
                   type="number"
@@ -210,7 +212,7 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
                   }}
                 >
                   <FileText size={11} />
-                  每章字数
+                  {t('generateConfig.wordsPerChapterLabel')}
                 </label>
                 <Input
                   type="number"
@@ -240,12 +242,12 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
                 color: 'var(--color-text-muted)',
               }}
             >
-              创作脑洞
+              {t('generateConfig.creativeIdea')}
             </label>
             <Textarea
               autoFocus
               rows={5}
-              placeholder={defaultIdea || '示例：我想写一个小人物在废土世界捡到远古文明遗物后逆袭的末世流小说，男频爽文风格，主角性格隐忍但有谋略...'}
+              placeholder={defaultIdea || t('generateConfig.ideaPlaceholder')}
               value={idea}
               onChange={e => setIdea(e.target.value)}
               onKeyDown={e => {
@@ -255,23 +257,23 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
           </div>
 
           <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            写得越具体，AI 生成的配置越精准。后续还可以在表单中手动精修。
+            {t('generateConfig.ideaHint')}
           </p>
         </div>
 
         <DialogFooter className="sm:justify-between items-center">
           <span className="text-xs text-[var(--color-text-muted)] mt-2 sm:mt-0">
-            生成后自动填入配置表单 · ⌘↵ 快捷确认
+            {t('generateConfig.shortcutHint')}
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={onClose}>取消</Button>
+            <Button variant="outline" onClick={onClose}>{t('common.cancel', { ns: 'common' })}</Button>
             <Button
               variant="ai"
               size="lg"
               onClick={handleGenerate}
               disabled={!idea.trim() || isSubmitting}
             >
-              <><Sparkles size={13} /> 一键生成配置</>
+              <><Sparkles size={13} /> {t('generateConfig.generateConfig')}</>
             </Button>
           </div>
         </DialogFooter>

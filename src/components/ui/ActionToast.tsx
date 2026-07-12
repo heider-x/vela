@@ -21,6 +21,7 @@
 import { createRoot } from 'react-dom/client'
 import { useEffect, useState, useCallback } from 'react'
 import { X, CheckCircle2, AlertTriangle, Info, Sparkles } from 'lucide-react'
+import i18n from '../../i18n'
 
 // ===== 类型定义 =====
 
@@ -275,8 +276,8 @@ export const actionToast = {
     ensureContainer()
     const actions: ActionToastAction[] = []
     if (openAction) {
-      actions.push({ label: '打开查看', onClick: openAction })
-      actions.push({ label: '忽略', variant: 'ghost' })
+      actions.push({ label: i18n.t('common.openAndView', '打开查看'), onClick: openAction })
+      actions.push({ label: i18n.t('common.ignore', '忽略'), variant: 'ghost' })
     }
     const item: ActionToastItem = {
       id: ++_counter,

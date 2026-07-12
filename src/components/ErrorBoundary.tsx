@@ -1,5 +1,6 @@
 import { Component, createContext } from 'react'
 import type { ReactNode, ErrorInfo, ContextType } from 'react'
+import i18n from '../i18n'
 
 interface Props {
   children: ReactNode
@@ -49,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
         >
           <span style={{ fontSize: 32 }}>⚠️</span>
           <p style={{ fontWeight: 600, fontSize: 14 }}>
-            {this.props.fallbackLabel || '组件渲染出错'}
+            {this.props.fallbackLabel || i18n.t('componentRenderError', { ns: 'common' })}
           </p>
           <pre
             style={{
@@ -83,7 +84,7 @@ export class ErrorBoundary extends Component<Props, State> {
             }}
             onClick={() => this.setState({ hasError: false, error: null, componentStack: '' })}
           >
-            重试
+            {i18n.t('retry', { ns: 'common' })}
           </button>
         </div>
       )

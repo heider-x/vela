@@ -1,13 +1,7 @@
 import { Zap, ScrollText, Cpu } from 'lucide-react'
 import { useLayoutStore, type BottomTab } from '../../stores/layout-store'
 import { useWorkflowStore } from '../../stores/workflow-store'
-
-/** 底部工具窗口每个 Tab 对应的按钮配置 */
-const bottomTabs: Array<{ id: BottomTab; icon: typeof Zap; label: string }> = [
-  { id: 'tasks',  icon: Zap,        label: '任务'    },
-  { id: 'log',    icon: ScrollText, label: '日志'    },
-  { id: 'models', icon: Cpu,        label: '模型'    },
-]
+import { useTranslation } from 'react-i18next'
 
 /**
  * 底部工具窗口左侧按钮栏（BottomToolWindowBar）
@@ -15,9 +9,17 @@ const bottomTabs: Array<{ id: BottomTab; icon: typeof Zap; label: string }> = [
  * 对应截图左下角红框区域
  */
 export default function BottomToolWindowBar() {
+  const { t } = useTranslation('layout')
   const bottomTab = useLayoutStore(s => s.bottomTab)
   const setBottomTab = useLayoutStore(s => s.setBottomTab)
   const activeRuns = useWorkflowStore(s => s.activeRuns)
+
+  // Bottom tabs
+  const bottomTabs: Array<{ id: BottomTab; icon: typeof Zap; label: string }> = [
+    { id: 'tasks',  icon: Zap,        label: t('statusBar.tasksLabel')    },
+    { id: 'log',    icon: ScrollText, label: t('bottomPanel.tabs.log')    },
+    { id: 'models', icon: Cpu,        label: t('bottomPanel.tabs.models')    },
+  ]
 
   return (
     <div

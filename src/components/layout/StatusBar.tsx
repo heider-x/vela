@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Wifi, BookOpen, CheckCircle2, FolderOpen } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '../../stores/project-store'
 import { useLLMStore } from '../../stores/llm-store'
 import { useLayoutStore } from '../../stores/layout-store'
@@ -7,6 +8,7 @@ import { useWorkflowStore } from '../../stores/workflow-store'
 
 /** 底部状态栏 — JetBrains 风格：22px、深灰底、多分段、hover 可点击感 */
 export default function StatusBar() {
+  const { t } = useTranslation('layout')
   const currentProject = useProjectStore((s) => s.currentProject)
   const models = useLLMStore(s => s.models)
   const defaultModelId = useLLMStore(s => s.defaultModelId)
@@ -47,10 +49,10 @@ export default function StatusBar() {
 
         <StatusBarDivider />
         <StatusBarSegment
-          title="商业合作与赞助支持"
+          title={t('statusBar.sponsorTooltip')}
           onClick={openSettings}
         >
-          <span className="font-medium" style={{ color: '#ff4d4f' }}>❤️ 支持作者</span>
+          <span className="font-medium" style={{ color: '#ff4d4f' }}>{t('statusBar.supportAuthor')}</span>
         </StatusBarSegment>
 
       </div>
@@ -62,7 +64,7 @@ export default function StatusBar() {
 
         {defaultModel ? (
           <StatusBarSegment
-            title={`当前模型：${defaultModel.name}`}
+            title={t('statusBar.currentModel', { name: defaultModel.name })}
             onClick={openSettings}
           >
             <Wifi size={11} />
@@ -70,10 +72,10 @@ export default function StatusBar() {
           </StatusBarSegment>
         ) : (
           <StatusBarSegment
-            title="点击配置模型"
+            title={t('statusBar.clickToConfigModel')}
             onClick={openSettings}
           >
-            <span className="opacity-50">未配置模型</span>
+            <span className="opacity-50">{t('statusBar.noModel')}</span>
           </StatusBarSegment>
         )}
       </div>
@@ -92,6 +94,7 @@ export default function StatusBar() {
  * - 完成后短暂显示 ✅ 然后淡出
  */
 function AITaskCapsule() {
+  const { t } = useTranslation('layout')
   // ✅ 使用 selector 精确订阅，避免 globalLogs 等高频字段导致被动重渲染
   const activeRuns = useWorkflowStore(s => s.activeRuns)
   const getActiveStepInfo = useWorkflowStore(s => s.getActiveStepInfo)
@@ -133,7 +136,7 @@ function AITaskCapsule() {
         onClick={() => useLayoutStore.getState().openRightPanel('ai-output')}
       >
         <CheckCircle2 size={10} />
-        <span className="truncate">{completedTitle.replace(/^[^\s]+\s/, '')} 完成</span>
+        <span className="truncate">{completedTitle.replace(/^[^\s]+\s/, '')} {t('statusBar.taskComplete')}</span>
       </div>
     )
   }
@@ -149,14 +152,14 @@ function AITaskCapsule() {
       <div
         className="ai-task-capsule"
         onClick={() => useLayoutStore.getState().openRightPanel('ai-output')}
-        title="点击查看任务进度"
+        title={t('statusBar.viewTaskProgress')}
       >
         {/* 脉冲圆点 */}
         <span
           className="w-[5px] h-[5px] rounded-full animate-pulse flex-shrink-0"
           style={{ backgroundColor: 'var(--color-accent)' }}
         />
-        <span>{activeRuns.length}个任务运行中...</span>
+        <span>{activeRuns.length}{t('statusBar.tasksRunning')}</span>
       </div>
     )
   }
@@ -167,7 +170,7 @@ function AITaskCapsule() {
     <div
       className="ai-task-capsule"
       onClick={() => useLayoutStore.getState().openRightPanel('ai-output')}
-      title="点击查看 AI 输出详情"
+      title={t('statusBar.viewAIDetails')}
     >
       {/* 脉冲圆点 */}
       <span

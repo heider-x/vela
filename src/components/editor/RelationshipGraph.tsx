@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface CharacterNode {
   name: string
@@ -69,6 +70,7 @@ const ROLE_COLORS: Record<string, string> = {
 
 /** 角色关系网 Canvas 可视化 */
 export default function RelationshipGraph({ characters }: RelationshipGraphProps) {
+  const { t } = useTranslation('editors')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const nodesRef = useRef<CharacterNode[]>([])
   const animRef = useRef<number>(0)
@@ -239,7 +241,7 @@ export default function RelationshipGraph({ characters }: RelationshipGraphProps
   if (characters.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-xs text-[var(--color-text-muted)]">
-        暂无角色数据
+        {t('relationshipGraph.noData')}
       </div>
     )
   }

@@ -3,24 +3,24 @@ import {
   Trash2, ChevronsDown, Loader2, CheckCircle2, XCircle, Clock,
   Play, X, ChevronDown, ChevronRight, Zap,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useLayoutStore } from '../../stores/layout-store'
 import { useWorkflowStore, type WorkflowStep, type WorkflowRun } from '../../stores/workflow-store'
 import { Button } from '../ui/Button'
 
-/** 底部面板 Tab 名称映射 */
-const TAB_LABELS: Record<string, string> = {
-  tasks:  '任务',
-  log:    '日志',
-  models: '模型调用',
-}
-
 /** 下方工具窗口 */
 export default function BottomPanel() {
+  const { t } = useTranslation('panels')
   const bottomPanelOpen = useLayoutStore(s => s.bottomPanelOpen)
   const bottomTab = useLayoutStore(s => s.bottomTab)
   const toggleBottomPanel = useLayoutStore(s => s.toggleBottomPanel)
-  // ✅ 只订阅 activeRuns，不订阅 globalLogs 等高频字段
   const activeRuns = useWorkflowStore(s => s.activeRuns)
+
+  const TAB_LABELS: Record<string, string> = {
+    tasks: t('bottomPanel.tabs.tasks'),
+    log: t('bottomPanel.tabs.log'),
+    models: t('bottomPanel.tabs.models'),
+  }
 
   // A) 懒卸载：面板关闭时保持挂载，仅视觉隐藏，避免切换时的短暂状态错乱
   const [visible, setVisible] = useState(bottomPanelOpen)
@@ -87,7 +87,7 @@ export default function BottomPanel() {
         </div>
 
         {/* 右侧：关闭按钮 */}
-        <button onClick={toggleBottomPanel} title="关闭面板" className="icon-btn" style={{ width: 18, height: 18 }}>
+        <button onClick={toggleBottomPanel} title={t('common.closePanel')} className="icon-btn" style={{ width: 18, height: 18 }}>
           <X size={12} strokeWidth={1.5} />
         </button>
       </div>
@@ -106,6 +106,7 @@ export default function BottomPanel() {
 // ===== ⚡ 任务视图（工作流进度主视图）— 支持多任务 =====
 
 function TaskRunView() {
+  const { t } = useTranslation('panels')
   const activeRuns = useWorkflowStore(s => s.activeRuns)
   const history = useWorkflowStore(s => s.history)
   const waitingRuns = useWorkflowStore(s => s.waitingRuns)
@@ -118,7 +119,7 @@ function TaskRunView() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--color-text-muted)' }}>
         <Zap size={24} style={{ opacity: 0.5 }} />
-        <span className="text-xs">暂无任务，AI 工作流启动后会在这里展示进度</span>
+        <span className="text-xs">{t('bottomPanel.noTasks')}</span>
       </div>
     )
   }
@@ -149,7 +150,7 @@ function TaskRunView() {
       {history.length > 0 && (
         <div className="flex-shrink-0">
           <div className="px-4 pt-3 pb-1 text-[0.68rem] font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-            历史任务
+            {t('bottomPanel.historyTasks')}
           </div>
           <div className="px-2 pb-2">
             {history.map((run) => (
@@ -198,6 +199,7 @@ function ActiveRunPanel({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('panels')
   const [expanded, setExpanded] = useState(true)
 
   // 需要确认时自动展开
@@ -270,7 +272,7 @@ function ActiveRunPanel({
             onClick={(e) => { e.stopPropagation(); onCancel() }}
             className="icon-btn"
             style={{ width: 18, height: 18 }}
-            title="取消任务"
+            title={t('bottomPanel.cancelTask', '取消任务')}
           >
             <X size={11} />
           </button>
@@ -298,14 +300,14 @@ function ActiveRunPanel({
             >
               <Clock size={11} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
               <span className="text-xs flex-1 truncate" style={{ color: 'var(--color-text-secondary)' }}>
-                下一步：{nextStepName}
+                {t('bottomPanel.nextStep')}{nextStepName}
               </span>
               <button
                 onClick={onConfirm}
                 className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium flex-shrink-0"
                 style={{ backgroundColor: 'var(--color-accent)', color: '#fff' }}
               >
-                <Play size={10} /> 继续
+                <Play size={10} /> {t('bottomPanel.continue')}
               </button>
             </div>
           )}
@@ -323,14 +325,14 @@ function ActiveRunPanel({
         >
           <Clock size={11} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
           <span className="text-xs flex-1 truncate" style={{ color: 'var(--color-text-secondary)' }}>
-            下一步：{nextStepName}
+            {t('bottomPanel.nextStep')}{nextStepName}
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); onConfirm() }}
             className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium flex-shrink-0"
             style={{ backgroundColor: 'var(--color-accent)', color: '#fff' }}
           >
-            <Play size={10} /> 继续
+            <Play size={10} /> {t('bottomPanel.continue')}
           </button>
         </div>
       )}
@@ -349,6 +351,7 @@ function WorkflowStepItem({
   index: number
   isLast: boolean
 }) {
+  const { t } = useTranslation('panels')
   const [expanded, setExpanded] = useState(false)
   const hasDetail = !!step.error || step.logs.length > 0
 
@@ -422,7 +425,7 @@ function WorkflowStepItem({
           )}
           {/* 完成耗时（若有时间戳）或简单标记 */}
           {step.status === 'skipped' && (
-            <span className="text-[0.68rem] flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>已跳过</span>
+            <span className="text-[0.68rem] flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>{t('bottomPanel.skipped')}</span>
           )}
         </div>
 
@@ -484,6 +487,7 @@ function StepStatusIcon({ status }: { status: WorkflowStep['status'] }) {
 // ===== 日志视图 =====
 
 function LogsView() {
+  const { t } = useTranslation('panels')
   const globalLogs = useWorkflowStore(s => s.globalLogs)
   const clearLogs = useWorkflowStore(s => s.clearLogs)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -509,19 +513,19 @@ function LogsView() {
         <Button
           variant="ghost" size="icon"
           onClick={() => setAutoScroll(!autoScroll)}
-          title={autoScroll ? '自动滚动: 开' : '自动滚动: 关'}
+          title={autoScroll ? t('common.autoScrollOn') : t('common.autoScrollOff')}
           className={autoScroll ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}
         >
           <ChevronsDown size={13} />
         </Button>
-        <Button variant="ghost" size="icon" onClick={clearLogs} title="清空日志">
+        <Button variant="ghost" size="icon" onClick={clearLogs} title={t('common.clearLogs')}>
           <Trash2 size={13} />
         </Button>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 pb-2 font-mono text-xs leading-5">
         {globalLogs.length === 0 && (
-          <div className="text-center py-8 opacity-30">暂无日志</div>
+          <div className="text-center py-8 opacity-30">{t('common.noLogs')}</div>
         )}
         {globalLogs.map((log, i) => (
           <div key={i} className="flex gap-2">
@@ -537,6 +541,7 @@ function LogsView() {
 // ===== 模型调用视图 =====
 
 function ModelsView() {
+  const { t } = useTranslation('panels')
   const [stats, setStats] = useState<{
     totalCalls: number; totalTokens: number
     totalPromptTokens: number; totalCompletionTokens: number
@@ -566,22 +571,22 @@ function ModelsView() {
           style={{ borderBottom: '1px solid var(--color-border)' }}
         >
           <div className="text-[0.7rem] text-[var(--color-text-muted)]">
-            <span className="font-bold text-sm text-[var(--color-text)]">{stats.totalCalls}</span> 次调用
+            <span className="font-bold text-sm text-[var(--color-text)]">{stats.totalCalls}</span> {t('common.calls')}
           </div>
           <div className="text-[0.7rem] text-[var(--color-text-muted)]">
-            <span className="font-bold text-sm text-[var(--color-text)]">{(stats.totalTokens / 1000).toFixed(1)}k</span> Tokens
+            <span className="font-bold text-sm text-[var(--color-text)]">{(stats.totalTokens / 1000).toFixed(1)}k</span> {t('common.tokens')}
           </div>
           <div className="text-[0.7rem] text-[var(--color-text-muted)]">
-            输入 <span className="font-mono text-[var(--color-text-secondary)]">{(stats.totalPromptTokens / 1000).toFixed(1)}k</span>
+            {t('common.input')} <span className="font-mono text-[var(--color-text-secondary)]">{(stats.totalPromptTokens / 1000).toFixed(1)}k</span>
           </div>
           <div className="text-[0.7rem] text-[var(--color-text-muted)]">
-            输出 <span className="font-mono text-[var(--color-text-secondary)]">{(stats.totalCompletionTokens / 1000).toFixed(1)}k</span>
+            {t('common.output')} <span className="font-mono text-[var(--color-text-secondary)]">{(stats.totalCompletionTokens / 1000).toFixed(1)}k</span>
           </div>
         </div>
       )}
       <div className="flex-1 overflow-y-auto font-mono text-xs">
         {history.length === 0 ? (
-          <div className="flex items-center justify-center h-full opacity-30 text-sm">暂无调用记录</div>
+          <div className="flex items-center justify-center h-full opacity-30 text-sm">{t('common.noRecords')}</div>
         ) : (
           <table className="w-full">
             <thead>
@@ -589,12 +594,12 @@ function ModelsView() {
                 className="text-[0.7rem] text-[var(--color-text-muted)]"
                 style={{ borderBottom: '1px solid var(--color-border)' }}
               >
-                <th className="text-left px-4 py-1 font-medium">时间</th>
-                <th className="text-left px-2 py-1 font-medium">模型</th>
-                <th className="text-left px-2 py-1 font-medium">用途</th>
-                <th className="text-right px-2 py-1 font-medium">Tokens</th>
-                <th className="text-right px-2 py-1 font-medium">耗时</th>
-                <th className="text-center px-2 py-1 font-medium">状态</th>
+                <th className="text-left px-4 py-1 font-medium">{t('common.time')}</th>
+                <th className="text-left px-2 py-1 font-medium">{t('common.model')}</th>
+                <th className="text-left px-2 py-1 font-medium">{t('common.purpose')}</th>
+                <th className="text-right px-2 py-1 font-medium">{t('common.tokens')}</th>
+                <th className="text-right px-2 py-1 font-medium">{t('common.duration')}</th>
+                <th className="text-center px-2 py-1 font-medium">{t('common.status')}</th>
               </tr>
             </thead>
             <tbody>

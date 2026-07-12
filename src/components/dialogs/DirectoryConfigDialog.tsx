@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileText } from 'lucide-react'
 import { useProjectStore } from '../../stores/project-store'
 import { useWorkflowStore } from '../../stores/workflow-store'
@@ -22,6 +23,7 @@ interface Props {
 
 /** 蓝图生成配置弹框 — 选择生成范围和模式 */
 export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, onConfirm }: Props) {
+  const { t } = useTranslation('dialogs')
   const currentProject = useProjectStore(s => s.currentProject)
 
   // 范围选择
@@ -43,7 +45,7 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
   const handleConfirm = () => {
     // 防重复：同类型工作流正在运行
     if (isBatchRunning) {
-      toast.warning('已有蓝图生成任务正在执行，请等待完成后再试')
+      toast.warning(t('directoryConfig.taskRunning'))
       return
     }
 
@@ -65,7 +67,7 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
 
     onConfirm({ ...params, pacingGuidance: pacingGuidance.trim() || undefined })
     onClose()
-    toast.info('✨ 已提交：正在生成章节蓝图...')
+    toast.info(t('directoryConfig.submitted'))
   }
 
   return (
@@ -74,19 +76,19 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText size={16} className="text-[var(--color-accent)]" />
-            生成章节蓝图
+            {t('directoryConfig.title')}
           </DialogTitle>
           <DialogDescription>
             {existingCount > 0
-              ? `当前已存在 ${existingCount} 章蓝图，选择下一步操作：`
-              : `项目共 ${total} 章，请选择生成范围：`}
+              ? t('directoryConfig.existingBlueprints', { count: existingCount })
+              : t('directoryConfig.totalChaptersInfo', { total })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="px-5 py-4 space-y-4">
           <div>
             <Label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--color-text)' }}>
-              生成数量 / 范围
+              {t('directoryConfig.quantityLabel')}
             </Label>
             <div className="space-y-3 mt-2">
               <RadioOption
@@ -94,7 +96,7 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
                 onChange={() => setRangeMode('front')}
                 label={
                   <span className="flex items-center gap-2">
-                    批量连续生成
+                    {t('directoryConfig.batchGenerate')}
                     <Input
                       type="number"
                       value={frontN}
@@ -107,7 +109,7 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
                       className="w-16 h-6 text-xs px-2 py-0"
                       onClick={e => e.stopPropagation()}
                     />
-                    章
+                    {t('directoryConfig.chapters')}
                   </span>
                 }
               />
@@ -116,7 +118,7 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
                 onChange={() => setRangeMode('range')}
                 label={
                   <span className="flex items-center gap-2">
-                    指定生成：第
+                    {t('directoryConfig.specifyRange')}
                     <Input
                       type="number"
                       value={rangeStart}
@@ -129,7 +131,7 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
                       className="w-16 h-6 text-xs px-2 py-0"
                       onClick={e => e.stopPropagation()}
                     />
-                    到 第
+                    {t('directoryConfig.toChapter')}
                     <Input
                       type="number"
                       value={rangeEnd}
@@ -142,14 +144,14 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
                       className="w-16 h-6 text-xs px-2 py-0"
                       onClick={e => e.stopPropagation()}
                     />
-                    章
+                    {t('directoryConfig.chapters')}
                   </span>
                 }
               />
               <RadioOption
                 checked={rangeMode === 'full'}
                 onChange={() => setRangeMode('full')}
-                label={`全量生成（共 ${total} 章）`}
+                label={t('directoryConfig.fullGenerate', { total })}
               />
             </div>
           </div>
@@ -160,18 +162,18 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
               style={{ backgroundColor: 'var(--color-panel)', border: '1px solid var(--color-border)' }}
             >
               <p className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
-                针对已有数据的处理方式：
+                {t('directoryConfig.existingDataHandling')}
               </p>
               <div className="space-y-3 mt-2">
                 <RadioOption
                   checked={overwriteMode === 'append'}
                   onChange={() => setOverwriteMode('append')}
-                  label={`追加模式：保留现有蓝图，从第 ${existingCount + 1} 章起往后生成`}
+                  label={t('directoryConfig.appendMode', { from: existingCount + 1 })}
                 />
                 <RadioOption
                   checked={overwriteMode === 'full'}
                   onChange={() => setOverwriteMode('full')}
-                  label={`覆盖模式：无视现有蓝图，从第 1 章起强制覆盖生成`}
+                  label={t('directoryConfig.overwriteMode')}
                 />
               </div>
             </div>
@@ -180,12 +182,12 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
           {/* 节奏/风格指导（可选） */}
           <div>
             <Label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--color-text)' }}>
-              节奏/风格指导（可选）
+              {t('directoryConfig.rhythmGuide')}
             </Label>
             <Textarea
               value={pacingGuidance}
               onChange={e => setPacingGuidance(e.target.value)}
-              placeholder={'如："前30章快节奏，每章安排一个爽点。中期适当铺设伏笔和角色成长。"'}
+              placeholder={t('directoryConfig.rhythmPlaceholder')}
               rows={2}
               className="text-xs"
             />
@@ -193,10 +195,10 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>取消</Button>
+          <Button variant="outline" onClick={onClose}>{t('common.cancel', { ns: 'common' })}</Button>
           <Button variant="default" onClick={handleConfirm}>
             <FileText size={13} />
-            开始生成
+            {t('directoryConfig.startGeneration')}
           </Button>
         </DialogFooter>
       </DialogContent>

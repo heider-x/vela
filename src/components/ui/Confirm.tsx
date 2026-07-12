@@ -14,6 +14,7 @@
 import { createRoot } from 'react-dom/client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from './Button'
+import i18n from '../../i18n'
 
 // ===== 内部组件 =====
 
@@ -30,10 +31,10 @@ interface ConfirmDialogProps extends ConfirmOptions {
 }
 
 function ConfirmDialog({
-  title = '确认操作',
+  title = i18n.t('confirmAction', { ns: 'common' }),
   message,
-  confirmText = '确认',
-  cancelText = '取消',
+  confirmText = i18n.t('confirm', { ns: 'common' }),
+  cancelText = i18n.t('cancel', { ns: 'common' }),
   danger = false,
   onResolve,
 }: ConfirmDialogProps) {

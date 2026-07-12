@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FolderOpen, Sparkles } from 'lucide-react'
 import { useProjectStore } from '../../stores/project-store'
 import { ipc } from '../../services/ipc-client'
@@ -16,6 +17,7 @@ interface NewProjectDialogProps {
 
 /** 新建项目对话框 */
 export default function NewProjectDialog({ open, onClose }: NewProjectDialogProps) {
+  const { t } = useTranslation('dialogs')
   const createProject = useProjectStore((s) => s.createProject)
   const [name, setName] = useState('')
   const [path, setPath] = useState('')
@@ -57,20 +59,20 @@ export default function NewProjectDialog({ open, onClose }: NewProjectDialogProp
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles size={18} className="text-[var(--color-accent)]" />
-            新建小说项目
+            {t('newProject.title')}
           </DialogTitle>
-          <DialogDescription>填写作品名称和保存位置，其余配置在项目内完成</DialogDescription>
+          <DialogDescription>{t('newProject.description')}</DialogDescription>
         </DialogHeader>
 
         {/* 表单 */}
         <div className="px-5 py-4 space-y-4">
           {/* 项目名称 */}
           <div>
-            <Label>作品名称</Label>
+            <Label>{t('newProject.nameLabel')}</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="如：斗破苍穹"
+              placeholder={t('newProject.namePlaceholder')}
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
@@ -78,30 +80,30 @@ export default function NewProjectDialog({ open, onClose }: NewProjectDialogProp
 
           {/* 保存路径 */}
           <div>
-            <Label>保存位置</Label>
+            <Label>{t('newProject.pathLabel')}</Label>
             <div className="flex gap-2">
               <Input
                 value={path}
                 onChange={(e) => setPath(e.target.value)}
-                placeholder="选择项目保存目录"
+                placeholder={t('newProject.pathPlaceholder')}
                 className="flex-1"
               />
               <Button variant="outline" onClick={handleSelectFolder}>
                 <FolderOpen size={14} />
-                选择
+                {t('newProject.selectFolder')}
               </Button>
             </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>取消</Button>
+          <Button variant="ghost" onClick={onClose}>{t('newProject.cancel')}</Button>
           <Button
             onClick={handleCreate}
             disabled={creating || !name.trim() || !path.trim()}
           >
             <Sparkles size={14} />
-            {creating ? '创建中...' : '创建项目'}
+            {creating ? t('newProject.creating') : t('newProject.createProject')}
           </Button>
         </DialogFooter>
       </DialogContent>

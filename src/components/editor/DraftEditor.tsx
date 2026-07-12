@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Sparkles, Search, BadgeCheck, Save, FileStack, FileText, Wrench } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { useProjectStore } from '../../stores/project-store'
 import { useEditorStore } from '../../stores/editor-store'
@@ -37,6 +38,7 @@ interface Props {
  * — 正文：CodeMirrorEditor（prose 模式）
  */
 export default function DraftEditor({ filePath, content }: Props) {
+  const { t } = useTranslation('editors')
   // 从系统读取草稿元数据与章节标题
   const [meta, setMeta] = useState<(DraftMeta & { chapterTitle?: string; filePath?: string }) | null>(null)
   const [pendingRevisions, setPendingRevisions] = useState<RevisionEntry[]>([])
@@ -60,7 +62,7 @@ export default function DraftEditor({ filePath, content }: Props) {
       const { ipc } = await import('../../services/ipc-client')
       const bps = await ipc.invoke('db:blueprint-get-all')
       const bp = Array.isArray(bps) ? bps.find((b: unknown) => (b as { chapterNumber?: number }).chapterNumber === m.chapterNumber) : null
-      setMeta({ ...m, chapterTitle: bp ? (bp as { title?: string }).title : '未知标题', filePath, fileName: `v${m.version}`, createdAt: m.updatedAt ?? m.createdAt })
+      setMeta({ ...m, chapterTitle: bp ? (bp as { title?: string }).title : t('chapterCard.unnamed'), filePath, fileName: `v${m.version}`, createdAt: m.updatedAt ?? m.createdAt })
       // 使用 DB 化的虚拟 chapterDir（用于 draft-index 兼容层解析章节号）
       const chapterDir = `vela://draft/ch${m.chapterNumber}`
       // 检查待合并修稿
@@ -95,10 +97,10 @@ export default function DraftEditor({ filePath, content }: Props) {
   const [userRefinePrompt, setUserRefinePrompt] = useState('')
   // 审稿维度多选
   const REVIEW_DIMS = [
-    { key: 'continuity', label: '剧情连贯性', desc: '与前文是否矛盾' },
-    { key: 'logic', label: '剧情合理性', desc: '因果逻辑、动机、常识' },
-    { key: 'character', label: '角色状态', desc: '能力/位置/情感一致性' },
-    { key: 'foreshadow', label: '前后章节串联', desc: '伏笔、悬念连贯' },
+    { key: 'continuity', label: t('draftEditor.reviewDims.continuity'), desc: t('draftEditor.reviewDims.continuityDesc') },
+    { key: 'logic', label: t('draftEditor.reviewDims.logic'), desc: t('draftEditor.reviewDims.logicDesc') },
+    { key: 'character', label: t('draftEditor.reviewDims.character'), desc: t('draftEditor.reviewDims.characterDesc') },
+    { key: 'foreshadow', label: t('draftEditor.reviewDims.foreshadow'), desc: t('draftEditor.reviewDims.foreshadowDesc') },
   ]
   const [reviewDims, setReviewDims] = useState<Record<string, boolean>>(
     Object.fromEntries(REVIEW_DIMS.map(d => [d.key, true]))
@@ -142,13 +144,13 @@ export default function DraftEditor({ filePath, content }: Props) {
 
       useWorkflowStore.getState().startWorkflow(createRefineOnlyWorkflow({
         chapterNumber: meta.chapterNumber,
-        chapterTitle: meta.chapterTitle ?? '未知标题',
+        chapterTitle: meta.chapterTitle ?? t('draftEditor.unknownTitle'),
         draftPath: filePath,
         draftContent: body,
         userRefinePrompt: userRefinePrompt.trim() || undefined,
       }), false)
     } catch (e) {
-      toast.error(`修稿启动失败：${e}`)
+      toast.error(t('draftEditor.refineStartFailed', { error: e }))
     }
   }
 
@@ -163,13 +165,13 @@ export default function DraftEditor({ filePath, content }: Props) {
 
       useWorkflowStore.getState().startWorkflow(createReviewOnlyWorkflow({
         chapterNumber: meta.chapterNumber,
-        chapterTitle: meta.chapterTitle ?? '未知标题',
+        chapterTitle: meta.chapterTitle ?? t('draftEditor.unknownTitle'),
         draftPath: filePath,
         draftContent: body,
         reviewFocus: REVIEW_DIMS.filter(d => reviewDims[d.key]).map(d => d.label).join('、') || undefined,
       }), false)
     } catch (e) {
-      toast.error(`审稿启动失败：${e}`)
+      toast.error(t('draftEditor.reviewStartFailed', { error: e }))
     }
   }
 
@@ -177,10 +179,10 @@ export default function DraftEditor({ filePath, content }: Props) {
   const doFinalize = async () => {
     if (!meta || isChapterBusy) return
     const ok = await confirm(
-      `确定要将第 ${meta.chapterNumber} 章定稿吗？\n\n定稿后章节将标记为完成，不再支持修改和重新后处理。`,
+      t('draftEditor.finalizeConfirmText', { chapter: meta.chapterNumber }),
       {
-        title: '确认定稿',
-        confirmText: '确认定稿',
+        title: t('draftEditor.finalizeConfirmTitle'),
+        confirmText: t('draftEditor.finalizeConfirm'),
       }
     )
     if (!ok) return
@@ -192,12 +194,12 @@ export default function DraftEditor({ filePath, content }: Props) {
 
       useWorkflowStore.getState().startWorkflow(createFinalizeWorkflow({
         chapterNumber: meta.chapterNumber,
-        chapterTitle: meta.chapterTitle ?? '未知标题',
+        chapterTitle: meta.chapterTitle ?? t('draftEditor.unknownTitle'),
         draftPath: filePath,
         draftContent: body,
       }), false)
     } catch (e) {
-      toast.error(`定稿启动失败：${e}`)
+      toast.error(t('draftEditor.finalizeStartFailed', { error: e }))
     }
   }
 
@@ -207,14 +209,14 @@ export default function DraftEditor({ filePath, content }: Props) {
     try {
       const guard = await guardRepairPostProcess(meta.chapterNumber)
       if (!guard.ok) {
-        toast.error(guard.message || '无法执行修复')
+        toast.error(guard.message || t('draftEditor.cannotRepair'))
         return
       }
       const { useWorkflowStore } = await import('../../stores/workflow-store')
       const { createRepairFinalizeWorkflow } = await import('../../services/workflows/chapter-workflow')
       useWorkflowStore.getState().startWorkflow(createRepairFinalizeWorkflow(meta.chapterNumber), false)
     } catch (e) {
-      toast.error(`修复启动失败：${e}`)
+      toast.error(t('draftEditor.repairStartFailed', { error: e }))
     }
   }, [meta, isChapterBusy])
 
@@ -258,15 +260,15 @@ export default function DraftEditor({ filePath, content }: Props) {
         // 关闭弹窗 + 刷新待合并列表 + 更新本地元数据
         setMergeData(null)
         setMeta(prev => prev ? { ...prev, status: 'revised' } : prev)
-        toast.success('✅ 合并完成，草稿已更新')
+        toast.success(t('draftEditor.mergeComplete'))
         const { getPendingRevisions } = await import('../../services/draft-index')
         const pending = await getPendingRevisions(chapterDir, meta.version)
         setPendingRevisions(pending)
       } else {
-        toast.error(`合并失败：${result.error}`)
+        toast.error(t('draftEditor.mergeFailed', { error: result.error }))
       }
     } catch (e) {
-      toast.error(`合并出错：${e}`)
+      toast.error(t('draftEditor.mergeError', { error: e }))
     }
   }
 
@@ -284,7 +286,7 @@ export default function DraftEditor({ filePath, content }: Props) {
 
     useEditorStore.getState().openFile({
       id: `review-report-${meta.chapterNumber}-${latest.id}`,
-      name: `审稿报告 v${meta.version}`,
+      name: t('draftEditor.reviewReportName', { version: meta.version }),
       type: 'review-report',
       content: reportContent,
       filePath,
@@ -307,7 +309,7 @@ export default function DraftEditor({ filePath, content }: Props) {
         {/* 左侧：章节标题 + 版本 */}
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs font-medium truncate" style={{ color: 'var(--color-text-secondary)' }}>
-            {meta ? `第 ${meta.chapterNumber} 章 — ${meta.chapterTitle}` : '草稿'}
+            {meta ? t('draftEditor.chapterLabel', { chapter: meta.chapterNumber, title: meta.chapterTitle }) : t('draftEditor.draft')}
           </span>
           {meta && (
             <span className="text-[0.7rem] flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>
@@ -322,7 +324,7 @@ export default function DraftEditor({ filePath, content }: Props) {
             {/* 字数 */}
             {charCount > 0 && (
               <span className="text-xs tabular-nums mr-1" style={{ color: 'var(--color-text-muted)' }}>
-                {charCount.toLocaleString()} 字
+                {charCount.toLocaleString()} {t('draftEditor.chars')}
               </span>
             )}
 
@@ -331,7 +333,7 @@ export default function DraftEditor({ filePath, content }: Props) {
               <span
                 className="w-1.5 h-1.5 rounded-full flex-shrink-0 mr-0.5"
                 style={{ backgroundColor: 'var(--color-warning)' }}
-                title="有未保存的修改"
+                title={t('draftEditor.unsavedTooltip')}
               />
             )}
 
@@ -342,10 +344,10 @@ export default function DraftEditor({ filePath, content }: Props) {
                 size="sm"
                 onClick={() => doSave(currentBodyRef.current)}
                 disabled={saving}
-                title="保存（⌘S）"
+                title={t('draftEditor.saveTooltip')}
               >
                 <Save size={12} />
-                {saving ? '保存中...' : '保存'}
+                {saving ? t('draftEditor.saving') : t('draftEditor.save')}
               </Button>
             )}
 
@@ -366,10 +368,10 @@ export default function DraftEditor({ filePath, content }: Props) {
                 variant="outline"
                 size="sm"
                 onClick={() => openPendingRevision(pendingRevisions[0])}
-                title="有待合并的修稿，点击打开三栏合并视图"
+                title={t('draftEditor.pendingMergeTooltip')}
               >
                 <FileStack size={12} />
-                待合并({pendingRevisions.length})
+                {t('draftEditor.pendingMerge', { count: pendingRevisions.length })}
               </Button>
             )}
 
@@ -379,10 +381,10 @@ export default function DraftEditor({ filePath, content }: Props) {
                 variant="outline"
                 size="sm"
                 onClick={openLatestReview}
-                title="查看最新审稿报告"
+                title={t('draftEditor.reviewReportTooltip')}
               >
                 <FileText size={12} />
-                审稿报告({reviewCount})
+                {t('draftEditor.reviewReport', { count: reviewCount })}
               </Button>
             )}
 
@@ -392,10 +394,10 @@ export default function DraftEditor({ filePath, content }: Props) {
               size="sm"
               onClick={() => { setUserRefinePrompt(''); setConfirmAction('refine') }}
               disabled={isChapterBusy}
-              title="AI 修稿 — 大神级润色，生成修稿并打开合并视图"
+              title={t('draftEditor.aiRefineTooltip')}
             >
               <Sparkles size={12} />
-              AI 修稿
+              {t('draftEditor.aiRefine')}
             </Button>
 
             {/* AI 审稿 */}
@@ -404,10 +406,10 @@ export default function DraftEditor({ filePath, content }: Props) {
               size="sm"
               onClick={() => setConfirmAction('review')}
               disabled={isChapterBusy}
-              title="AI 审稿 — 一致性检查，生成审稿报告"
+              title={t('draftEditor.aiReviewTooltip')}
             >
               <Search size={12} />
-              AI 审稿
+              {t('draftEditor.aiReview')}
             </Button>
 
             {/* 定稿 */}
@@ -416,10 +418,10 @@ export default function DraftEditor({ filePath, content }: Props) {
               size="sm"
               onClick={doFinalize}
               disabled={isChapterBusy}
-              title="定稿 — 确认终稿并写入正文章节"
+              title={t('draftEditor.finalizeTooltip')}
             >
               <BadgeCheck size={12} />
-              定稿
+              {t('draftEditor.finalize')}
             </Button>
           </div>
         )}
@@ -429,11 +431,11 @@ export default function DraftEditor({ filePath, content }: Props) {
           <div className="flex items-center gap-2 flex-shrink-0">
             {charCount > 0 && (
               <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
-                {charCount.toLocaleString()} 字
+                {charCount.toLocaleString()} {t('draftEditor.chars')}
               </span>
             )}
             <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {status === 'finalized' ? '已定稿（只读）' : '已归档（只读）'}
+              {status === 'finalized' ? t('draftEditor.finalizedReadonly') : t('draftEditor.archivedReadonly')}
             </span>
             {/* 已定稿 → 有失败项时显示修复定稿按钮 */}
             {status === 'finalized' && meta && hasProcessFailure && (
@@ -442,10 +444,10 @@ export default function DraftEditor({ filePath, content }: Props) {
                 size="sm"
                 onClick={doRepairFinalize}
                 disabled={isChapterBusy}
-                title="重新执行失败的后处理步骤（角色卡、知识库等）"
+                title={t('draftEditor.repairFinalizeTooltip')}
               >
                 <Wrench size={11} />
-                修复定稿
+                {t('draftEditor.repairFinalize')}
               </Button>
             )}
           </div>
@@ -488,24 +490,24 @@ export default function DraftEditor({ filePath, content }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles size={15} className="text-[var(--color-accent)]" />
-              {confirmAction === 'refine' ? 'AI 修稿确认' : 'AI 审稿确认'}
+              {confirmAction === 'refine' ? t('draftEditor.refineDialogTitle') : t('draftEditor.reviewDialogTitle')}
             </DialogTitle>
             <DialogDescription>
-              对象：{meta ? `${meta.chapterTitle} v${meta.version}` : '当前草稿'}
+              {t('draftEditor.dialogTarget', { title: meta?.chapterTitle ?? t('draftEditor.draft'), version: meta?.version ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <div className="px-5 py-2 text-sm space-y-1.5" style={{ color: 'var(--color-text-secondary)' }}>
             {confirmAction === 'refine' ? (
               <>
-                <div className="font-medium text-[var(--color-text)]">本次【直接修稿】范围：</div>
-                <div>1. 全文基础润色、词汇优化，增强画面与表现力。</div>
-                <div>2. 可在下方指定的额外修稿要求。</div>
+                <div className="font-medium text-[var(--color-text)]">{t('draftEditor.refineScopeTitle')}</div>
+                <div>{t('draftEditor.refineScope1')}</div>
+                <div>{t('draftEditor.refineScope2')}</div>
               </>
             ) : (
               <>
-                <div>将调用 AI 对本章草稿进行一致性检查，并生成审稿报告。</div>
+                <div>{t('draftEditor.reviewDescription')}</div>
                 <div className="mt-3">
-                  <div className="text-xs font-medium mb-2" style={{ color: 'var(--color-text)' }}>重点检查维度：</div>
+                  <div className="text-xs font-medium mb-2" style={{ color: 'var(--color-text)' }}>{t('draftEditor.reviewFocusTitle')}</div>
                   <div className="flex flex-wrap gap-2">
                     {REVIEW_DIMS.map(d => (
                       <label
@@ -542,7 +544,7 @@ export default function DraftEditor({ filePath, content }: Props) {
           {confirmAction === 'refine' && (
             <div className="px-5 pb-2">
               <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
-                附加修稿要求（可选）：
+                {t('draftEditor.additionalRefinePrompt')}
               </label>
               <textarea
                 className="w-full px-3 py-2 rounded-md text-sm"
@@ -554,7 +556,7 @@ export default function DraftEditor({ filePath, content }: Props) {
                   resize: 'vertical',
                   outline: 'none',
                 }}
-                placeholder="例如：加强打斗场面的画面感；把结尾的伏笔改为更隐晦的暗示；对白太书面化，改为口语化风格..."
+                placeholder={t('draftEditor.additionalRefinePlaceholder')}
                 value={userRefinePrompt}
                 onChange={e => setUserRefinePrompt(e.target.value)}
               />
@@ -562,7 +564,7 @@ export default function DraftEditor({ filePath, content }: Props) {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmAction(null)}>取消</Button>
+            <Button variant="outline" onClick={() => setConfirmAction(null)}>{t('draftEditor.cancel')}</Button>
             <Button
               variant="ai"
               onClick={() => {
@@ -572,7 +574,7 @@ export default function DraftEditor({ filePath, content }: Props) {
                 else if (act === 'review') doReview()
               }}
             >
-              确认执行
+              {t('draftEditor.confirmExecution')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -595,7 +597,7 @@ export default function DraftEditor({ filePath, content }: Props) {
         >
           <DialogHeader className="px-4 py-0" style={{ height: 38, display: 'flex', alignItems: 'center' }}>
             <DialogTitle className="flex items-center gap-2 text-[0.8rem]">
-              修稿合并 — 第{meta?.chapterNumber}章 {meta?.chapterTitle}
+              {t('draftEditor.mergeDialogTitle', { chapter: meta?.chapterNumber, title: meta?.chapterTitle })}
             </DialogTitle>
           </DialogHeader>
           {/* 合并视图主体 */}

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { ArrowLeftRight, Check, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface DiffViewerProps {
   /** 原始文本 */
@@ -30,11 +31,14 @@ interface DiffLine {
 export default function DiffViewer({
   original,
   modified,
-  originalLabel = '原稿',
-  modifiedLabel = '修稿',
+  originalLabel,
+  modifiedLabel,
   onAccept,
   onReject,
 }: DiffViewerProps) {
+  const { t } = useTranslation('editors')
+  const resolvedOriginalLabel = originalLabel ?? t('diffViewer.original')
+  const resolvedModifiedLabel = modifiedLabel ?? t('diffViewer.revised')
   const [mode, setMode] = useState<'side' | 'inline'>('side')
 
   // 计算差异
@@ -57,7 +61,7 @@ export default function DiffViewer({
         <div className="flex items-center gap-3">
           <ArrowLeftRight size={14} style={{ color: 'var(--color-accent)' }} />
           <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
-            文本对比
+            {t('diffViewer.title')}
           </span>
           <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             <span style={{ color: 'var(--color-success)' }}>+{addCount}</span>
@@ -76,7 +80,7 @@ export default function DiffViewer({
               border: '1px solid var(--color-border)',
             }}
           >
-            {mode === 'side' ? '并排视图' : '内联视图'}
+            {mode === 'side' ? t('diffViewer.sideBySide') : t('diffViewer.inline')}
           </button>
           {/* 操作按钮 */}
           {onReject && (
@@ -85,7 +89,7 @@ export default function DiffViewer({
               className="flex items-center gap-1 px-2 py-0.5 rounded text-xs"
               style={{ color: 'var(--color-error)', border: '1px solid var(--color-border)' }}
             >
-              <X size={12} /> 拒绝
+              <X size={12} /> {t('diffViewer.reject')}
             </button>
           )}
           {onAccept && (
@@ -97,7 +101,7 @@ export default function DiffViewer({
                 color: '#fff',
               }}
             >
-              <Check size={12} /> 接受修改
+              <Check size={12} /> {t('diffViewer.acceptChanges')}
             </button>
           )}
         </div>
@@ -105,7 +109,7 @@ export default function DiffViewer({
 
       {/* Diff 内容 */}
       {mode === 'side' ? (
-        <SideBySideView diffLines={diffLines} originalLabel={originalLabel} modifiedLabel={modifiedLabel} />
+        <SideBySideView diffLines={diffLines} originalLabel={resolvedOriginalLabel} modifiedLabel={resolvedModifiedLabel} />
       ) : (
         <InlineView diffLines={diffLines} />
       )}

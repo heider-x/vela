@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLayoutStore } from '../../stores/layout-store'
 import { ContextMenu } from '../ui/ContextMenu'
 import KnowledgePanel from './KnowledgePanel'
@@ -19,6 +20,7 @@ import {
 
 /** 左侧面板 */
 export default function Sidebar() {
+  const { t } = useTranslation('panels')
   const sidebarView = useLayoutStore(s => s.sidebarView)
   // 全局右键菜单状态
   const [sidebarMenu, setSidebarMenu] = useState<SidebarMenuState | null>(null)
@@ -30,10 +32,10 @@ export default function Sidebar() {
   }, [])
 
   const viewTitles: Record<string, string> = {
-    home:       '主页',
-    project:    '项目结构',
-    knowledge:  '知识库',
-    characters: '角色管理',
+    home:       t('sidebar.home'),
+    project:    t('sidebar.project'),
+    knowledge:  t('sidebar.knowledge'),
+    characters: t('sidebar.characters'),
   }
 
   return (

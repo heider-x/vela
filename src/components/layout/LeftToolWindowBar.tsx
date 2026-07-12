@@ -4,26 +4,17 @@ import {
 } from 'lucide-react'
 import { useLayoutStore, type SidebarView, type BottomTab } from '../../stores/layout-store'
 import { useWorkflowStore } from '../../stores/workflow-store'
+import { useTranslation } from 'react-i18next'
 
 /** 左侧侧边栏视图按钮配置（不含 Home，它单独渲染） */
-const sidebarActivities: Array<{ id: SidebarView; icon: typeof FolderOpen; label: string }> = [
-  { id: 'project', icon: FolderOpen, label: '项目结构' },
-  { id: 'knowledge', icon: BookOpen, label: '知识库' },
-  { id: 'characters', icon: Users, label: '角色管理' },
-]
-
-/** 底部面板 Tab 按钮配置 */
-const bottomTabs: Array<{ id: BottomTab; icon: typeof Zap; label: string }> = [
-  { id: 'tasks', icon: Zap, label: '任务' },
-  { id: 'log', icon: ScrollText, label: '日志' },
-  { id: 'models', icon: Cpu, label: '模型调用' },
-]
+// Note: These arrays are now inside the component to support i18n
 
 /**
  * 左侧工具窗口栏（LeftToolWindowBar）
  * JetBrains 风格：36px 宽，全高
  */
 export default function LeftToolWindowBar() {
+  const { t } = useTranslation('layout')
   const sidebarView = useLayoutStore(s => s.sidebarView)
   const sidebarOpen = useLayoutStore(s => s.sidebarOpen)
   const setSidebarView = useLayoutStore(s => s.setSidebarView)
@@ -31,6 +22,20 @@ export default function LeftToolWindowBar() {
   const bottomPanelOpen = useLayoutStore(s => s.bottomPanelOpen)
   const setBottomTab = useLayoutStore(s => s.setBottomTab)
   const currentRun = useWorkflowStore(s => s.currentRun)
+
+  // Side bar activities (Home excluded - rendered separately)
+  const sidebarActivities: Array<{ id: SidebarView; icon: typeof FolderOpen; label: string }> = [
+    { id: 'project', icon: FolderOpen, label: t('activityBar.project') },
+    { id: 'knowledge', icon: BookOpen, label: t('activityBar.knowledge') },
+    { id: 'characters', icon: Users, label: t('activityBar.characters') },
+  ]
+
+  // Bottom panel tabs
+  const bottomTabs: Array<{ id: BottomTab; icon: typeof Zap; label: string }> = [
+    { id: 'tasks', icon: Zap, label: t('statusBar.tasksLabel') },
+    { id: 'log', icon: ScrollText, label: t('bottomPanel.tabs.log') },
+    { id: 'models', icon: Cpu, label: t('bottomPanel.tabs.models') },
+  ]
 
   /** Home 按钮是否激活 */
   const homeActive = sidebarOpen && sidebarView === 'home'
@@ -51,7 +56,7 @@ export default function LeftToolWindowBar() {
         {/* Home 按钮 — 点击切换到主页视图 */}
         <button
           onClick={() => setSidebarView('home')}
-          title="欢迎页"
+          title={t('activityBar.home')}
           className="tool-btn"
           style={{
             height: 30,
