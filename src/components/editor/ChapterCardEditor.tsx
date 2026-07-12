@@ -282,7 +282,7 @@ export default function ChapterCardEditor() {
       <div className="flex-1 flex overflow-hidden">
         {/* 左侧章节列表 */}
         <div
-          className="flex flex-col flex-shrink-0 w-[200px] border-r overflow-hidden"
+          className="flex flex-col flex-shrink-0 w-[240px] border-r overflow-hidden"
           style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-sidebar)' }}
         >
           {blueprints.length === 0 ? (

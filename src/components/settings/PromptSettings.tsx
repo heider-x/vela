@@ -253,7 +253,7 @@ function TemplateItem({
                   }}
                 >
                   <code className="font-mono">{`{{${varName}}}`}</code>
-                  <span className="opacity-60 max-w-[120px] truncate">{desc}</span>
+                  <span className="opacity-60 max-w-[200px] truncate">{desc}</span>
                 </button>
               ))}
             </div>

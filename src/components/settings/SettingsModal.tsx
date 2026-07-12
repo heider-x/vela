@@ -68,7 +68,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="relative flex w-[880px] h-[600px] rounded-2xl overflow-hidden shadow-2xl"
+        className="relative flex w-full max-w-[880px] max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl"
         style={{
           backgroundColor: 'var(--color-editor-bg)',
           border: '1px solid var(--color-border)',
@@ -76,7 +76,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
       >
         {/* 左侧导航 */}
         <aside
-          className="flex flex-col w-52 flex-shrink-0 py-5 gap-1"
+          className="flex flex-col w-60 flex-shrink-0 py-5 gap-1"
           style={{
             backgroundColor: 'var(--color-sidebar)',
             borderRight: '1px solid var(--color-border)',
@@ -95,14 +95,14 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
               key={s.id}
               onClick={() => setSection(s.id)}
               className={cn(
-                'flex items-center gap-2.5 mx-2 px-3 py-2.5 rounded-lg text-left text-sm transition-colors',
+                'flex items-center gap-2.5 mx-2 px-3 py-2.5 rounded-lg text-left text-sm transition-colors min-w-0',
                 section === s.id
                   ? 'bg-[var(--color-accent)] text-white'
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-text)]',
               )}
             >
-              {s.icon}
-              {t(`general.${s.id === 'llm' ? 'models' : s.id}`)}
+              <span className="flex-shrink-0">{s.icon}</span>
+              <span className="truncate">{t(`general.${s.id === 'llm' ? 'models' : s.id}`)}</span>
             </button>
           ))}
         </aside>

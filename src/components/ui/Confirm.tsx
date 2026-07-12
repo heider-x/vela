@@ -95,7 +95,7 @@ function ConfirmDialog({
           borderRadius: 'var(--radius-2xl)',
           boxShadow: 'var(--shadow-popover)',
           padding: '20px 24px',
-          minWidth: 320,
+          minWidth: 380,
           maxWidth: 460,
           /* CSS 动画，使用 both 从而提前应用 0% 关键帧，彻底杜绝闪烁现象 */
           animation: isExiting

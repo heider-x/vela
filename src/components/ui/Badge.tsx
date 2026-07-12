@@ -17,7 +17,7 @@ import { cn } from '../../lib/utils'
 
 const badgeVariants = cva(
   /* 基础样式：内联 flex、圆角胶囊、小号文字、无换行 */
-  'inline-flex items-center px-2 py-0.5 text-[0.7rem] font-medium rounded-full whitespace-nowrap leading-none transition-all duration-200',
+  'inline-flex items-center px-2 py-0.5 text-[0.7rem] font-medium rounded-full leading-none transition-all duration-200',
   {
     variants: {
       variant: {

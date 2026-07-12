@@ -126,7 +126,7 @@ export default function VersionHistory() {
   return (
     <div className="h-full flex overflow-hidden">
       {/* 左侧章节列表 */}
-      <div className="flex flex-col flex-shrink-0 w-[200px] border-r border-[var(--color-border)] bg-[var(--color-sidebar)]">
+      <div className="flex flex-col flex-shrink-0 w-[240px] border-r border-[var(--color-border)] bg-[var(--color-sidebar)]">
         <div className="flex items-center px-3 h-9 flex-shrink-0 border-b border-[var(--color-border)]">
           <span className="text-xs font-medium text-[var(--color-text)]">
             <History size={13} className="inline mr-1" />
