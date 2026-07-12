@@ -19,6 +19,15 @@ import enPages from './locales/en/pages.json'
 import enStores from './locales/en/stores.json'
 import enSettings from './locales/en/settings.json'
 
+import ruCommon from './locales/ru/common.json'
+import ruDialogs from './locales/ru/dialogs.json'
+import ruEditors from './locales/ru/editors.json'
+import ruPanels from './locales/ru/panels.json'
+import ruLayout from './locales/ru/layout.json'
+import ruPages from './locales/ru/pages.json'
+import ruStores from './locales/ru/stores.json'
+import ruSettings from './locales/ru/settings.json'
+
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined'
 
 const i18nConfig: Parameters<typeof i18n.init>[0] = {
@@ -42,6 +51,16 @@ const i18nConfig: Parameters<typeof i18n.init>[0] = {
       pages: enPages,
       stores: enStores,
       settings: enSettings,
+    },
+    ru: {
+      common: ruCommon,
+      dialogs: ruDialogs,
+      editors: ruEditors,
+      panels: ruPanels,
+      layout: ruLayout,
+      pages: ruPages,
+      stores: ruStores,
+      settings: ruSettings,
     },
   },
   fallbackLng: 'zh-CN',
@@ -74,8 +93,13 @@ i18n.init(i18nConfig)
 // Update HTML lang attribute when language changes (browser only)
 if (isBrowser) {
   i18n.on('languageChanged', (lng) => {
-    document.documentElement.lang = lng === 'en' ? 'en' : 'zh-CN'
-    document.title = lng === 'en' ? 'Vela — AI Novel Writing IDE' : 'Vela — AI 小说创作 IDE'
+    document.documentElement.lang = lng === 'ru' ? 'ru' : lng === 'en' ? 'en' : 'zh-CN'
+    const titles: Record<string, string> = {
+      'ru': 'Vela — ИИ-редактор для написания романов',
+      'en': 'Vela — AI Novel Writing IDE',
+      'zh-CN': 'Vela — AI 小说创作 IDE',
+    }
+    document.title = titles[lng] || titles['zh-CN']
   })
 }
 

@@ -31,6 +31,15 @@ import enPages from '../locales/en/pages.json'
 import enStores from '../locales/en/stores.json'
 import enSettings from '../locales/en/settings.json'
 
+import ruCommon from '../locales/ru/common.json'
+import ruDialogs from '../locales/ru/dialogs.json'
+import ruEditors from '../locales/ru/editors.json'
+import ruPanels from '../locales/ru/panels.json'
+import ruLayout from '../locales/ru/layout.json'
+import ruPages from '../locales/ru/pages.json'
+import ruStores from '../locales/ru/stores.json'
+import ruSettings from '../locales/ru/settings.json'
+
 const NAMESPACES = ['common', 'dialogs', 'editors', 'panels', 'layout', 'pages', 'stores', 'settings'] as const
 
 const ZH_CN_FILES: Record<string, Record<string, unknown>> = {
@@ -53,6 +62,17 @@ const EN_FILES: Record<string, Record<string, unknown>> = {
   pages: enPages,
   stores: enStores,
   settings: enSettings,
+}
+
+const RU_FILES: Record<string, Record<string, unknown>> = {
+  common: ruCommon,
+  dialogs: ruDialogs,
+  editors: ruEditors,
+  panels: ruPanels,
+  layout: ruLayout,
+  pages: ruPages,
+  stores: ruStores,
+  settings: ruSettings,
 }
 
 // Helper: recursively collect all leaf keys from a nested object
@@ -102,21 +122,27 @@ describe('i18n Initialization', () => {
 
 describe('Translation Key Completeness', () => {
   for (const ns of NAMESPACES) {
-    it(`${ns}: zh-CN and en should have the same keys`, () => {
+    it(`${ns}: zh-CN, en, and ru should have the same keys`, () => {
       const zhKeys = getLeafKeys(ZH_CN_FILES[ns]).sort()
       const enKeys = getLeafKeys(EN_FILES[ns]).sort()
+      const ruKeys = getLeafKeys(RU_FILES[ns]).sort()
 
       const missingInEn = zhKeys.filter(k => !enKeys.includes(k))
+      const missingInRu = zhKeys.filter(k => !ruKeys.includes(k))
       const missingInZh = enKeys.filter(k => !zhKeys.includes(k))
 
       if (missingInEn.length > 0) {
         console.error(`${ns}: Missing keys in en: ${missingInEn.join(', ')}`)
+      }
+      if (missingInRu.length > 0) {
+        console.error(`${ns}: Missing keys in ru: ${missingInRu.join(', ')}`)
       }
       if (missingInZh.length > 0) {
         console.error(`${ns}: Missing keys in zh-CN: ${missingInZh.join(', ')}`)
       }
 
       expect(missingInEn).toEqual([])
+      expect(missingInRu).toEqual([])
       expect(missingInZh).toEqual([])
     })
   }
@@ -142,6 +168,15 @@ describe('Translation Retrieval', () => {
     expect(i18n.t('ok')).toBe('OK')
     expect(i18n.t('retry')).toBe('Retry')
     expect(i18n.t('save')).toBe('Save')
+  })
+
+  it('should return Russian text for common keys in ru', async () => {
+    await i18n.changeLanguage('ru')
+    expect(i18n.t('confirm')).toBe('Подтвердить')
+    expect(i18n.t('cancel')).toBe('Отмена')
+    expect(i18n.t('ok')).toBe('ОК')
+    expect(i18n.t('retry')).toBe('Повторить')
+    expect(i18n.t('save')).toBe('Сохранить')
   })
 
   it('should work with namespace prefix', () => {
@@ -173,6 +208,14 @@ describe('Interpolation', () => {
     expect(i18n.t('hoursAgo', { count: 2 })).toBe('2 hours ago')
     expect(i18n.t('daysAgo', { count: 1 })).toBe('1 days ago')
   })
+
+  it('should interpolate count in ru', async () => {
+    await i18n.changeLanguage('ru')
+    expect(i18n.t('itemsCount', { count: 5 })).toBe('5 элементов')
+    expect(i18n.t('minutesAgo', { count: 3 })).toBe('3 мин. назад')
+    expect(i18n.t('hoursAgo', { count: 2 })).toBe('2 ч. назад')
+    expect(i18n.t('daysAgo', { count: 1 })).toBe('1 дн. назад')
+  })
 })
 
 describe('Language Switching', () => {
@@ -184,6 +227,16 @@ describe('Language Switching', () => {
     await i18n.changeLanguage('en')
     expect(i18n.language).toBe('en')
     expect(i18n.t('confirm')).toBe('Confirm')
+
+    await i18n.changeLanguage('zh-CN')
+    expect(i18n.language).toBe('zh-CN')
+    expect(i18n.t('confirm')).toBe('确认')
+  })
+
+  it('should switch to ru and back to zh-CN', async () => {
+    await i18n.changeLanguage('ru')
+    expect(i18n.language).toBe('ru')
+    expect(i18n.t('confirm')).toBe('Подтвердить')
 
     await i18n.changeLanguage('zh-CN')
     expect(i18n.language).toBe('zh-CN')
@@ -235,6 +288,12 @@ describe('JSON File Validity', () => {
       const content = JSON.stringify(EN_FILES[ns])
       expect(content).toBeDefined()
       expect(typeof EN_FILES[ns]).toBe('object')
+    })
+
+    it(`ru/${ns}.json should be valid JSON with no duplicate keys`, () => {
+      const content = JSON.stringify(RU_FILES[ns])
+      expect(content).toBeDefined()
+      expect(typeof RU_FILES[ns]).toBe('object')
     })
   }
 })

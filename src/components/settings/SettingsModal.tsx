@@ -156,6 +156,7 @@ function LanguageSection() {
   const languages = [
     { code: 'zh-CN', label: '简体中文', nativeLabel: '简体中文' },
     { code: 'en', label: 'English', nativeLabel: 'English' },
+    { code: 'ru', label: 'Русский', nativeLabel: 'Русский' },
   ]
 
   const handleLanguageChange = async (langCode: string) => {
@@ -198,9 +199,11 @@ function LanguageSection() {
           ))}
         </div>
         <p className="text-xs mt-3" style={{ color: 'var(--color-text-muted)' }}>
-          {currentLang === 'zh-CN'
-            ? '切换后界面语言将立即生效'
-            : 'Language will change immediately after selection'}
+          {currentLang === 'ru'
+            ? 'Язык интерфейса изменится сразу после выбора'
+            : currentLang === 'zh-CN'
+              ? '切换后界面语言将立即生效'
+              : 'Language will change immediately after selection'}
         </p>
       </div>
     </div>
