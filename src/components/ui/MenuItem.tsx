@@ -2,6 +2,8 @@
  * 通用菜单项按钮
  * 统一替换 AgentHeader.MoreMenuItem 和 ActivityBar.MenuAction
  */
+import { useTranslation } from 'react-i18next'
+
 export interface MenuItemProps {
   label: string
   onClick: () => void
@@ -12,6 +14,7 @@ export interface MenuItemProps {
 }
 
 export function MenuItem({ label, onClick, icon, shortcut, disabled, danger }: MenuItemProps) {
+  const { t } = useTranslation()
   return (
     <button
       onClick={!disabled ? onClick : undefined}
@@ -46,7 +49,7 @@ export function MenuItem({ label, onClick, icon, shortcut, disabled, danger }: M
         <span className="text-[0.7rem] opacity-40 font-mono ml-2 flex-shrink-0">{shortcut}</span>
       )}
       {disabled && (
-        <span className="ml-auto text-[0.7rem] opacity-40">即将推出</span>
+        <span className="ml-auto text-[0.7rem] opacity-40">{t('comingSoon')}</span>
       )}
     </button>
   )

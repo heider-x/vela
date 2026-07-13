@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { Save, Sparkles, Info, Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '../../stores/project-store'
 import { useLLMStore } from '../../stores/llm-store'
 import { useWorkflowStore } from '../../stores/workflow-store'
@@ -13,6 +14,7 @@ import GenerateConfigDialog from '../dialogs/GenerateConfigDialog'
 
 /** 小说配置编辑器 — Tab 内的可视化配置面板 */
 export default function NovelConfigEditor() {
+  const { t } = useTranslation('editors')
   // ✅ 用 selector 精确订阅：只有 currentProject 变化时才重新渲染
   //    不订阅 fileTree、recentProjects 等无关字段
   const currentProject = useProjectStore(s => s.currentProject)
@@ -33,7 +35,7 @@ export default function NovelConfigEditor() {
 
   if (!config) return (
     <div className="h-full flex items-center justify-center" style={{ color: 'var(--color-text-muted)' }}>
-      <span className="text-sm opacity-50">加载配置中...</span>
+      <span className="text-sm opacity-50">{t('novelConfig.loadingConfig')}</span>
     </div>
   )
 
@@ -103,18 +105,18 @@ export default function NovelConfigEditor() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
-              小说配置
+              {t('novelConfig.title')}
             </h2>
             <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-              定义你的小说基本信息和写作参数
+              {t('novelConfig.description')}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ai" onClick={handleAIGenerate}>
-              <Sparkles size={13} /> AI 填充配置
+              <Sparkles size={13} /> {t('novelConfig.aiFillConfig')}
             </Button>
             <Button variant="outline" onClick={handleSave} disabled={saving}>
-              <Save size={13} /> {saving ? '保存中...' : '保存'}
+              <Save size={13} /> {saving ? t('novelConfig.saving') : t('novelConfig.save')}
             </Button>
           </div>
         </div>
@@ -122,27 +124,27 @@ export default function NovelConfigEditor() {
         {/* 配置表单 */}
         <div className="space-y-5">
           {/* 基本信息 */}
-          <Section title="基本信息">
+          <Section title={t('novelConfig.basicInfo')}>
             <div className="grid grid-cols-3 gap-4">
-              <Field label="类型">
+              <Field label={t('novelConfig.genre')}>
                 <NativeSelect value={config.genre} onChange={(e) => update('genre', e.target.value)}>
                   {genres.map((g) => <option key={g} value={g}>{g}</option>)}
                 </NativeSelect>
               </Field>
-              <Field label="细分类型">
-                <Input value={config.subGenre} onChange={(e) => update('subGenre', e.target.value)} placeholder="如：修仙/重生/末世" />
+              <Field label={t('novelConfig.subGenre')}>
+                <Input value={config.subGenre} onChange={(e) => update('subGenre', e.target.value)} placeholder={t('novelConfig.subGenrePlaceholder')} />
               </Field>
-              <Field label="目标受众">
+              <Field label={t('novelConfig.targetAudience')}>
                 <NativeSelect value={config.targetAudience} onChange={(e) => update('targetAudience', e.target.value)}>
-                  <option value="男频">男频</option>
-                  <option value="女频">女频</option>
-                  <option value="双性向">双性向</option>
-                  <option value="全龄">全龄</option>
+                  <option value="男频">{t('novelConfig.male')}</option>
+                  <option value="女频">{t('novelConfig.female')}</option>
+                  <option value="双性向">{t('novelConfig.both')}</option>
+                  <option value="全龄">{t('novelConfig.allAges')}</option>
                 </NativeSelect>
               </Field>
             </div>
             <div className="grid grid-cols-4 gap-4 mt-4">
-              <Field label="故事结构" tipItems={[
+              <Field label={t('novelConfig.plotStructure')} tipItems={[
                 '三幕结构：经典的“建置→对抗→高潮”，适合大多数网文类型',
                 '英雄之旅：神话学十二阶段，适合冒险/成长类，强调内在蜕变',
                 '节拍表：好莱坞十五拍结构，节奏最精细，适合情感张力强的故事',
@@ -159,20 +161,20 @@ export default function NovelConfigEditor() {
                   <option value="freeform">自由结构</option>
                 </NativeSelect>
               </Field>
-              <Field label="叙事视角" tipItems={[
+              <Field label={t('novelConfig.narrativePOV')} tipItems={[
                 '第一人称："我"视角叙事，代入感最强，信息受限',
                 '第三人称有限视角：跟随主角视角，兼顾代入感和灵活性，最常用',
                 '第三人称全知视角：可自由切换角色内心，适合群像叙事',
                 '多视角轮换：多名角色交替叙事，适合复杂群像故事',
               ]}>
                 <NativeSelect value={config.narrativePOV || 'third_limited'} onChange={(e) => update('narrativePOV', e.target.value as NovelConfig['narrativePOV'])}>
-                  <option value="first_person">第一人称</option>
-                  <option value="third_limited">第三人称有限视角</option>
-                  <option value="third_omniscient">第三人称全知视角</option>
-                  <option value="multi_pov">多视角轮换</option>
+                  <option value="first_person">{t('novelConfig.narrativePOVOptions.first_person')}</option>
+                  <option value="third_limited">{t('novelConfig.narrativePOVOptions.third_limited')}</option>
+                  <option value="third_omniscient">{t('novelConfig.narrativePOVOptions.third_omniscient')}</option>
+                  <option value="multi_pov">{t('novelConfig.narrativePOVOptions.multi_pov')}</option>
                 </NativeSelect>
               </Field>
-              <Field label="总章数">
+              <Field label={t('novelConfig.totalChapters')}>
                 <Input
                   type="number"
                   value={config.totalChapters}
@@ -185,7 +187,7 @@ export default function NovelConfigEditor() {
                   min={1}
                 />
               </Field>
-              <Field label="每章字数">
+              <Field label={t('novelConfig.wordsPerChapter')}>
                 <Input
                   type="number"
                   value={config.wordsPerChapter}
@@ -203,8 +205,8 @@ export default function NovelConfigEditor() {
 
           {/* 核心大纲 */}
           <Section
-            title="核心大纲"
-            desc="一段话概括整个故事：谁/在哪/要做什么。也是 AI 一键填充时的灵感输入"
+            title={t('novelConfig.coreOutline')}
+            desc={t('novelConfig.coreOutlineDesc')}
             aiFieldKey="coreOutline"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
@@ -214,8 +216,8 @@ export default function NovelConfigEditor() {
 
           {/* 世界观设定 */}
           <Section
-            title="世界观 / 初始设定"
-            desc="故事发生的背景、时代、力量体系（架构生成后可由 AI 自动扩展）"
+            title={t('novelConfig.worldSetting')}
+            desc={t('novelConfig.worldSettingDesc')}
             aiFieldKey="worldSetting"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
@@ -225,8 +227,8 @@ export default function NovelConfigEditor() {
 
           {/* 金手指 */}
           <Section
-            title="金手指 / 核心卖点"
-            desc="主角的差异化优势：获取方式、核心能力、成长路径（架构生成时 AI 会深度扩展）"
+            title={t('novelConfig.goldenFinger')}
+            desc={t('novelConfig.goldenFingerDesc')}
             aiFieldKey="goldenFinger"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
@@ -236,8 +238,8 @@ export default function NovelConfigEditor() {
 
           {/* 主角人设 */}
           <Section
-            title="主角人设"
-            desc="性格特征、背景故事、核心目标（架构生成时 AI 会补全关系网和角色弧光）"
+            title={t('novelConfig.protagonistProfile')}
+            desc={t('novelConfig.protagonistProfileDesc')}
             aiFieldKey="protagonistProfile"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
@@ -247,8 +249,8 @@ export default function NovelConfigEditor() {
 
           {/* 全局写作要求 */}
           <Section
-            title="全局写作要求"
-            desc="写作风格、禁忌事项、节奏控制等全局规则（AI 填充配置时会自动生成）"
+            title={t('novelConfig.globalGuidance')}
+            desc={t('novelConfig.globalGuidanceDesc')}
             aiFieldKey="globalGuidance"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
@@ -263,8 +265,8 @@ export default function NovelConfigEditor() {
 
           {/* 文风配置 */}
           <Section
-            title="文风配置"
-            desc="AI 写稿/修稿时会严格遵循这里的风格要求。可手动填写或由 AI 自动生成。"
+            title={t('novelConfig.writingStyle')}
+            desc={t('novelConfig.writingStyleDesc')}
             aiFieldKey="writingStyle"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
@@ -278,7 +280,7 @@ export default function NovelConfigEditor() {
           </Section>
 
           {/* 参考作品 */}
-          <Section title="参考作品" desc={'参考作品的风格、体系或机制，如："参考《证道》的修炼体系"'}>
+          <Section title={t('novelConfig.referenceWorks')} desc={t('novelConfig.referenceWorksDesc')}>
             <Textarea value={config.referenceWorks || ''} onChange={(e) => update('referenceWorks', e.target.value)} placeholder="参考哪些作品的风格、设定或机制？（AI 架构生成时会参考）" rows={2} />
           </Section>
         </div>

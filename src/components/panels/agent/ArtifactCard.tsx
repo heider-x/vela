@@ -5,6 +5,7 @@
  * 显示可点击的产物卡片，用户可直接跳转到对应资源。
  */
 import { FileText, FolderOpen, Play, ExternalLink } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { ToolArtifact } from '../../../services/agent/tool-registry'
 import { useEditorStore } from '../../../stores/editor-store'
 import { ipc } from '../../../services/ipc-client'
@@ -29,18 +30,19 @@ function ArtifactIcon({ type }: { type: ToolArtifact['type'] }) {
   }
 }
 
-/** 产物类型中文标签 */
-function typeLabel(type: ToolArtifact['type']): string {
+/** 产物类型标签 */
+function typeLabel(type: ToolArtifact['type'], t: (key: string) => string): string {
   switch (type) {
-    case 'file_created': return '新建文件'
-    case 'file_modified': return '已修改'
-    case 'workflow_started': return '工作流'
-    case 'tab_opened': return '已打开'
+    case 'file_created': return t('artifact.fileCreated')
+    case 'file_modified': return t('artifact.fileModified')
+    case 'workflow_started': return t('artifact.workflowStarted')
+    case 'tab_opened': return t('artifact.tabOpened')
     default: return ''
   }
 }
 
 export default function ArtifactCard({ artifact }: Props) {
+  const { t } = useTranslation('panels')
   const { type, name, path } = artifact
 
   const handleClick = async () => {
@@ -71,7 +73,7 @@ export default function ArtifactCard({ artifact }: Props) {
         <ArtifactIcon type={type} />
       </div>
       <span className="artifact-name">{name}</span>
-      <span className="artifact-type">{typeLabel(type)}</span>
+      <span className="artifact-type">{typeLabel(type, t)}</span>
     </div>
   )
 }

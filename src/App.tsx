@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels'
+import { useTranslation } from 'react-i18next'
 import { useThemeStore } from './stores/theme-store'
 import { useLayoutStore } from './stores/layout-store'
 import { useLLMStore } from './stores/llm-store'
@@ -30,6 +31,7 @@ import { globalEventBus } from './shared/event-bus'
  * 使用 react-resizable-panels 实现可拖拽调整大小的四区布局
  */
 export default function App() {
+  const { t } = useTranslation('common')
   const initTheme = useThemeStore((s) => s.initTheme)
   const sidebarOpen = useLayoutStore(s => s.sidebarOpen)
   const aiPanelOpen = useLayoutStore(s => s.aiPanelOpen)
@@ -71,7 +73,7 @@ export default function App() {
       if (!latest) return
       const shortTitle = latest.title.replace(/^[^\s]+\s/, '')
       actionToast.workflowComplete(
-        `✅ 「${shortTitle}」已完成`,
+        `✅ 「${shortTitle}」${t('completed')}`,
         () => useLayoutStore.getState().openRightPanel('ai-output')
       )
     })
@@ -135,7 +137,7 @@ export default function App() {
               {sidebarOpen && (
                 <>
                   <Panel id="sidebar" defaultSize={20} minSize={10}>
-                    <ErrorBoundary fallbackLabel="侧边栏渲染失败">
+                    <ErrorBoundary fallbackLabel={t('sidebarRenderError')}>
                       <Sidebar />
                     </ErrorBoundary>
                   </Panel>
@@ -145,7 +147,7 @@ export default function App() {
 
               {/* 编辑区 */}
               <Panel id="editor" defaultSize={60} minSize={10}>
-                <ErrorBoundary fallbackLabel="编辑区渲染失败">
+                <ErrorBoundary fallbackLabel={t('editorRenderError')}>
                   <EditorArea onNewProject={() => useLayoutStore.getState().openNewProject()} />
                 </ErrorBoundary>
               </Panel>
@@ -155,7 +157,7 @@ export default function App() {
                 <>
                   <PanelResizeHandle />
                   <Panel id="ai-panel" defaultSize={20} minSize={10}>
-                    <ErrorBoundary fallbackLabel="AI 面板渲染失败">
+                    <ErrorBoundary fallbackLabel={t('aiPanelRenderError')}>
                       {rightView === 'ai-output' ? <AIOutputPanel /> : <AIPanel />}
                     </ErrorBoundary>
                   </Panel>

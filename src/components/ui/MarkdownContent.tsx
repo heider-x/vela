@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { Brain, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface MarkdownContentProps {
   content: string
@@ -11,6 +12,7 @@ interface MarkdownContentProps {
  * 用于 Agent 对话、AI 输出面板的正文格式化显示
  */
 export default function MarkdownContent({ content, streaming }: MarkdownContentProps) {
+  const { t } = useTranslation('editors')
   // 解析 <think> 标签：将内容拆分为 [thinking?, ...markdownSegments]
   const segments = parseThinkSegments(content)
 
@@ -18,10 +20,10 @@ export default function MarkdownContent({ content, streaming }: MarkdownContentP
     <div className="assistant-content w-full">
       {segments.map((seg, i) =>
         seg.type === 'think' ? (
-          <ThinkingBlock key={`think-${i}`} content={seg.content} streaming={streaming && i === segments.length - 1} />
+          <ThinkingBlock key={`think-${i}`} content={seg.content} streaming={streaming && i === segments.length - 1} t={t} />
         ) : (
           <React.Fragment key={`md-${i}`}>
-            {renderLines(seg.content.split('\n'))}
+            {renderLines(seg.content.split('\n'), t)}
           </React.Fragment>
         )
       )}
@@ -31,7 +33,7 @@ export default function MarkdownContent({ content, streaming }: MarkdownContentP
 }
 
 /** 渲染行列表为 React 元素 */
-function renderLines(lines: string[]): React.ReactNode {
+function renderLines(lines: string[], t: (key: string) => string): React.ReactNode {
   const elements: React.ReactNode[] = []
   let i = 0
 
@@ -48,7 +50,7 @@ function renderLines(lines: string[]): React.ReactNode {
         i++
       }
       elements.push(
-        <CodeBlock key={i} lang={lang} code={codeLines.join('\n')} />
+        <CodeBlock key={i} lang={lang} code={codeLines.join('\n')} t={t} />
       )
       i++ // 跳过结束的 ```
       continue
@@ -203,7 +205,7 @@ function renderInline(text: string): React.ReactNode {
 
 // ===== 代码块组件 =====
 
-function CodeBlock({ lang, code }: { lang: string; code: string }) {
+function CodeBlock({ lang, code, t }: { lang: string; code: string; t: (key: string) => string }) {
   const codeRef = useRef<HTMLElement>(null)
 
   const handleCopy = () => {
@@ -233,7 +235,7 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
           onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-border)')}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
-          复制
+          {t('markdownContent.copy')}
         </button>
       </div>
       {/* 代码内容 */}
@@ -268,7 +270,7 @@ export function StreamingCursor() {
 
 // ===== ThinkingBlock — 可折叠的思考过程区块 =====
 
-function ThinkingBlock({ content, streaming }: { content: string; streaming?: boolean }) {
+function ThinkingBlock({ content, streaming, t }: { content: string; streaming?: boolean; t: (key: string) => string }) {
   const [expanded, setExpanded] = useState(false)
   const trimmed = content.trim()
   if (!trimmed && !streaming) return null
@@ -291,7 +293,7 @@ function ThinkingBlock({ content, streaming }: { content: string; streaming?: bo
       >
         <Brain size={13} style={{ color: 'var(--color-accent)', opacity: 0.7 }} />
         <span className="font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-          {streaming ? '正在思考…' : '思考过程'}
+          {streaming ? t('markdownContent.thinkingStreaming') : t('markdownContent.thinking')}
         </span>
         {streaming && (
           <span

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { ipc } from '../services/ipc-client'
 import type { ModelProfile, LLMResponse, TokenUsage } from '../shared/ipc-channels'
+import i18n from '../i18n'
 
 /** 流式生成的回调 */
 interface StreamCallbacks {
@@ -119,7 +120,7 @@ export const useLLMStore = create<LLMState>()((set, get) => ({
 
   generate: async (messages, modelId, options) => {
     const mid = modelId ?? get().defaultModelId
-    if (!mid) return { success: false, content: '', error: '未配置默认模型' }
+    if (!mid) return { success: false, content: '', error: i18n.t('llm.noDefaultModel', { ns: 'stores' }) }
     return ipc.invoke('llm:generate', {
       modelId: mid,
       messages,
@@ -131,7 +132,7 @@ export const useLLMStore = create<LLMState>()((set, get) => ({
   generateStream: async (messages, callbacks, modelId, options) => {
     const mid = modelId ?? get().defaultModelId
     if (!mid) {
-      callbacks.onError?.('未配置默认模型')
+      callbacks.onError?.(i18n.t('llm.noDefaultModel', { ns: 'stores' }))
       return ''
     }
 

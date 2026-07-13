@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { ipc } from '../services/ipc-client'
 import type { ProjectData, NovelConfig, FileNode } from '../shared/ipc-channels'
 import { alertError } from '../components/ui/AlertDialog'
+import i18n from '../i18n'
 
 /**
  * 从 currentProject 中提取纯净的 ProjectData 字段，
@@ -23,7 +24,7 @@ function toPlainProjectData(p: ProjectData): ProjectData {
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
-      reject(new Error(`[${label}] 超时 (${ms}ms)`))
+      reject(new Error(i18n.t('project.timeout', { ns: 'stores', label, ms })))
     }, ms)
     promise.then(
       (v) => { clearTimeout(timer); resolve(v) },
@@ -95,7 +96,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       const result = await ipc.invoke('project:create', config)
       if (!result.success) {
         console.error('[Project] 创建失败:', result.error)
-        alertError(result.error ?? '未知错误', { title: '创建项目失败' })
+        alertError(result.error ?? i18n.t('project.unknownError', { ns: 'stores' }), { title: i18n.t('project.createFailed', { ns: 'stores' }) })
         return false
       }
       // 使用主进程返回的实际项目路径（跨平台安全，避免路径分隔符问题）
@@ -103,7 +104,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
       return get().openProject(projectDir)
     } catch (e) {
       console.error('[Project] createProject 异常:', e)
-      alertError(String(e), { title: '创建项目异常' })
+      alertError(String(e), { title: i18n.t('project.createError', { ns: 'stores' }) })
       return false
     } finally {
       set({ loading: false })
@@ -127,12 +128,12 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         return true
       }
       console.error('[Project] 打开失败:', result.error)
-      alertError(result.error ?? '未知错误', { title: '打开项目失败' })
+      alertError(result.error ?? i18n.t('project.unknownError', { ns: 'stores' }), { title: i18n.t('project.openFailed', { ns: 'stores' }) })
       return false
     } catch (e) {
       console.error('[Project] IPC 通信异常:', e)
       try { await ipc.invoke('fs:write-file', '/tmp/vela_error.log', String(e)) } catch { /* ignore error writing to log */ }
-      alertError(String(e), { title: '打开项目异常' })
+      alertError(String(e), { title: i18n.t('project.openError', { ns: 'stores' }) })
       return false
     } finally {
       set({ loading: false })

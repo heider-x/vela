@@ -12,6 +12,7 @@ export default defineConfig({
       'src/services/narrative-consistency/__tests__/narrative-consistency.test.ts',
       'src/services/narrative-consistency/__tests__/perf-regression.test.ts',
       'electron/__tests__/ipc-validation.test.ts',
+      'src/i18n/__tests__/i18n.test.ts',
     ],
     globals: false,
   },

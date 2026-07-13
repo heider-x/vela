@@ -11,6 +11,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { RefreshCw, CheckCircle2, XCircle, AlertTriangle, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/Button'
 import { useProjectStore } from '../../stores/project-store'
 import { readPostProcessStatus, type PostProcessStatus } from '../../services/workflows/workflow-utils'
@@ -37,6 +38,7 @@ export function PostProcessStatusPanel({
   onStatusLoad,
   className,
 }: PostProcessStatusPanelProps) {
+  const { t } = useTranslation('common')
   const [status, setStatus] = useState<PostProcessStatus | null>(null)
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [loading, setLoading] = useState(true)
@@ -100,7 +102,7 @@ export function PostProcessStatusPanel({
         className,
       )}>
         <CheckCircle2 size={12} />
-        <span>{status.sourceLabel} 完成（{successCount}/{totalCount}）</span>
+        <span>{status.sourceLabel} {t('completed')}（{successCount}/{totalCount}）</span>
       </div>
     )
   }
@@ -126,7 +128,7 @@ export function PostProcessStatusPanel({
               : 'text-[var(--color-warning,#f59e0b)]'
           } />
           <span className="text-[11px] font-medium text-[var(--color-text)]">
-            {status.sourceLabel} — {failedSteps.length} 个步骤失败
+            {status.sourceLabel} — {failedSteps.length} {t('failed')}
           </span>
           <span className="text-[10px] text-[var(--color-text-muted)]">
             ({successCount}/{totalCount})
@@ -157,7 +159,7 @@ export function PostProcessStatusPanel({
                 </span>
                 {step.critical && !step.ok && (
                   <span className="shrink-0 px-1 py-0.5 rounded text-[9px] bg-red-500/15 text-red-400">
-                    关键
+                    {t('completed')}
                   </span>
                 )}
               </div>
@@ -170,13 +172,13 @@ export function PostProcessStatusPanel({
                 ) : (
                   <>
                     <span className="text-[10px] text-[var(--color-error,#ef4444)] max-w-[120px] truncate" title={step.error}>
-                      {step.error || '失败'}
+                      {step.error || t('failed')}
                     </span>
                     {onRetry && (
                       <button
                         onClick={(e) => { e.stopPropagation(); onRetry(key) }}
                         className="p-0.5 rounded hover:bg-[var(--color-hover)] transition-colors cursor-pointer"
-                        title="重试此步骤"
+                        title={t('retry')}
                       >
                         <RefreshCw size={11} className="text-[var(--color-accent)]" />
                       </button>
@@ -192,7 +194,7 @@ export function PostProcessStatusPanel({
             <div className="flex items-center gap-1 text-[10px] text-[var(--color-text-muted)]">
               <Clock size={10} />
               <span>
-                上次尝试 {new Date(status.updatedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                {t('lastAttempt')} {new Date(status.updatedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
             {onRetry && (
@@ -203,7 +205,7 @@ export function PostProcessStatusPanel({
                 className="gap-1"
               >
                 <RefreshCw size={10} />
-                重试失败步骤
+                {t('retry')}
               </Button>
             )}
           </div>

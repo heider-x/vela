@@ -7,6 +7,7 @@ import { skillRegistry } from '../services/agent/skill-registry'
 import { parseSlashCommand, parseMentions, mentionsToToolCalls } from '../services/agent/intent-router'
 import { toolRegistry } from '../services/agent/tool-registry'
 import type { ToolArtifact } from '../services/agent/tool-registry'
+import i18n from '../i18n'
 
 // ===== 类型定义 =====
 
@@ -105,27 +106,28 @@ const generateTitle = (content: string): string => {
 const generateHelpText = (): string => {
   const toolCount = toolRegistry.listAll().length
   const skillCount = skillRegistry.listAll().length
+  const t = (key: string) => i18n.t(key, { ns: 'stores' })
   const lines: string[] = [
-    '## Vela AI 助手 — 帮助',
+    t('agent.helpTitle'),
     '',
-    '### 可用命令',
-    '- `/clear` — 清空当前对话',
-    '- `/new` — 开始新对话',
-    '- `/help` — 显示此帮助信息',
-    '- `/status` — 查看项目状态',
+    t('agent.availableCommands'),
+    '- ' + t('agent.cmdClear'),
+    '- ' + t('agent.cmdNew'),
+    '- ' + t('agent.cmdHelp'),
+    '- ' + t('agent.cmdStatus'),
     '',
-    '### @ 提及',
-    '输入 `@` 可引用项目上下文：故事架构、角色卡、蓝图、知识库等。',
+    t('agent.mentions'),
+    t('agent.mentionsDesc'),
     '',
-    '### 可用工具',
-    '当前已加载 **' + toolCount + '** 个工具、**' + skillCount + '** 个 Skill。',
+    t('agent.availableTools'),
+    'Current: **' + toolCount + '** tools, **' + skillCount + '** skills.',
     '',
-    '### Skill 命令',
+    t('agent.skillCommands'),
   ]
   for (const s of skillRegistry.listAll()) {
     lines.push('- `/' + s.metadata.name + '` — ' + s.metadata.description)
   }
-  lines.push('', '有任何创作问题，直接问我即可！')
+  lines.push('', t('agent.helpFooter'))
   return lines.join('\n')
 }
 
@@ -169,7 +171,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
     const llmStore = useLLMStore.getState()
     const newConv: AgentConversation = {
       id: genId(),
-      title: '新对话',
+      title: i18n.t('agent.newConversation', { ns: 'stores' }),
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -362,7 +364,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
 
       if (!modelId) {
         updateAssistantMsg(m => ({
-          ...m, content: '⚠️ 请先在设置中配置 AI 模型。', streaming: false,
+          ...m, content: i18n.t('agent.needModel', { ns: 'stores' }), streaming: false,
         }))
         set({ generating: false })
         return
@@ -391,7 +393,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
           }
         }
         if (prefetchResults.length > 0) {
-          enrichedUserMessage = `${enrichedUserMessage}\n\n---\n以下是用户 @ 引用的上下文数据（已自动获取）：\n\n${prefetchResults.join('\n\n---\n\n')}`
+          enrichedUserMessage = `${enrichedUserMessage}\n\n---\n${i18n.t('agent.contextReference', { ns: 'stores' })}\n\n${prefetchResults.join('\n\n---\n\n')}`
         }
       }
 
@@ -498,7 +500,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
           onError: (error) => {
             updateAssistantMsg(m => ({
               ...m,
-              content: `❌ 生成失败：${error}`,
+              content: i18n.t('agent.generationFailed', { ns: 'stores', error }),
               streaming: false,
             }))
             set({ generating: false, activeRequestId: null })
@@ -509,7 +511,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
     } catch (error) {
       updateAssistantMsg(m => ({
         ...m,
-        content: `❌ 发生异常：${String(error)}`,
+        content: i18n.t('agent.generationError', { ns: 'stores', error: String(error) }),
         streaming: false,
       }))
       set({ generating: false, activeRequestId: null })
@@ -542,7 +544,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
       conversations: state.conversations.map(c => ({
         ...c,
         messages: c.messages.map(m =>
-          m.streaming ? { ...m, streaming: false, content: m.content + '\n\n_（已停止生成）_' } : m
+          m.streaming ? { ...m, streaming: false, content: m.content + '\n\n_' + i18n.t('agent.generationStopped', { ns: 'stores' }) + '_' } : m
         ),
       })),
     }))

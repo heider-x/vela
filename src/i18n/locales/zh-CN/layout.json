@@ -1,0 +1,47 @@
+{
+  "titleBar": {
+    "unsavedChanges": "有未保存的修改",
+    "zoomOut": "缩小 (⌘+-)",
+    "zoomOutCtrl": "缩小 (Ctrl+-)",
+    "resetZoom": "重置缩放 (⌘+0)",
+    "resetZoomCtrl": "重置缩放 (Ctrl+0)",
+    "zoomIn": "放大 (⌘+=)",
+    "zoomInCtrl": "放大 (Ctrl+=)",
+    "settings": "设置",
+    "themeGalaxy": "星空",
+    "themePaper": "纸质",
+    "themeDark": "黑夜",
+    "themeLight": "浅色",
+    "themeLabel": "主题: {{theme}}"
+  },
+  "statusBar": {
+    "supportAuthor": "❤️ 支持作者",
+    "sponsorTooltip": "商业合作与赞助支持",
+    "currentModel": "当前模型：{{name}}",
+    "clickToConfigModel": "点击配置模型",
+    "noModel": "未配置模型",
+    "taskComplete": " 完成",
+    "tasksRunning": "{{count}}个任务运行中...",
+    "viewTaskProgress": "点击查看任务进度",
+    "viewAIDetails": "点击查看 AI 输出详情",
+    "tasksLabel": "任务"
+  },
+  "activityBar": {
+    "home": "主页",
+    "project": "项目",
+    "knowledge": "知识库",
+    "characters": "角色",
+    "settings": "设置",
+    "agent": "AI 助手",
+    "projectManagement": "项目管理",
+    "currentProject": "当前项目",
+    "newProject": "新建项目",
+    "openProject": "打开项目...",
+    "closeProject": "关闭当前项目",
+    "recentProjects": "最近项目",
+    "noOtherRecent": "暂无其他最近项目",
+    "closeProjectTitle": "关闭项目",
+    "discardAndClose": "放弃并关闭",
+    "unsavedConfirm": "以下文件有未保存的修改：\n{{names}}\n\n确定要关闭项目吗？未保存的内容将丢失。"
+  }
+}

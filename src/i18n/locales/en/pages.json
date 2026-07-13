@@ -1,0 +1,50 @@
+{
+  "welcome": {
+    "title": "Welcome to Vela",
+    "subtitle": "AI-powered novel writing IDE",
+    "newProject": "New Project",
+    "newProjectDesc": "Start a new novel",
+    "openProject": "Open Project",
+    "openProjectDesc": "Open an existing Vela project",
+    "importNovel": "Import Novel",
+    "importNovelDesc": "Import an existing work to continue",
+    "recentProjects": "Recent Projects",
+    "footer": "Vela v0.1.0 · 7-stage AI-driven writing pipeline · Local-first data security"
+  },
+  "knowledge": {
+    "title": "Knowledge Base Overview",
+    "noDocuments": "No documents yet",
+    "importPrompt": "Import documents to start using the knowledge base"
+  },
+  "knowledgeOverview": {
+    "title": "Knowledge Base",
+    "description": "Local vector database based on LanceDB. Auto-indexed after finalization, providing semantic search context for AI writing.",
+    "openProjectFirst": "Please open a project first",
+    "docCount": "Documents",
+    "chunkCount": "Chunks",
+    "engine": "Engine",
+    "searchMode": "Search Mode",
+    "ftsVector": "FTS+Vector",
+    "ftsOnly": "FTS",
+    "hybrid": "Hybrid",
+    "basic": "Basic",
+    "hybridSearch": "Hybrid Search",
+    "bm25Search": "BM25 Full-text Search",
+    "indexUpgrade": "Vector index upgrade pending",
+    "vectorlessCount": "{{count}} text chunks don't have vector embeddings yet. Upgrade to enable enhanced semantic search.",
+    "rebuilding": "Rebuilding...",
+    "rebuildIndex": "Rebuild Vector Index",
+    "rebuildSuccess": "Vector index rebuilt: {{processed}} chunks processed{{failed}}",
+    "failedCount": ", {{count}} chunks failed",
+    "rebuildFailed": "Vector backfill failed",
+    "semanticSearch": "Semantic Search",
+    "hybridHint": "BM25 + Vector neighbor fusion",
+    "basicHint": "Configure Embedding model to automatically upgrade to hybrid search",
+    "searchPlaceholder": "Enter query, e.g.: protagonist's power system, worldbuilding core settings...",
+    "search": "Search",
+    "searchResults": "Search Results ({{count}})",
+    "clear": "Clear",
+    "fullTextMatch": "Full-text match",
+    "similarity": "Similarity {{score}}%"
+  }
+}

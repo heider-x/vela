@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { DiffEditor, type DiffOnMount } from '@monaco-editor/react'
 import { Check, X, Columns2, AlignJustify } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '../../stores/theme-store'
 
 interface MonacoDiffViewerProps {
@@ -26,11 +27,12 @@ interface MonacoDiffViewerProps {
 export default function MonacoDiffViewer({
   original,
   modified,
-  originalLabel = '原稿',
-  modifiedLabel = '修稿',
+  originalLabel,
+  modifiedLabel,
   onAccept,
   onReject,
 }: MonacoDiffViewerProps) {
+  const { t } = useTranslation('editors')
   const [inline, setInline] = useState(false)
   const theme = useThemeStore((s) => s.theme)
   const diffEditorRef = useRef<Parameters<DiffOnMount>[0] | null>(null)
@@ -77,10 +79,10 @@ export default function MonacoDiffViewer({
       >
         <div className="flex items-center gap-3">
           <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
-            文本对比
+            {t('diffViewer.title')}
           </span>
           <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            {originalLabel} → {modifiedLabel}
+            {originalLabel ?? t('diffViewer.original')} → {modifiedLabel ?? t('diffViewer.revised')}
           </span>
           <span className="text-xs">
             <span style={{ color: 'var(--color-success)' }}>+{stats.additions}</span>
@@ -98,10 +100,10 @@ export default function MonacoDiffViewer({
               color: 'var(--color-text-secondary)',
               border: '1px solid var(--color-border)',
             }}
-            title={inline ? '切换并排视图' : '切换内联视图'}
+            title={inline ? t('diffViewer.toggleSideBySide') : t('diffViewer.toggleInline')}
           >
             {inline ? <Columns2 size={12} /> : <AlignJustify size={12} />}
-            {inline ? '并排' : '内联'}
+            {inline ? t('diffViewer.sideBySideShort') : t('diffViewer.inlineShort')}
           </button>
           {/* 操作按钮 */}
           {onReject && (
@@ -110,7 +112,7 @@ export default function MonacoDiffViewer({
               className="flex items-center gap-1 px-2 py-0.5 rounded text-xs"
               style={{ color: 'var(--color-error)', border: '1px solid var(--color-border)' }}
             >
-              <X size={12} /> 拒绝
+              <X size={12} /> {t('diffViewer.reject')}
             </button>
           )}
           {onAccept && (
@@ -122,7 +124,7 @@ export default function MonacoDiffViewer({
                 color: '#fff',
               }}
             >
-              <Check size={12} /> 接受修改
+              <Check size={12} /> {t('diffViewer.acceptChanges')}
             </button>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { ipc } from '../services/ipc-client'
 import type { CharacterData, CharacterStateData } from '../../electron/repositories/character-repository'
+import i18n from '../i18n'
 
 export type CharacterCurrentState = CharacterStateData
 export type CharacterCard = CharacterData
@@ -17,10 +18,10 @@ export const EMPTY_STATE: CharacterCurrentState = {
 }
 
 export const ROLE_LABELS: Record<CharacterCard['role'], string> = {
-  protagonist: '🌟 主角',
-  antagonist: '🔥 反派',
-  supporting: '👥 配角',
-  minor: '📌 龙套',
+  protagonist: i18n.t('characters.protagonist', { ns: 'panels' }),
+  antagonist: i18n.t('characters.antagonist', { ns: 'panels' }),
+  supporting: i18n.t('characters.supporting', { ns: 'panels' }),
+  minor: i18n.t('characters.minor', { ns: 'panels' }),
 }
 
 interface CharacterState {
@@ -77,7 +78,7 @@ export const useCharacterStore = create<CharacterState>()((set, get) => ({
   addCharacter: () => {
     const newCard: CharacterCard = {
       ...EMPTY_CARD,
-      name: `新角色_${Math.random().toString(36).slice(2, 6)}`,
+      name: i18n.t('characters.newCharacter', { ns: 'panels' }) + Math.random().toString(36).slice(2, 6),
     }
     set((s) => ({
       characters: [...s.characters, newCard],

@@ -3,12 +3,14 @@
  */
 
 import { FolderOpen } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '../../../stores/project-store'
 import { useLayoutStore } from '../../../stores/layout-store'
 import { ipc } from '../../../services/ipc-client'
 import { Button } from '../../ui/Button'
 
 export default function HomeSidebarPanel() {
+  const { t } = useTranslation('pages')
   const currentProject = useProjectStore(s => s.currentProject)
   const recentProjects = useProjectStore(s => s.recentProjects)
   const openProject = useProjectStore(s => s.openProject)
@@ -31,7 +33,7 @@ export default function HomeSidebarPanel() {
                 {currentProject.name}
               </p>
               <p className="text-[0.7rem] truncate mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                当前项目
+                {t('welcome.openProject')}
               </p>
             </div>
           </div>
@@ -45,7 +47,7 @@ export default function HomeSidebarPanel() {
           className="w-full"
           onClick={() => useLayoutStore.getState().openNewProject()}
         >
-          新建项目
+          {t('welcome.newProject')}
         </Button>
         <Button
           variant="outline"
@@ -57,7 +59,7 @@ export default function HomeSidebarPanel() {
             }
           }}
         >
-          打开项目
+          {t('welcome.openProject')}
         </Button>
       </div>
 
@@ -69,7 +71,7 @@ export default function HomeSidebarPanel() {
             style={{ borderTop: '1px solid var(--color-border)' }}
           >
             <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
-              最近项目
+              {t('welcome.recentProjects')}
             </span>
           </div>
           <div className="space-y-0.5">
@@ -98,7 +100,7 @@ export default function HomeSidebarPanel() {
               ))}
             {recentProjects.filter(p => p.path !== currentProject?.path).length === 0 && (
               <p className="text-xs px-2 py-1 opacity-50" style={{ color: 'var(--color-text-muted)' }}>
-                暂无其他最近项目
+                No other recent projects
               </p>
             )}
           </div>

@@ -1,0 +1,45 @@
+{
+  "workflow": {
+    "started": "🚀 工作流「{{title}}」已启动",
+    "cancelled": "⏹ 工作流「{{title}}」已取消",
+    "stepRunning": "▶ [{{title}}] 执行步骤: {{step}}",
+    "stepComplete": "✅ [{{title}}] 步骤完成: {{step}}",
+    "waitingConfirm": "⏸ [{{title}}] 等待确认继续第 {{index}} 步：{{nextStep}}",
+    "stepFailed": "❌ [{{title}}] 步骤失败: {{step}} — {{error}}",
+    "completed": "🎉 工作流「{{title}}」已完成",
+    "onCompleteFailed": "⚠️ onComplete 执行失败: {{error}}",
+    "allCancelled": "⏹ 所有工作流已取消"
+  },
+  "project": {
+    "timeout": "[{{label}}] 超时 ({{ms}}ms)",
+    "unknownError": "未知错误",
+    "createFailed": "创建项目失败",
+    "createError": "创建项目异常",
+    "openFailed": "打开项目失败",
+    "openError": "打开项目异常"
+  },
+  "llm": {
+    "noDefaultModel": "未配置默认模型",
+    "connectionFailed": "连接失败"
+  },
+  "agentEngine": {
+    "timeout": "工具执行超时（{{seconds}}s）",
+    "workflowCancelled": "工作流已取消",
+    "streamFailed": "流式生成失败",
+    "noModel": "未配置默认 AI 模型"
+  },
+  "guard": {
+    "openProjectFirst": "请先打开或新建一个项目。",
+    "fillNovelConfig": "请先填写「小说配置」中的核心大纲或主角人设，AI 才能据此生成故事架构。\n\n当前类型：{{genre}}",
+    "premiseNotGenerated": "「故事前提」尚未生成，它是章节蓝图的基础。\n\n请先在「故事架构」中点击「AI 生成架构」，生成故事前提后再来生成章节蓝图。",
+    "missingArchitecture": "注意：以下架构信息尚未生成，蓝图质量可能受影响：\n{{items}}\n\n建议先生成完整架构，或继续使用现有内容。",
+    "noCharacterCards": "角色卡不存在（数据库中没有角色记录）。\n\n请先在「故事架构」中生成角色图谱（会自动创建角色卡），或在「角色管理」中手动创建角色卡。",
+    "noBlueprints": "尚未生成章节蓝图（数据库为空）。\n\n请先在「章节蓝图」中点击「AI 生成蓝图」，让 AI 规划每章内容后，再回来写稿。",
+    "prevChapterNotFinalized": "上下文缺失：第 {{chapter}} 章尚未定稿！\n\n为了保证 AI 写稿时能读取到连贯的上下文（前章结尾和剧情要点），请必须先前往草稿箱完成第 {{chapter}} 章的定稿操作。",
+    "prevPostProcessIncomplete": "第 {{chapter}} 章的定稿后处理未完成！\n\n以下关键步骤失败：\n{{steps}}\n\n请先在草稿箱中点击「修复定稿」按钮补全数据，否则后续章节的 AI 上下文将不完整。",
+    "characterCannotRegenerate": "已有章节蓝图，角色卡不可重新生成。\n\n蓝图生成已依赖角色数据，重新生成角色卡会导致现有蓝图和已写章节全部失效。\n如需修改角色，请手动编辑现有角色卡。",
+    "noFinalizedChapters": "尚无已定稿章节，无法执行修复操作。",
+    "canOnlyRepairLatest": "只允许修复最新定稿章节（第 {{chapter}} 章）的后处理。\n\n回溯修复第 {{target}} 章会破坏角色状态的线性演化链。",
+    "characterCardsMissingForWrite": "角色卡不存在（数据库中没有角色记录）。\n\nAI 写稿需要角色状态作为上下文，请先在「故事架构」中生成角色图谱，或在「角色管理」中手动创建角色卡。"
+  }
+}

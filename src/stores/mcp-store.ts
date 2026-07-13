@@ -8,6 +8,7 @@
 import { create } from 'zustand'
 import { ipc } from '../services/ipc-client'
 import { toolRegistry } from '../services/agent/tool-registry'
+import i18n from '../i18n'
 import type {
   MCPServerConfig,
   MCPConnectionStatus,
@@ -117,7 +118,7 @@ export const useMCPStore = create<MCPState>()((set, get) => ({
   connectServer: async (config) => {
     const result = await ipc.invoke('mcp:connect', config as unknown as Record<string, unknown>)
     if (!result.success) {
-      set({ error: result.error ?? '连接失败' })
+      set({ error: result.error ?? i18n.t('llm.connectionFailed', { ns: 'stores' }) })
       return
     }
     await get().refreshStatus()

@@ -14,6 +14,7 @@ import { useLayoutStore } from '../../../stores/layout-store'
 import { ipc } from '../../../services/ipc-client'
 import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/EmptyState'
+import { useTranslation } from 'react-i18next'
 
 
 
@@ -25,6 +26,7 @@ import DraftBoxGroup from './DraftBoxGroup'
 import ManuscriptGroup from './ManuscriptGroup'
 
 export default function ProjectTree() {
+  const { t } = useTranslation('panels')
   const currentProject = useProjectStore(s => s.currentProject)
 
   // refreshFileTree / loadAllDrafts 在 refreshAll 内通过 getState() 调用
@@ -80,7 +82,7 @@ export default function ProjectTree() {
     return (
       <EmptyState
         icon={<span className="text-4xl opacity-60" style={{ color: 'var(--color-text-muted)' }}><FolderOpen size={36} /></span>}
-        message="未打开项目"
+        message={t('projectTree.noProject')}
         className="p-4 pb-[15vh]"
         opacity={1}
       >
@@ -88,7 +90,7 @@ export default function ProjectTree() {
           className="text-xs text-center mt-0.5"
           style={{ color: 'var(--color-text-muted)' }}
         >
-          新建或打开一个小说项目开始创作
+          {t('projectTree.noProjectDesc')}
         </span>
         {/* 操作按钮 */}
         <div className="flex flex-col gap-2 mt-3 w-full">
@@ -97,7 +99,7 @@ export default function ProjectTree() {
             className="w-full"
             onClick={() => useLayoutStore.getState().openNewProject()}
           >
-            新建项目
+            {t('projectTree.newProject')}
           </Button>
           <Button
             variant="outline"
@@ -109,7 +111,7 @@ export default function ProjectTree() {
               }
             }}
           >
-            打开项目
+            {t('projectTree.openProject')}
           </Button>
         </div>
       </EmptyState>
@@ -142,7 +144,7 @@ export default function ProjectTree() {
         <span className="font-semibold text-xs truncate" style={{ color: 'var(--color-text)' }}>
           {currentProject.name}
         </span>
-        <Button variant="ghost" size="icon" onClick={() => refreshAll()} title="刷新">
+        <Button variant="ghost" size="icon" onClick={() => refreshAll()} title={t('common.refresh')}>
           <RefreshCw size={12} />
         </Button>
       </div>
@@ -150,9 +152,9 @@ export default function ProjectTree() {
       {/* 1. 小说配置 */}
       <LeafItem
         iconName="book-open"
-        label="小说配置"
-        desc="基础参数与写作要求"
-        badge={configDone ? '已完成' : '待配置'}
+        label={t('projectTree.novelConfig')}
+        desc={t('projectTree.configDesc')}
+        badge={configDone ? t('projectTree.configDone') : t('projectTree.pendingConfig')}
         badgeDone={configDone}
         onClick={() => {
           const state = useEditorStore.getState()
@@ -160,19 +162,19 @@ export default function ProjectTree() {
           if (configTab) {
             state.setActiveTab(configTab.id)
           } else {
-            state.openFile({ id: 'config', name: '小说配置', type: 'config' })
+            state.openFile({ id: 'config', name: t('projectTree.novelConfig'), type: 'config' })
           }
         }}
         onContextMenu={e => showSidebarMenu([
           {
             key: 'open',
-            label: '打开小说配置',
+            label: t('projectTree.openNovelConfig'),
             icon: <FolderOpen size={13} />,
             onClick: () => {
               const state = useEditorStore.getState()
               const configTab = state.tabs.find(t => t.type === 'config')
               if (configTab) state.setActiveTab(configTab.id)
-              else state.openFile({ id: 'config', name: '小说配置', type: 'config' })
+              else state.openFile({ id: 'config', name: t('projectTree.novelConfig'), type: 'config' })
             },
           },
         ], e)}
@@ -184,9 +186,9 @@ export default function ProjectTree() {
       {/* 3. 章节蓝图 — 点击打开编辑器页 */}
       <LeafItem
         iconName="layout-list"
-        label="章节蓝图"
-        desc="AI 生成的章节目录，可编辑"
-        badge={blueprintCount > 0 ? `${blueprintCount}/${nc.totalChapters} 章` : '待生成'}
+        label={t('projectTree.chapterBlueprint')}
+        desc={t('projectTree.blueprintDesc')}
+        badge={blueprintCount > 0 ? `${blueprintCount}/${nc.totalChapters} ${t('common.chapters', { ns: 'common' })}` : t('projectTree.pendingGeneration')}
         badgeColor={
           blueprintCount >= nc.totalChapters
             ? 'var(--color-success)'
@@ -195,11 +197,11 @@ export default function ProjectTree() {
               : undefined
         }
         badgeDone={blueprintCount >= nc.totalChapters}
-        onClick={() => openBuiltinEditor('chapter-card-editor', '章节蓝图', 'chapter-card')}
+        onClick={() => openBuiltinEditor('chapter-card-editor', t('projectTree.chapterBlueprint'), 'chapter-card')}
         onContextMenu={e => showSidebarMenu([
           {
             key: 'open',
-            label: '打开章节蓝图',
+            label: t('projectTree.openChapterBlueprint'),
             icon: <FolderOpen size={13} />,
             onClick: () => openBuiltinEditor('chapter-card-editor', '章节蓝图', 'chapter-card'),
           },
@@ -225,6 +227,7 @@ function WorldBuildingGroup({
   archStatus: Record<string, boolean>
   archDone: number
 }) {
+  const { t } = useTranslation('panels')
   const [open, setOpen] = useState(true)
 
   const allDone = archDone === ARCH_FILES.length
@@ -235,8 +238,8 @@ function WorldBuildingGroup({
       <div
         className="tree-item gap-1.5 cursor-pointer select-none"
         style={{ paddingLeft: 10 }}
-        onClick={() => openBuiltinEditor('world-building-editor', '故事架构', 'world-building')}
-        title="打开故事架构编辑器（可生成架构文档）"
+        onClick={() => openBuiltinEditor('world-building-editor', t('projectTree.storyArch'), 'world-building')}
+        title={t('projectTree.archEditorTip')}
       >
         <span
           style={{ width: 12, flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'pointer' }}
@@ -248,7 +251,7 @@ function WorldBuildingGroup({
           }
         </span>
         <FolderTree size={14} style={{ color: 'var(--color-text-muted)' }} />
-        <span className="text-sm font-medium flex-1 min-w-0 truncate" style={{ color: 'var(--color-text)' }}>故事架构</span>
+        <span className="text-sm font-medium flex-1 min-w-0 truncate" style={{ color: 'var(--color-text)' }}>{t('projectTree.storyArch')}</span>
         {/* 进度徽章 */}
         <span
           className="text-[0.7rem] flex-shrink-0 ml-1"
@@ -295,6 +298,7 @@ function ArchFileRow({
   filePath: string
   isGenerated: boolean
 }) {
+  const { t } = useTranslation('panels')
   return (
     <div
       className="tree-item gap-1.5 cursor-pointer select-none"
@@ -303,14 +307,14 @@ function ArchFileRow({
       onContextMenu={e => showSidebarMenu([
         {
           key: 'open',
-          label: '打开文件',
+          label: t('projectTree.openFile'),
           icon: <FolderOpen size={13} />,
           onClick: () => openArchFile(filePath, `${f.label}`),
         },
         { key: 'div1', type: 'divider' as const },
         {
           key: 'copy-path',
-          label: '复制文件路径',
+          label: t('projectTree.copyFilePath'),
           icon: <Copy size={13} />,
           onClick: () => navigator.clipboard.writeText(filePath).catch(() => { }),
         },
@@ -330,7 +334,7 @@ function ArchFileRow({
       </span>
       {!isGenerated && (
         <span className="text-[0.7rem] flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>
-          待生成
+          {t('projectTree.pendingGeneration')}
         </span>
       )}
     </div>

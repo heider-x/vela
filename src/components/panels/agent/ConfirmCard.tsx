@@ -5,6 +5,7 @@
  * 用户可以批准或拒绝操作。
  */
 import { ShieldAlert } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { ToolCallInfo } from '../../../services/agent/agent-engine'
 import { useAgentStore } from '../../../stores/agent-store'
 
@@ -13,18 +14,19 @@ interface Props {
 }
 
 export default function ConfirmCard({ toolCall }: Props) {
+  const { t } = useTranslation('panels')
   const { resolveToolConfirmation } = useAgentStore()
   const { id, toolName, arguments: args } = toolCall
 
   // 生成操作描述
-  const description = generateDescription(toolName, args)
+  const description = generateDescription(toolName, args, t)
 
   return (
     <div className="confirm-card">
       {/* 头部 */}
       <div className="confirm-card-header">
         <ShieldAlert size={14} />
-        <span>需要确认操作</span>
+        <span>{t('agent.confirmAction')}</span>
       </div>
 
       {/* 内容 */}
@@ -56,13 +58,13 @@ export default function ConfirmCard({ toolCall }: Props) {
           className="confirm-card-btn reject"
           onClick={() => resolveToolConfirmation(id, false)}
         >
-          拒绝
+          {t('agent.reject')}
         </button>
         <button
           className="confirm-card-btn approve"
           onClick={() => resolveToolConfirmation(id, true)}
         >
-          批准执行
+          {t('agent.approveExecute')}
         </button>
       </div>
     </div>
@@ -70,17 +72,17 @@ export default function ConfirmCard({ toolCall }: Props) {
 }
 
 /** 根据 Tool 名称生成人类可读的操作描述 */
-function generateDescription(toolName: string, args: Record<string, unknown>): string {
+function generateDescription(toolName: string, args: Record<string, unknown>, t: (key: string, options?: Record<string, unknown>) => string): string {
   switch (toolName) {
     case 'write_file':
-      return `将写入文件：${args.file_path ?? '未知路径'}`
+      return t('agent.willWriteFile', { path: args.file_path ?? t('agent.unknownPath') })
     case 'open_editor':
-      return `将在编辑器中打开：${args.file_path ?? '未知文件'}`
+      return t('agent.willOpenInEditor', { path: args.file_path ?? t('agent.unknownFile') })
     case 'start_workflow':
-      return `将启动工作流：${args.workflow ?? '未知工作流'}${args.chapter_number ? `（第 ${args.chapter_number} 章）` : ''}`
+      return t('agent.willStartWorkflow', { workflow: args.workflow ?? t('agent.unknownWorkflow') }) + (args.chapter_number ? t('agent.chapterNumber', { chapter: args.chapter_number }) : '')
     case 'update_config':
-      return `将更新项目配置：${args.field ?? '未知字段'}`
+      return t('agent.willUpdateConfig', { field: args.field ?? t('agent.unknownField') })
     default:
-      return `将执行操作：${toolName}`
+      return t('agent.willExecuteAction', { tool: toolName })
   }
 }

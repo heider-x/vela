@@ -1,0 +1,47 @@
+{
+  "titleBar": {
+    "unsavedChanges": "Несохранённые изменения",
+    "zoomOut": "Уменьшить (⌘+-)",
+    "zoomOutCtrl": "Уменьшить (Ctrl+-)",
+    "resetZoom": "Сбросить масштаб (⌘+0)",
+    "resetZoomCtrl": "Сбросить масштаб (Ctrl+0)",
+    "zoomIn": "Увеличить (⌘+=)",
+    "zoomInCtrl": "Увеличить (Ctrl+=)",
+    "settings": "Настройки",
+    "themeGalaxy": "Галактика",
+    "themePaper": "Бумага",
+    "themeDark": "Тёмная",
+    "themeLight": "Светлая",
+    "themeLabel": "Тема: {{theme}}"
+  },
+  "statusBar": {
+    "supportAuthor": "❤️ Поддержать автора",
+    "sponsorTooltip": "Бизнес и спонсорство",
+    "currentModel": "Текущая модель: {{name}}",
+    "clickToConfigModel": "Нажмите для настройки модели",
+    "noModel": "Модель не настроена",
+    "taskComplete": " Завершено",
+    "tasksRunning": "{{count}} задач(и) выполняется...",
+    "viewTaskProgress": "Нажмите для просмотра прогресса задачи",
+    "viewAIDetails": "Нажмите для просмотра деталей вывода ИИ",
+    "tasksLabel": "Задачи"
+  },
+  "activityBar": {
+    "home": "Главная",
+    "project": "Проект",
+    "knowledge": "База знаний",
+    "characters": "Персонажи",
+    "settings": "Настройки",
+    "agent": "ИИ-ассистент",
+    "projectManagement": "Управление проектами",
+    "currentProject": "Текущий проект",
+    "newProject": "Новый проект",
+    "openProject": "Открыть проект...",
+    "closeProject": "Закрыть текущий проект",
+    "recentProjects": "Недавние проекты",
+    "noOtherRecent": "Других недавних проектов нет",
+    "closeProjectTitle": "Закрыть проект",
+    "discardAndClose": "Отбросить и закрыть",
+    "unsavedConfirm": "Следующие файлы имеют несохранённые изменения:\n{{names}}\n\nВы уверены, что хотите закрыть проект? Несохранённые изменения будут потеряны."
+  }
+}

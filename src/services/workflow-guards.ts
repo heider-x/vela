@@ -10,8 +10,11 @@
 
 import { useProjectStore } from '../stores/project-store'
 import { ipc } from './ipc-client'
+import i18n from '../i18n'
 
 import { readPostProcessStatus, getChapterFinalizeScope, getFailedStepLabels } from './workflows/workflow-utils'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'stores', ...opts })
 
 export interface GuardResult {
   ok: boolean
@@ -30,7 +33,7 @@ export interface GuardResult {
 export function guardArchitectureGeneration(): GuardResult {
   const project = useProjectStore.getState().currentProject
   if (!project) {
-    return { ok: false, message: '请先打开或新建一个项目。' }
+    return { ok: false, message: t('guard.openProjectFirst') }
   }
 
   const { coreOutline, protagonistProfile, worldSetting, genre } = project.novelConfig
@@ -45,7 +48,7 @@ export function guardArchitectureGeneration(): GuardResult {
   if (!hasConfig) {
     return {
       ok: false,
-      message: `请先填写「小说配置」中的核心大纲或主角人设，AI 才能据此生成故事架构。\n\n当前类型：${genre || '未设置'}`,
+      message: t('guard.fillNovelConfig', { genre: genre || 'Not set' }),
       action: 'open-config',
     }
   }
@@ -63,7 +66,7 @@ export function guardArchitectureGeneration(): GuardResult {
 export async function guardDirectoryGeneration(): Promise<GuardResult> {
   const project = useProjectStore.getState().currentProject
   if (!project) {
-    return { ok: false, message: '请先打开或新建一个项目。' }
+    return { ok: false, message: t('guard.openProjectFirst') }
   }
 
   const core = await ipc.invoke('db:project-core-get')
@@ -71,16 +74,16 @@ export async function guardDirectoryGeneration(): Promise<GuardResult> {
 
   const checkHasContent = (text: string | null | undefined) => text && text.length > 50 && !text.includes('> 待生成')
 
-  if (!core || !checkHasContent(core.premise)) missing.push('故事前提')
-  if (!core || !checkHasContent(core.charactersArch)) missing.push('角色图谱')
-  if (!core || !checkHasContent(core.worldbuilding)) missing.push('世界观')
-  if (!core || !checkHasContent(core.synopsis)) missing.push('情节大纲')
+  if (!core || !checkHasContent(core.premise)) missing.push(t('sidebar.premise', { ns: 'panels' }))
+  if (!core || !checkHasContent(core.charactersArch)) missing.push(t('sidebar.characterMap', { ns: 'panels' }))
+  if (!core || !checkHasContent(core.worldbuilding)) missing.push(t('sidebar.worldbuilding', { ns: 'panels' }))
+  if (!core || !checkHasContent(core.synopsis)) missing.push(t('sidebar.synopsis', { ns: 'panels' }))
 
   // 故事前提是必须的（第一个大块）
-  if (missing.includes('故事前提')) {
+  if (missing.includes(t('sidebar.premise', { ns: 'panels' }))) {
     return {
       ok: false,
-      message: `「故事前提」尚未生成，它是章节蓝图的基础。\n\n请先在「故事架构」中点击「AI 生成架构」，生成故事前提后再来生成章节蓝图。`,
+      message: t('guard.premiseNotGenerated'),
       action: 'open-world-building',
     }
   }
@@ -89,7 +92,7 @@ export async function guardDirectoryGeneration(): Promise<GuardResult> {
   if (missing.length > 0) {
     return {
       ok: true, // 允许继续，但携带警告信息
-      message: `注意：以下架构信息尚未生成，蓝图质量可能受影响：\n${missing.map(m => `• ${m}`).join('\n')}\n\n建议先生成完整架构，或继续使用现有内容。`,
+      message: t('guard.missingArchitecture', { items: missing.map(m => `• ${m}`).join('\n') }),
     }
   }
 
@@ -98,7 +101,7 @@ export async function guardDirectoryGeneration(): Promise<GuardResult> {
   if (chars.length === 0) {
     return {
       ok: false,
-      message: `角色卡不存在（数据库中没有角色记录）。\n\n请先在「故事架构」中生成角色图谱（会自动创建角色卡），或在「角色管理」中手动创建角色卡。`,
+      message: t('guard.noCharacterCards'),
     }
   }
 
@@ -115,14 +118,14 @@ export async function guardDirectoryGeneration(): Promise<GuardResult> {
 export async function guardChapterWriting(targetChapterNumber?: number): Promise<GuardResult> {
   const project = useProjectStore.getState().currentProject
   if (!project) {
-    return { ok: false, message: '请先打开或新建一个项目。' }
+    return { ok: false, message: t('guard.openProjectFirst') }
   }
 
   const blueprints = await ipc.invoke('db:blueprint-get-all')
   if (blueprints.length === 0) {
     return {
       ok: false,
-      message: `尚未生成章节蓝图（数据库为空）。\n\n请先在「章节蓝图」中点击「AI 生成蓝图」，让 AI 规划每章内容后，再回来写稿。`,
+      message: t('guard.noBlueprints'),
       action: 'open-blueprint',
     }
   }
@@ -132,7 +135,7 @@ export async function guardChapterWriting(targetChapterNumber?: number): Promise
   if (chars.length === 0) {
     return {
       ok: false,
-      message: `角色卡不存在（数据库中没有角色记录）。\n\nAI 写稿需要角色状态作为上下文，请先在「故事架构」中生成角色图谱，或在「角色管理」中手动创建角色卡。`,
+      message: t('guard.characterCardsMissingForWrite'),
     }
   }
 
@@ -143,7 +146,7 @@ export async function guardChapterWriting(targetChapterNumber?: number): Promise
     if (!prevDraftMeta) {
       return {
         ok: false,
-        message: `上下文缺失：第 ${prevChapter} 章尚未定稿！\n\n为了保证 AI 写稿时能读取到连贯的上下文（前章结尾和剧情要点），请必须先前往草稿箱完成第 ${prevChapter} 章的定稿操作。`,
+        message: t('guard.prevChapterNotFinalized', { chapter: prevChapter }),
       }
     }
 
@@ -154,7 +157,7 @@ export async function guardChapterWriting(targetChapterNumber?: number): Promise
       const failedLabels = getFailedStepLabels(prevStatus)
       return {
         ok: false,
-        message: `第 ${prevChapter} 章的定稿后处理未完成！\n\n以下关键步骤失败：\n${failedLabels.map(f => `• ${f}`).join('\n')}\n\n请先在草稿箱中点击「修复定稿」按钮补全数据，否则后续章节的 AI 上下文将不完整。`,
+        message: t('guard.prevPostProcessIncomplete', { chapter: prevChapter, steps: failedLabels.map(f => `• ${f}`).join('\n') }),
       }
     }
     // 如果状态文件不存在（旧版定稿）→ 兼容放行
@@ -173,14 +176,14 @@ export async function guardChapterWriting(targetChapterNumber?: number): Promise
 export async function guardCharacterRegeneration(): Promise<GuardResult> {
   const project = useProjectStore.getState().currentProject
   if (!project) {
-    return { ok: false, message: '请先打开或新建一个项目。' }
+    return { ok: false, message: t('guard.openProjectFirst') }
   }
 
   const blueprints = await ipc.invoke('db:blueprint-get-all')
   if (blueprints.length > 0) {
     return {
       ok: false,
-      message: `已有章节蓝图，角色卡不可重新生成。\n\n蓝图生成已依赖角色数据，重新生成角色卡会导致现有蓝图和已写章节全部失效。\n如需修改角色，请手动编辑现有角色卡。`,
+      message: t('guard.characterCannotRegenerate'),
     }
   }
 
@@ -197,20 +200,20 @@ export async function guardCharacterRegeneration(): Promise<GuardResult> {
 export async function guardRepairPostProcess(chapterNumber: number): Promise<GuardResult> {
   const project = useProjectStore.getState().currentProject
   if (!project) {
-    return { ok: false, message: '请先打开或新建一个项目。' }
+    return { ok: false, message: t('guard.openProjectFirst') }
   }
 
   // 从数据库获取最大的定稿章节号
   const maxFinalized = await ipc.invoke('db:draft-get-max-finalized-chapter')
 
   if (maxFinalized === 0) {
-    return { ok: false, message: '尚无已定稿章节，无法执行修复操作。' }
+    return { ok: false, message: t('guard.noFinalizedChapters') }
   }
 
   if (chapterNumber !== maxFinalized) {
     return {
       ok: false,
-      message: `只允许修复最新定稿章节（第 ${maxFinalized} 章）的后处理。\n\n回溯修复第 ${chapterNumber} 章会破坏角色状态的线性演化链。`,
+      message: t('guard.canOnlyRepairLatest', { chapter: maxFinalized, target: chapterNumber }),
     }
   }
 

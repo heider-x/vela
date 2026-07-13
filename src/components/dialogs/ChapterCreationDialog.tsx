@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Sparkles, Play, AlertCircle } from 'lucide-react'
 import { useProjectStore } from '../../stores/project-store'
 import { useLLMStore } from '../../stores/llm-store'
@@ -29,6 +30,7 @@ const CREATION_LOG_REL = '.vela/chapter_creation_log.json'
 
 /** 章节创作对话框 — 配置并启动章节创作工作流（步进式，每步等待用户确认） */
 export default function ChapterCreationDialog({ isOpen, onClose, prefill }: Props) {
+  const { t } = useTranslation('dialogs')
   const currentProject = useProjectStore(s => s.currentProject)
   const defaultModelId = useLLMStore(s => s.defaultModelId)
   // ✅ action 用 getState() 获取，不订阅 workflow store 高频更新
@@ -151,14 +153,14 @@ export default function ChapterCreationDialog({ isOpen, onClose, prefill }: Prop
 
   const handleStart = async () => {
     if (!defaultModelId) {
-      addLog('error', '⚠️ 请先配置 AI 模型')
+      addLog('error', t('chapterCreation.needModel'))
       return
     }
     if (!currentProject) return
 
     // 防重复：同类型工作流正在运行
     if (isChapterRunning) {
-      toast.warning('已有章节创作任务正在执行，请等待完成后再试')
+      toast.warning(t('chapterCreation.taskRunning'))
       return
     }
 
@@ -166,7 +168,7 @@ export default function ChapterCreationDialog({ isOpen, onClose, prefill }: Prop
     const targetChapter = Number(chapterNumber) || 1
     const guard = await guardChapterWriting(targetChapter)
     if (!guard.ok) {
-      setGuardError(guard.message || '前置条件未满足')
+      setGuardError(guard.message || t('chapterCreation.prereqNotMet'))
       return
     }
     setGuardError(null)
@@ -176,7 +178,7 @@ export default function ChapterCreationDialog({ isOpen, onClose, prefill }: Prop
 
     const workflow = createChapterWorkflow({
       chapterNumber: Number(chapterNumber) || 1,
-      title: title || `第${chapterNumber || 1}章`,
+      title: title || t('chapterCreation.defaultTitle', { chapterNumber: chapterNumber || 1 }),
       role,
       purpose,
       characters: characters.split(/[、,，]/).map(s => s.trim()).filter(Boolean),
@@ -201,18 +203,18 @@ export default function ChapterCreationDialog({ isOpen, onClose, prefill }: Prop
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles size={16} className="text-[var(--color-accent)]" />
-            创作新章节
+            {t('chapterCreation.title')}
           </DialogTitle>
           <DialogDescription>
-            配置章节参数后启动 AI 创作流水线
+            {t('chapterCreation.description')}
             {loadedFromBlueprint && (
               <span className="ml-2 text-[0.7rem] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-600 dark:text-green-400">
-                已从章节蓝图预填
+                {t('chapterCreation.prefilledFromBlueprint')}
               </span>
             )}
             {loadedFromHistory && !loadedFromBlueprint && (
               <span className="ml-2 text-[0.7rem] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(var(--color-accent-rgb), 0.15)', color: 'var(--color-accent)' }}>
-                已自动填入上次参数
+                {t('chapterCreation.prefilledFromLast')}
               </span>
             )}
           </DialogDescription>
@@ -222,7 +224,7 @@ export default function ChapterCreationDialog({ isOpen, onClose, prefill }: Prop
         <div className="px-5 py-4 space-y-3">
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label>章节号</Label>
+                  <Label>{t('chapterCreation.chapterNumber')}</Label>
                   <Input
                     type="number"
                     value={chapterNumber}
@@ -236,11 +238,11 @@ export default function ChapterCreationDialog({ isOpen, onClose, prefill }: Prop
                   />
                 </div>
                 <div>
-                  <Label>章节标题</Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="留空自动生成" />
+                  <Label>{t('chapterCreation.chapterTitle')}</Label>
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('chapterCreation.titlePlaceholder')} />
                 </div>
                 <div>
-                  <Label>目标字数</Label>
+                  <Label>{t('chapterCreation.targetWords')}</Label>
                   <Input
                     type="number"
                     value={wordsTarget}
@@ -258,75 +260,83 @@ export default function ChapterCreationDialog({ isOpen, onClose, prefill }: Prop
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>章节定位</Label>
+                  <Label>{t('chapterCreation.chapterRole')}</Label>
                   <NativeSelect value={role} onChange={(e) => setRole(e.target.value)}>
-                    {['开篇', '铺垫', '发展', '冲突', '高潮', '转折', '收尾'].map((r) => (
-                      <option key={r} value={r}>{r}</option>
+                    {[
+                      { key: 'opening', value: '开篇' },
+                      { key: 'setup', value: '铺垫' },
+                      { key: 'development', value: '发展' },
+                      { key: 'conflict', value: '冲突' },
+                      { key: 'climax', value: '高潮' },
+                      { key: 'turning', value: '转折' },
+                      { key: 'resolution', value: '收尾' },
+                    ].map((r) => (
+                      <option key={r.key} value={r.value}>{t(`chapterCreation.roles.${r.key}`)}</option>
                     ))}
                   </NativeSelect>
                 </div>
                 <div>
-                  <Label>出场角色</Label>
-                  <Input value={characters} onChange={(e) => setCharacters(e.target.value)} placeholder="用逗号或顿号分隔" />
+                  <Label>{t('chapterCreation.characters')}</Label>
+                  <Input value={characters} onChange={(e) => setCharacters(e.target.value)} placeholder={t('chapterCreation.charactersPlaceholder')} />
                 </div>
               </div>
 
               <div>
-                <Label>章节目的</Label>
+                <Label>{t('chapterCreation.purpose')}</Label>
                 <Textarea
                   value={purpose}
                   onChange={(e) => setPurpose(e.target.value)}
-                  placeholder="这一章要推进什么（剧情/角色/伏笔）..."
+                  placeholder={t('chapterCreation.purposePlaceholder')}
                   rows={2}
                 />
               </div>
 
               <div>
-                <Label>关键事件</Label>
+                <Label>{t('chapterCreation.keyEvents')}</Label>
                 <Textarea
                   value={keyEvents}
                   onChange={(e) => setKeyEvents(e.target.value)}
-                  placeholder="本章需要发生的关键事件..."
+                  placeholder={t('chapterCreation.keyEventsPlaceholder')}
                   rows={2}
                 />
               </div>
 
               <div>
-                <Label>作者微操指导 <span className="text-[0.7rem] opacity-50">（可选，写稿时最高优先级）</span></Label>
+                <Label>{t('chapterCreation.authorGuidance')} <span className="text-[0.7rem] opacity-50">{t('chapterCreation.guidanceHint')}</span></Label>
                 <Textarea
                   value={userGuidance}
                   onChange={(e) => setUserGuidance(e.target.value)}
-                  placeholder="特殊要求：开头氛围、结尾方式、某个细节处理方式..."
+                  placeholder={t('chapterCreation.guidancePlaceholder')}
                   rows={2}
                 />
               </div>
 
               <div>
-                <Label>知识库检索关键词 <span className="text-[0.7rem] opacity-50">（可选，追加到向量搜索 query）</span></Label>
+                <Label>{t('chapterCreation.kbKeywords')} <span className="text-[0.7rem] opacity-50">{t('chapterCreation.kbKeywordsHint')}</span></Label>
                 <Input
                   value={knowledgeHint}
                   onChange={(e) => setKnowledgeHint(e.target.value)}
-                  placeholder="如：「剑法传承」「草原地貌」（帮助 AI 检索相关设定）"
+                  placeholder={t('chapterCreation.kbKeywordsPlaceholder')}
                 />
               </div>
             </div>
 
             <DialogFooter className="sm:justify-between items-center">
               <span className="text-xs mt-2 sm:mt-0" style={{ color: 'var(--color-text-muted)' }}>
-                流程：一键写稿（修稿/审稿后续在工具栏处理）
+                {t('chapterCreation.workflowInfo')}
               </span>
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={onClose}>取消</Button>
+                <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
                 <Button variant="ai" size="lg" onClick={handleStart} disabled={isChapterRunning}>
                   {isChapterRunning ? (
                     <span className="flex items-center gap-2">
                       <span className="animate-spin" style={{ filter: 'brightness(1.5)' }}>🌀</span>
-                      章节创作中...
+                      {t('chapterCreation.creating')}
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
                       <Play size={13} />
-                      开始创作
+                      {t('chapterCreation.startCreation')}
                     </span>
                   )}
                 </Button>

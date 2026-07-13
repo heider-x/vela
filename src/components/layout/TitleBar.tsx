@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Sun, Moon, ScrollText, Settings, ZoomIn, ZoomOut, Sparkles } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '../../stores/project-store'
 import { useThemeStore, type Theme } from '../../stores/theme-store'
 import { useEditorStore } from '../../stores/editor-store'
@@ -18,6 +19,7 @@ const themeOrder: Theme[] = ['galaxy', 'dark', 'light', 'paper']
 
 /** 标题栏组件 — JetBrains 风格：36px 高，含缩放控制 */
 export default function TitleBar() {
+  const { t } = useTranslation('layout')
   const projectName = useProjectStore((s) => s.currentProject?.name)
   const { theme, setTheme } = useThemeStore()
   const { zoom, zoomIn, zoomOut, zoomReset } = useThemeStore()
@@ -113,7 +115,7 @@ export default function TitleBar() {
         {/* 未保存警示灯：当存在 dirty tab 时显示橙色小圆点 */}
         {hasDirty && (
           <span
-            title="有未保存的修改"
+            title={t('titleBar.unsavedChanges')}
             style={{
               display: 'inline-block',
               width: 7,
@@ -141,7 +143,7 @@ export default function TitleBar() {
         {/* 缩小 */}
         <button
           onClick={zoomOut}
-          title={`缩小 (${isMac ? '⌘' : 'Ctrl'}+-)`}
+          title={t(isMac ? 'titleBar.zoomOut' : 'titleBar.zoomOutCtrl')}
           className="icon-btn"
           style={{ width: 22, height: 22 }}
         >
@@ -151,7 +153,7 @@ export default function TitleBar() {
         {/* 缩放比例显示，点击可重置 */}
         <button
           onClick={zoomReset}
-          title={`重置缩放 (${isMac ? '⌘' : 'Ctrl'}+0)`}
+          title={t(isMac ? 'titleBar.resetZoom' : 'titleBar.resetZoomCtrl')}
           style={{
             fontSize: "0.7rem",
             fontFamily: 'var(--font-mono)',
@@ -173,7 +175,7 @@ export default function TitleBar() {
         {/* 放大 */}
         <button
           onClick={zoomIn}
-          title={`放大 (${isMac ? '⌘' : 'Ctrl'}+=)`}
+          title={t(isMac ? 'titleBar.zoomIn' : 'titleBar.zoomInCtrl')}
           className="icon-btn"
           style={{ width: 22, height: 22 }}
         >
@@ -194,7 +196,7 @@ export default function TitleBar() {
         {/* 主题切换 */}
         <button
           onClick={cycleTheme}
-          title={`主题: ${theme === 'galaxy' ? '星空' : theme === 'paper' ? '纸质' : theme === 'dark' ? '黑夜' : '浅色'}`}
+          title={t('titleBar.themeLabel', { theme: t(`titleBar.theme${theme.charAt(0).toUpperCase() + theme.slice(1)}`) })}
           className="icon-btn"
           style={{ width: 24, height: 22 }}
         >
@@ -204,7 +206,7 @@ export default function TitleBar() {
         {/* 设置 */}
         <button
           onClick={openSettings}
-          title="设置"
+          title={t('titleBar.settings')}
           className="icon-btn"
           style={{ width: 24, height: 22 }}
         >

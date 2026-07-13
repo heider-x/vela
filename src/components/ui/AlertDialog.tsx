@@ -16,6 +16,7 @@ import { createRoot } from 'react-dom/client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { Button } from './Button'
+import i18n from '../../i18n'
 
 // ===== 类型定义 =====
 
@@ -34,9 +35,9 @@ interface AlertDialogProps extends AlertOptions {
 // ===== 弹窗组件 =====
 
 function AlertDialog({
-  title = '发生错误',
+  title = i18n.t('error', { ns: 'common' }),
   message,
-  confirmText = '确定',
+  confirmText = i18n.t('ok', { ns: 'common' }),
   onClose,
 }: AlertDialogProps) {
   const [isExiting, setIsExiting] = useState(false)

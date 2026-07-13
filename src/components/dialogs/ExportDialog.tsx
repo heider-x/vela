@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Download, FileText, Files, Type } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '../../stores/project-store'
 import { exportNovel, type ExportFormat } from '../../services/export-service'
 import { ipc } from '../../services/ipc-client'
@@ -16,6 +17,7 @@ interface Props {
 
 /** 导出对话框 — 使用 shadcn/ui */
 export default function ExportDialog({ isOpen, onClose }: Props) {
+  const { t } = useTranslation('dialogs')
   const currentProject = useProjectStore(s => s.currentProject)
   const [format, setFormat] = useState<ExportFormat>('merged-md')
   const [includeOutline, setIncludeOutline] = useState(true)
@@ -35,9 +37,9 @@ export default function ExportDialog({ isOpen, onClose }: Props) {
   }
 
   const FORMAT_OPTIONS: Array<{ value: ExportFormat; label: string; desc: string; icon: React.ReactNode }> = [
-    { value: 'merged-md', label: '合并 Markdown', desc: '全书合并为单个 .md 文件', icon: <FileText size={18} /> },
-    { value: 'split-md', label: '分章 Markdown', desc: '每章一个独立 .md 文件', icon: <Files size={18} /> },
-    { value: 'txt', label: '纯文本 TXT', desc: '去除格式标记的纯文本', icon: <Type size={18} /> },
+    { value: 'merged-md', label: t('export.formatMergedMd'), desc: t('export.formatMergedMdDesc'), icon: <FileText size={18} /> },
+    { value: 'split-md', label: t('export.formatSplitMd'), desc: t('export.formatSplitMdDesc'), icon: <Files size={18} /> },
+    { value: 'txt', label: t('export.formatTxt'), desc: t('export.formatTxtDesc'), icon: <Type size={18} /> },
   ]
 
   return (
@@ -46,9 +48,9 @@ export default function ExportDialog({ isOpen, onClose }: Props) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download size={16} className="text-[var(--color-accent)]" />
-            导出项目
+            {t('export.title')}
           </DialogTitle>
-          <DialogDescription>选择导出格式和目标目录</DialogDescription>
+          <DialogDescription>{t('export.description')}</DialogDescription>
         </DialogHeader>
 
         <div className="px-5 py-4 space-y-3">
@@ -82,7 +84,7 @@ export default function ExportDialog({ isOpen, onClose }: Props) {
           {/* 选项 */}
           <label className="flex items-center gap-2 text-xs cursor-pointer text-[var(--color-text-secondary)]">
             <input type="checkbox" checked={includeOutline} onChange={(e) => setIncludeOutline(e.target.checked)} />
-            包含故事大纲
+            {t('export.includeOutline')}
           </label>
 
           {/* 结果 */}
@@ -91,7 +93,7 @@ export default function ExportDialog({ isOpen, onClose }: Props) {
               'p-3 rounded-lg text-xs',
               result.success ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
             )}>
-              {result.success ? `✅ 已导出到: ${result.path}` : `❌ ${result.error}`}
+              {result.success ? t('export.exported', { path: result.path }) : t('export.exportError', { error: result.error })}
             </div>
           )}
         </div>
@@ -99,7 +101,7 @@ export default function ExportDialog({ isOpen, onClose }: Props) {
         <DialogFooter className="justify-end">
           <Button variant="default" onClick={handleExport} disabled={exporting}>
             <Download size={13} />
-            {exporting ? '导出中...' : '选择目录并导出'}
+            {exporting ? t('export.exporting') : t('export.selectAndExport')}
           </Button>
         </DialogFooter>
       </DialogContent>

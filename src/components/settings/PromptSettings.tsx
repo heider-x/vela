@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChevronDown, ChevronRight, Globe, FolderOpen, RotateCcw, AlertTriangle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import {
   BUILTIN_PROMPTS,
   EDITABLE_PROMPT_KEYS,
   getPromptTemplate,
   getPromptSource,
+  getPromptName,
+  getPromptDescription,
   saveCustomPrompt,
   saveProjectCustomPrompt,
   deleteCustomPrompt,
@@ -19,15 +22,16 @@ import { cn } from '../../lib/utils'
 // ==================== 来源标签配置 ====================
 
 const SOURCE_CONFIG = {
-  builtin: { label: '内置', color: 'var(--color-text-muted)', bg: 'var(--color-hover)' },
-  global: { label: '全局', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
-  project: { label: '项目', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+  builtin: { labelKey: 'prompts.builtin', color: 'var(--color-text-muted)', bg: 'var(--color-hover)' },
+  global: { labelKey: 'prompts.global', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+  project: { labelKey: 'prompts.project', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
 } as const
 
 // ==================== 主组件 ====================
 
 /** 提示词模板设置面板 */
 export default function PromptSettings() {
+  const { t } = useTranslation('settings')
   const project = useProjectStore((s) => s.currentProject)
   const [expandedKey, setExpandedKey] = useState<string | null>(null)
   // 强制刷新用（保存/恢复后 getPromptSource 的结果会变）
@@ -56,11 +60,8 @@ export default function PromptSettings() {
         className="flex items-start gap-2 px-3 py-2.5 rounded-lg text-xs mb-4"
         style={{ backgroundColor: 'var(--color-hover)', color: 'var(--color-text-muted)' }}
       >
-        <span className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-text-muted)' }}>提示</span>
-        <span>
-          自定义提示词仅修改 AI 的创作指导策略，输出格式约束（如 JSON schema）会自动追加，不受自定义影响。
-          支持两级覆盖：<strong>全局</strong>（所有小说生效）和<strong>项目</strong>（仅当前小说生效）。
-        </span>
+        <span className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{t('appearance.hint')}</span>
+        <span dangerouslySetInnerHTML={{ __html: t('prompts.description') }} />
       </div>
 
       {editableTemplates.map((builtinTemplate) => {
@@ -104,6 +105,7 @@ function TemplateItem({
   projectPath: string | null
   onSaved: () => void
 }) {
+  const { t } = useTranslation('settings')
   const [editContent, setEditContent] = useState(currentTemplate.content)
   const [saving, setSaving] = useState(false)
   const [saveResult, setSaveResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
@@ -157,7 +159,7 @@ function TemplateItem({
     delete (template as Partial<PromptTemplate>).systemSuffix
     const ok = await saveCustomPrompt(template)
     setSaving(false)
-    setSaveResult(ok ? { type: 'success', msg: '已保存到全局配置' } : { type: 'error', msg: '保存失败' })
+    setSaveResult(ok ? { type: 'success', msg: t('prompts.savedToGlobal') } : { type: 'error', msg: t('prompts.saveFailed') })
     if (ok) onSaved()
     setTimeout(() => setSaveResult(null), 3000)
   }
@@ -174,7 +176,7 @@ function TemplateItem({
     delete (template as Partial<PromptTemplate>).systemSuffix
     const ok = await saveProjectCustomPrompt(projectPath, template)
     setSaving(false)
-    setSaveResult(ok ? { type: 'success', msg: '已保存到当前项目' } : { type: 'error', msg: '保存失败' })
+    setSaveResult(ok ? { type: 'success', msg: t('prompts.savedToProject') } : { type: 'error', msg: t('prompts.saveFailed') })
     if (ok) onSaved()
     setTimeout(() => setSaveResult(null), 3000)
   }
@@ -188,7 +190,7 @@ function TemplateItem({
     await deleteCustomPrompt(builtinTemplate.key)
     setEditContent(builtinTemplate.content)
     setSaving(false)
-    setSaveResult({ type: 'success', msg: '已恢复为内置默认' })
+    setSaveResult({ type: 'success', msg: t('prompts.resetDone') })
     onSaved()
     setTimeout(() => setSaveResult(null), 3000)
   }
@@ -214,17 +216,17 @@ function TemplateItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-              {builtinTemplate.name}
+              {getPromptName(builtinTemplate.key)}
             </span>
             <span
               className="text-[0.65rem] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0"
               style={{ color: sourceConf.color, backgroundColor: sourceConf.bg }}
             >
-              {sourceConf.label}
+              {t(sourceConf.labelKey)}
             </span>
           </div>
           <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--color-text-muted)' }}>
-            {builtinTemplate.description}
+            {getPromptDescription(builtinTemplate.key)}
           </p>
         </div>
       </button>
@@ -235,7 +237,7 @@ function TemplateItem({
           {/* 变量标签栏 */}
           <div className="pt-3">
             <p className="text-[0.68rem] font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>
-              可用变量（点击插入到光标位置）
+              {t('prompts.availableVariables')}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {Object.entries(builtinTemplate.variables).map(([varName, desc]) => (
@@ -251,7 +253,7 @@ function TemplateItem({
                   }}
                 >
                   <code className="font-mono">{`{{${varName}}}`}</code>
-                  <span className="opacity-60 max-w-[120px] truncate">{desc}</span>
+                  <span className="opacity-60 max-w-[200px] truncate">{desc}</span>
                 </button>
               ))}
             </div>
@@ -287,11 +289,7 @@ function TemplateItem({
             >
               <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
               <span>
-                以下变量在原模板中使用但在当前内容中未找到：
-                {missingVars.map((v) => (
-                  <code key={v} className="mx-1 font-mono">{`{{${v}}}`}</code>
-                ))}
-                ，可能导致渲染时出现未替换的占位符。
+                {t('prompts.missingVariablesWarning', { vars: missingVars.map(v => `{{${v}}}`).join(', ') })}
               </span>
             </div>
           )}
@@ -304,30 +302,30 @@ function TemplateItem({
               size="sm"
               onClick={handleSaveGlobal}
               disabled={saving}
-              title="保存到全局配置（所有小说生效）"
+              title={t('prompts.saveToGlobalTooltip')}
             >
               <Globe size={12} />
-              保存到全局
+              {t('prompts.saveToGlobal')}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleSaveProject}
               disabled={saving || !projectPath}
-              title={projectPath ? '保存到当前项目（仅此小说生效）' : '请先打开一个项目'}
+              title={projectPath ? t('prompts.saveToProjectTooltip') : t('prompts.noProject')}
             >
               <FolderOpen size={12} />
-              保存到项目
+              {t('prompts.saveToProject')}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleReset}
               disabled={saving || source === 'builtin'}
-              title="恢复为内置默认版本"
+              title={t('prompts.resetTooltip')}
             >
               <RotateCcw size={12} />
-              恢复默认
+              {t('prompts.resetDefault')}
             </Button>
           </div>
 

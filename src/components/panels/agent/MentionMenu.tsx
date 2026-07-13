@@ -3,6 +3,7 @@
  *
  * 用户输入 @ 时弹出的上下文资源选择面板。
  */
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { searchMentionTargets, type MentionTarget } from '../../../services/agent/intent-router'
 
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function MentionMenu({ query, onSelect, onClose, position }: Props) {
+  const { t } = useTranslation('panels')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -71,7 +73,7 @@ export default function MentionMenu({ query, onSelect, onClose, position }: Prop
       }}
     >
       <div className="text-[0.68rem] px-3 py-1" style={{ color: 'var(--color-text-muted)' }}>
-        引用上下文
+        {t('agent.referenceContext')}
       </div>
       {results.map((target, i) => (
         <button

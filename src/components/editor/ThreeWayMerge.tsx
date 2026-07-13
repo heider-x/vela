@@ -9,6 +9,7 @@
  * 布局：左栏原稿（只读）| 中栏合并结果（可编辑）| 右栏修稿（只读）
  */
 import React, { useState, useCallback, useRef, useMemo, useLayoutEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../ui/Button'
 import './three-way-merge.css'
 
@@ -303,6 +304,7 @@ function EditableCell({ text, onChange }: { text: string; onChange: (t: string) 
 export default function ThreeWayMerge({
   originalContent, modifiedContent, onComplete, onCancel,
 }: ThreeWayMergeProps) {
+  const { t } = useTranslation('editors')
   const segments = useMemo(() => computeSegments(originalContent, modifiedContent),
     [originalContent, modifiedContent])
   const hunks = useMemo(() => segments.filter(s => s.type === 'hunk').map(s => s.hunk!), [segments])
@@ -366,18 +368,18 @@ export default function ThreeWayMerge({
   return (
     <div className="three-way-merge">
       <div className="twm-toolbar">
-        <Button variant="ghost" size="sm" onClick={revertAll}>← 全部原稿</Button>
-        <Button variant="ghost" size="sm" onClick={applyAll}>全部修稿 →</Button>
-        <span className="twm-toolbar-progress">已采用 {processedCount}/{hunks.length} 处变更</span>
-        {onCancel && <Button variant="ghost" size="sm" onClick={onCancel}>取消</Button>}
-        <Button variant="success" size="sm" onClick={() => onComplete(buildMergedText())}>完成合并</Button>
+        <Button variant="ghost" size="sm" onClick={revertAll}>{t('threeWayMerge.revertAll')}</Button>
+        <Button variant="ghost" size="sm" onClick={applyAll}>{t('threeWayMerge.applyAll')}</Button>
+        <span className="twm-toolbar-progress">{t('threeWayMerge.progress', { applied: processedCount, total: hunks.length })}</span>
+        {onCancel && <Button variant="ghost" size="sm" onClick={onCancel}>{t('threeWayMerge.cancel')}</Button>}
+        <Button variant="success" size="sm" onClick={() => onComplete(buildMergedText())}>{t('threeWayMerge.completeMerge')}</Button>
       </div>
 
       {/* 固定表头 */}
       <div className="twm-headers">
-        <div className="twm-header">原稿 <span className="twm-tag readonly">只读</span></div>
-        <div className="twm-header">合并结果 <span className="twm-tag editable">可编辑</span></div>
-        <div className="twm-header">修稿 <span className="twm-tag readonly">只读</span></div>
+        <div className="twm-header">{t('threeWayMerge.original')} <span className="twm-tag readonly">{t('threeWayMerge.readonly')}</span></div>
+        <div className="twm-header">{t('threeWayMerge.mergeResult')} <span className="twm-tag editable">{t('threeWayMerge.editable')}</span></div>
+        <div className="twm-header">{t('threeWayMerge.revised')} <span className="twm-tag readonly">{t('threeWayMerge.readonly')}</span></div>
       </div>
 
       {/* 单滚动容器 + CSS Grid 自动行高对齐 */}
@@ -412,7 +414,7 @@ export default function ThreeWayMerge({
                 {/* 左栏 */}
                 <div className={`twm-cell twm-cell-left ${isApplied ? 'processed' : ''}`}>
                   <HunkLines lines={hunk.originalLines} padCount={leftPad} cls="twm-line-removed"
-                    emptyLabel={`（新增 ${hunk.modifiedLines.length} 行）`} />
+                    emptyLabel={t('threeWayMerge.newLines', { count: hunk.modifiedLines.length })} />
                 </div>
 
                 {/* 中栏 */}
@@ -426,12 +428,12 @@ export default function ThreeWayMerge({
                   <div className="twm-hunk-row">
                     <button className={`twm-adopt ${isApplied ? 'adopted' : ''}`}
                       onClick={() => toggleHunk(hunk.index)}
-                      title={isApplied ? '恢复原稿' : '采用修稿'}>
+                      title={isApplied ? t('threeWayMerge.revertTooltip') : t('threeWayMerge.adoptTooltip')}>
                       {isApplied ? '✓' : '«'}
                     </button>
                     <div className="twm-hunk-text">
                       <HunkLines lines={hunk.modifiedLines} padCount={rightPad} cls="twm-line-added"
-                        emptyLabel={`（删除 ${hunk.originalLines.length} 行）`} />
+                        emptyLabel={t('threeWayMerge.deletedLines', { count: hunk.originalLines.length })} />
                     </div>
                   </div>
                 </div>

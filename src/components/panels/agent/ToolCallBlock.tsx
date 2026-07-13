@@ -16,6 +16,7 @@ import {
   Loader2,
   AlertTriangle,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { ToolCallInfo } from '../../../services/agent/agent-engine'
 
 interface Props {
@@ -40,18 +41,19 @@ function StatusIcon({ status }: { status: ToolCallInfo['status'] }) {
 }
 
 /** 状态文字 */
-function statusLabel(status: ToolCallInfo['status']): string {
+function statusLabel(status: ToolCallInfo['status'], t: (key: string) => string): string {
   switch (status) {
-    case 'completed': return '完成'
-    case 'failed': return '失败'
-    case 'running': return '执行中'
-    case 'waiting_confirm': return '待确认'
-    case 'pending': return '等待中'
+    case 'completed': return t('toolCall.completed')
+    case 'failed': return t('toolCall.failed')
+    case 'running': return t('toolCall.running')
+    case 'waiting_confirm': return t('toolCall.waitingConfirm')
+    case 'pending': return t('toolCall.pending')
     default: return ''
   }
 }
 
 export default function ToolCallBlock({ toolCall }: Props) {
+  const { t } = useTranslation('panels')
   const [expanded, setExpanded] = useState(false)
   const { toolName, arguments: args, status, result, error, source } = toolCall
 
@@ -68,14 +70,14 @@ export default function ToolCallBlock({ toolCall }: Props) {
         {/* 来源徽章 */}
         {source && (
           <span className={`tool-call-source-badge ${source}`}>
-            {source === 'builtin' ? '内置' : source === 'mcp' ? 'MCP' : 'Skill'}
+            {source === 'builtin' ? t('toolCall.builtin') : source === 'mcp' ? 'MCP' : 'Skill'}
           </span>
         )}
 
         {/* 状态 */}
         <div className="tool-call-status" style={{ marginLeft: 'auto' }}>
           <StatusIcon status={status} />
-          <span>{statusLabel(status)}</span>
+          <span>{statusLabel(status, t)}</span>
         </div>
 
         {/* 展开箭头 */}
@@ -107,9 +109,9 @@ export default function ToolCallBlock({ toolCall }: Props) {
                   color: 'var(--color-text-secondary)',
                   border: '1px solid var(--color-border)',
                 }}
-                title="复制结果"
+                title={t('toolCall.copyResult')}
               >
-                复制
+                {t('toolCall.copy')}
               </button>
             </div>
           )}

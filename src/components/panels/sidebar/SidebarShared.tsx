@@ -10,6 +10,7 @@ import {
   FilePen, PenTool, BrainCircuit, Sparkles, FolderOpen, Zap,
   FileText, MessageCircle, RefreshCw, GitCompare,
 } from 'lucide-react'
+import i18n from '../../../i18n'
 import type { ContextMenuEntry } from '../../ui/ContextMenu'
 
 // ===== 右键菜单状态管理 =====
@@ -106,11 +107,19 @@ export interface ArchFile {
   desc: string
 }
 
+export const getArchFiles = (): ArchFile[] => [
+  { key: 'premise', fileName: 'premise.md', label: i18n.t('sidebar.premise', { ns: 'panels' }), iconName: 'target', desc: i18n.t('sidebar.premiseDesc', { ns: 'panels' }) },
+  { key: 'characters', fileName: 'characters.md', label: i18n.t('sidebar.characterMap', { ns: 'panels' }), iconName: 'users', desc: i18n.t('sidebar.characterMapDesc', { ns: 'panels' }) },
+  { key: 'worldbuilding', fileName: 'worldbuilding.md', label: i18n.t('sidebar.worldbuilding', { ns: 'panels' }), iconName: 'globe', desc: i18n.t('sidebar.worldbuildingDesc', { ns: 'panels' }) },
+  { key: 'synopsis', fileName: 'synopsis.md', label: i18n.t('sidebar.synopsis', { ns: 'panels' }), iconName: 'map', desc: i18n.t('sidebar.synopsisDesc', { ns: 'panels' }) },
+]
+
+/** @deprecated Use getArchFiles() for translated labels */
 export const ARCH_FILES: ArchFile[] = [
-  { key: 'premise', fileName: 'premise.md', label: '故事前提', iconName: 'target', desc: 'Logline、核心冲突、金手指定位' },
-  { key: 'characters', fileName: 'characters.md', label: '角色图谱', iconName: 'users', desc: '角色弧光、关系网、矛盾交织' },
-  { key: 'worldbuilding', fileName: 'worldbuilding.md', label: '世界观', iconName: 'globe', desc: '核心规则、阶层断层、深层危机' },
-  { key: 'synopsis', fileName: 'synopsis.md', label: '情节大纲', iconName: 'map', desc: '三幕式情节骨架' },
+  { key: 'premise', fileName: 'premise.md', label: 'Premise', iconName: 'target', desc: 'Logline, core conflict, golden finger' },
+  { key: 'characters', fileName: 'characters.md', label: 'Character Map', iconName: 'users', desc: 'Character arcs, relationship web' },
+  { key: 'worldbuilding', fileName: 'worldbuilding.md', label: 'Worldbuilding', iconName: 'globe', desc: 'Core rules, class fractures' },
+  { key: 'synopsis', fileName: 'synopsis.md', label: 'Synopsis', iconName: 'map', desc: 'Three-act plot skeleton' },
 ]
 
 /** iconName → Lucide 图标组件映射 */

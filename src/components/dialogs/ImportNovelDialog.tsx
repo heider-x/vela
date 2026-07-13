@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileUp, FolderOpen, BookOpen, Zap, Clock, AlertTriangle } from 'lucide-react'
 import { useProjectStore } from '../../stores/project-store'
 import { useWorkflowStore } from '../../stores/workflow-store'
@@ -19,6 +20,7 @@ interface ImportNovelDialogProps {
 
 /** 导入小说向导对话框 */
 export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogProps) {
+  const { t } = useTranslation('dialogs')
   const createProject = useProjectStore((s) => s.createProject)
   const startWorkflow = useWorkflowStore((s) => s.startWorkflow)
 
@@ -50,7 +52,7 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
     // 自动推断项目名称（取第一个文件名去掉后缀）
     if (!name.trim()) {
       const firstFile = files[0]
-      const baseName = firstFile.split('/').pop()?.replace(/\.(txt|md|text)$/i, '') || '导入小说'
+      const baseName = firstFile.split('/').pop()?.replace(/\.(txt|md|text)$/i, '') || t('importNovel.defaultName')
       setName(baseName)
     }
 
@@ -63,7 +65,7 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
         setTotalWords(result.totalWords)
         setSplitDone(true)
       } else {
-        setSplitError(result.error || '拆章失败')
+        setSplitError(result.error || t('importNovel.splitFailed'))
       }
     } catch (e) {
       setSplitError(String(e))
@@ -120,15 +122,15 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileUp size={18} className="text-[var(--color-accent)]" />
-            导入已有小说
+            {t('importNovel.title')}
           </DialogTitle>
-          <DialogDescription>选择小说文件，Vela 将自动拆章并通过 AI 逆向推演全部结构化数据</DialogDescription>
+          <DialogDescription>{t('importNovel.description')}</DialogDescription>
         </DialogHeader>
 
         <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
           {/* ===== 文件选择 ===== */}
           <div>
-            <Label>选择小说文件</Label>
+            <Label>{t('importNovel.selectFile')}</Label>
             <div className="flex gap-2">
               <div
                 className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-xs truncate"
@@ -140,12 +142,12 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
               >
                 <BookOpen size={14} style={{ flexShrink: 0 }} />
                 {selectedFiles.length > 0
-                  ? `${selectedFiles.length} 个文件已选择`
-                  : '支持 .txt / .md 文件（单个或多个）'}
+                  ? t('importNovel.filesSelected', { count: selectedFiles.length })
+                  : t('importNovel.supportedFormats')}
               </div>
               <Button variant="outline" onClick={handleSelectFiles} disabled={splitting}>
                 <FolderOpen size={14} />
-                选择
+                {t('importNovel.select')}
               </Button>
             </div>
           </div>
@@ -155,7 +157,7 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
               style={{ backgroundColor: 'var(--color-hover)', color: 'var(--color-text-secondary)' }}>
               <div className="animate-spin w-3 h-3 border-2 border-current border-t-transparent rounded-full" />
-              正在分析并拆分章节...
+              {t('importNovel.analyzing')}
             </div>
           )}
 
@@ -174,13 +176,13 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
               <div className="flex items-center gap-4 px-3 py-2"
                 style={{ backgroundColor: 'var(--color-hover)' }}>
                 <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
-                  共 {chapters.length} 章
+                  {t('importNovel.totalChapters', { count: chapters.length })}
                 </span>
                 <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                  {totalWords.toLocaleString()} 字
+                  {t('importNovel.totalWords', { count: totalWords.toLocaleString() })}
                 </span>
                 <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                  平均 {Math.round(totalWords / chapters.length).toLocaleString()} 字/章
+                  {t('importNovel.avgWordsPerChapter', { count: Math.round(totalWords / chapters.length).toLocaleString() })}
                 </span>
               </div>
               {/* 章节列表（最多显示 8 行 + 省略） */}
@@ -188,16 +190,16 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
                 {chapters.slice(0, 8).map((ch) => (
                   <div key={ch.number} className="flex items-center justify-between text-xs">
                     <span style={{ color: 'var(--color-text-secondary)' }}>
-                      第{ch.number}章 {ch.title}
+                      {t('importNovel.chapterItem', { number: ch.number, title: ch.title })}
                     </span>
                     <span style={{ color: 'var(--color-text-muted)' }}>
-                      {ch.wordCount.toLocaleString()} 字
+                      {t('importNovel.chapterWords', { count: ch.wordCount.toLocaleString() })}
                     </span>
                   </div>
                 ))}
                 {chapters.length > 8 && (
                   <div className="text-xs text-center py-1" style={{ color: 'var(--color-text-muted)' }}>
-                    ··· 还有 {chapters.length - 8} 章 ···
+                    {t('importNovel.moreChapters', { count: chapters.length - 8 })}
                   </div>
                 )}
               </div>
@@ -206,26 +208,26 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
 
           {/* ===== 项目信息 ===== */}
           <div>
-            <Label>作品名称</Label>
+            <Label>{t('importNovel.novelName')}</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="导入后的项目名称"
+              placeholder={t('importNovel.namePlaceholder')}
             />
           </div>
 
           <div>
-            <Label>保存位置</Label>
+            <Label>{t('importNovel.saveLocation')}</Label>
             <div className="flex gap-2">
               <Input
                 value={savePath}
                 onChange={(e) => setSavePath(e.target.value)}
-                placeholder="选择项目保存目录"
+                placeholder={t('importNovel.pathPlaceholder')}
                 className="flex-1"
               />
               <Button variant="outline" onClick={handleSelectFolder}>
                 <FolderOpen size={14} />
-                选择
+                {t('importNovel.select')}
               </Button>
             </div>
           </div>
@@ -240,7 +242,7 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
               <div className="flex items-center gap-1.5">
                 <Zap size={13} style={{ color: 'var(--color-accent)' }} />
                 <span className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
-                  预估 AI 消耗
+                  {t('importNovel.estimatedAI')}
                 </span>
               </div>
               <div className="text-xs space-y-0.5" style={{ color: 'var(--color-text-muted)' }}>
@@ -250,20 +252,20 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
               </div>
               <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                 <Clock size={11} />
-                预计耗时 ~{costEstimate.estimatedMinutes} 分钟（因模型速度而异）
+                {t('importNovel.estimatedTime', { minutes: costEstimate.estimatedMinutes })}
               </div>
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>取消</Button>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel', { ns: 'common' })}</Button>
           <Button
             onClick={handleImport}
             disabled={importing || !name.trim() || !savePath.trim() || chapters.length === 0}
           >
             <FileUp size={14} />
-            {importing ? '导入中...' : `开始导入（${chapters.length} 章）`}
+            {importing ? t('importNovel.importing') : t('importNovel.startImport', { count: chapters.length })}
           </Button>
         </DialogFooter>
       </DialogContent>

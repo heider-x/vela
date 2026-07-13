@@ -8,6 +8,7 @@ import {
   AtSign,
   Workflow,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAgentStore, type AgentMode } from '../../../stores/agent-store'
 import { useLLMStore } from '../../../stores/llm-store'
 import type { ModelProfile } from '../../../shared/ipc-channels'
@@ -24,6 +25,7 @@ const MAX_HEIGHT = 200
  * 卡片式圆角容器，底部工具栏含模式/模型/发送
  */
 export default function AgentInputBox() {
+  const { t } = useTranslation('panels')
   const [inputText, setInputText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { generating, sendMessage, cancelGeneration, getActiveConversation, setMode, setModelId } = useAgentStore()
@@ -224,17 +226,17 @@ export default function AgentInputBox() {
           }}
         >
           <div className="text-[0.7rem] px-3 pb-1 pt-1" style={{ color: 'var(--color-text-muted)' }}>
-            添加上下文
+            {t('agent.addContext')}
           </div>
-          <ContextMenuItem icon={<Image size={13} />} label="媒体文件" onClick={() => setShowContextMenu(false)} disabled />
-          <ContextMenuItem icon={<AtSign size={13} />} label="@提及" onClick={() => {
+          <ContextMenuItem icon={<Image size={13} />} label={t('agent.mediaFiles')} onClick={() => setShowContextMenu(false)} disabled />
+          <ContextMenuItem icon={<AtSign size={13} />} label={t('agent.mention')} onClick={() => {
             setShowContextMenu(false)
             // 插入 @ 字符并触发 MentionMenu
             setInputText(prev => prev + '@')
             handleInputChange(inputText + '@')
             textareaRef.current?.focus()
           }} />
-          <ContextMenuItem icon={<Workflow size={13} />} label="工作流命令" onClick={() => {
+          <ContextMenuItem icon={<Workflow size={13} />} label={t('agent.workflowCommand')} onClick={() => {
             setShowContextMenu(false)
             // 插入 / 字符并触发 SlashCommandMenu
             setInputText('/')
@@ -251,7 +253,7 @@ export default function AgentInputBox() {
             value={inputText}
             onChange={e => handleInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入消息，@ 提及，/ 使用工作流..."
+            placeholder={t('agent.inputPlaceholder')}
             rows={1}
             className="w-full resize-none outline-none bg-transparent text-xs leading-relaxed px-2 py-2"
             style={{
@@ -274,7 +276,7 @@ export default function AgentInputBox() {
           {/* + 添加上下文 */}
           <div ref={contextRef}>
             <ToolbarIconBtn
-              title="添加上下文"
+              title={t('agent.addContext')}
               onClick={() => {
                 setShowModeMenu(false)
                 setShowModelMenu(false)
@@ -308,7 +310,7 @@ export default function AgentInputBox() {
               }}
             >
               <ChevronDown size={13} strokeWidth={1.5} />
-              <span className="select-none">{currentMode === 'planning' ? '深度' : '快速'}</span>
+              <span className="select-none">{currentMode === 'planning' ? t('agent.modeDeep') : t('agent.modeFast')}</span>
             </button>
 
             {/* 模式选择下拉 */}
@@ -323,20 +325,20 @@ export default function AgentInputBox() {
                 }}
               >
                 <div className="text-[0.7rem] px-3 py-1" style={{ color: 'var(--color-text-muted)' }}>
-                  对话模式
+                  {t('agent.dialogMode')}
                 </div>
                 <ModeMenuItem
                   mode="planning"
                   currentMode={currentMode}
-                  label="深度模式"
-                  desc="先规划后执行，适合深度研究、复杂任务和协同创作"
+                  label={t('agent.deepMode')}
+                  desc={t('agent.deepModeDesc')}
                   onClick={() => { setMode('planning'); setShowModeMenu(false) }}
                 />
                 <ModeMenuItem
                   mode="fast"
                   currentMode={currentMode}
-                  label="快速模式"
-                  desc="直接执行，适合简单快速任务"
+                  label={t('agent.fastMode')}
+                  desc={t('agent.fastModeDesc')}
                   onClick={() => { setMode('fast'); setShowModeMenu(false) }}
                 />
               </div>
@@ -368,7 +370,7 @@ export default function AgentInputBox() {
             >
               <ChevronDown size={13} strokeWidth={1.5} className="flex-shrink-0" />
               <span className="truncate select-none">
-                {currentModel?.name ?? (chatModels.length === 0 ? '未配置模型' : '选择模型')}
+                {currentModel?.name ?? (chatModels.length === 0 ? t('agent.noModelConfigured') : t('agent.selectModel'))}
               </span>
             </button>
 
@@ -386,11 +388,11 @@ export default function AgentInputBox() {
                 }}
               >
                 <div className="text-[0.7rem] px-3 py-1" style={{ color: 'var(--color-text-muted)' }}>
-                  选择模型
+                  {t('agent.selectModel')}
                 </div>
                 {chatModels.length === 0 ? (
                   <div className="px-3 py-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                    请先在设置中配置模型
+                    {t('agent.configureModelFirst')}
                   </div>
                 ) : (
                   chatModels.map(model => (
@@ -427,7 +429,7 @@ export default function AgentInputBox() {
               cursor: !generating && !canSend ? 'not-allowed' : 'pointer',
               opacity: !generating && !canSend ? 0.5 : 1,
             }}
-            title={generating ? '停止生成' : '发送消息'}
+            title={generating ? t('agent.stopGeneration') : t('agent.sendMessage')}
           >
             {generating ? (
               <Square size={10} fill="currentColor" />
@@ -485,6 +487,7 @@ function ContextMenuItem({
   onClick: () => void
   disabled?: boolean
 }) {
+  const { t } = useTranslation('panels')
   return (
     <button
       onClick={!disabled ? onClick : undefined}
@@ -503,7 +506,7 @@ function ContextMenuItem({
     >
       <span style={{ color: 'var(--color-text-secondary)' }}>{icon}</span>
       {label}
-      {disabled && <span className="ml-auto text-[0.7rem] opacity-40">即将</span>}
+      {disabled && <span className="ml-auto text-[0.7rem] opacity-40">{t('agent.comingSoon')}</span>}
     </button>
   )
 }

@@ -1,0 +1,45 @@
+{
+  "workflow": {
+    "started": "🚀 Workflow \"{{title}}\" started",
+    "cancelled": "⏹ Workflow \"{{title}}\" cancelled",
+    "stepRunning": "▶ [{{title}}] Running step: {{step}}",
+    "stepComplete": "✅ [{{title}}] Step completed: {{step}}",
+    "waitingConfirm": "⏸ [{{title}}] Waiting to continue to step {{index}}: {{nextStep}}",
+    "stepFailed": "❌ [{{title}}] Step failed: {{step}} — {{error}}",
+    "completed": "🎉 Workflow \"{{title}}\" completed",
+    "onCompleteFailed": "⚠️ onComplete failed: {{error}}",
+    "allCancelled": "⏹ All workflows cancelled"
+  },
+  "project": {
+    "timeout": "[{{label}}] Timed out ({{ms}}ms)",
+    "unknownError": "Unknown error",
+    "createFailed": "Failed to create project",
+    "createError": "Error creating project",
+    "openFailed": "Failed to open project",
+    "openError": "Error opening project"
+  },
+  "llm": {
+    "noDefaultModel": "No default model configured",
+    "connectionFailed": "Connection failed"
+  },
+  "agentEngine": {
+    "timeout": "Tool execution timed out ({{seconds}}s)",
+    "workflowCancelled": "Workflow cancelled",
+    "streamFailed": "Stream generation failed",
+    "noModel": "No default AI model configured"
+  },
+  "guard": {
+    "openProjectFirst": "Please open or create a project first.",
+    "fillNovelConfig": "Please fill in the core outline or protagonist profile in Novel Configuration first, so AI can generate the story architecture.\n\nCurrent genre: {{genre}}",
+    "premiseNotGenerated": "The \"Premise\" has not been generated yet. It is the foundation for chapter blueprints.\n\nPlease go to Story Architecture and click \"AI Generate Architecture\" to generate the premise before creating chapter blueprints.",
+    "missingArchitecture": "Note: The following architecture information has not been generated. Blueprint quality may be affected:\n{{items}}\n\nConsider generating the full architecture first, or continue with existing content.",
+    "noCharacterCards": "No character cards found (no character records in database).\n\nPlease generate the character map in Story Architecture (which auto-creates character cards), or manually create character cards in Character Management.",
+    "noBlueprints": "No chapter blueprints generated yet (database is empty).\n\nPlease go to Chapter Blueprints and click \"AI Generate Blueprints\" to let AI plan each chapter's content before writing.",
+    "prevChapterNotFinalized": "Missing context: Chapter {{chapter}} has not been finalized!\n\nTo ensure AI can read coherent context (previous chapter's ending and plot points), please finalize Chapter {{chapter}} in the Draft Box first.",
+    "prevPostProcessIncomplete": "Post-processing for finalized Chapter {{chapter}} is incomplete!\n\nThe following critical steps failed:\n{{steps}}\n\nPlease click \"Repair Finalized\" in the Draft Box to complete the data, otherwise subsequent chapters' AI context will be incomplete.",
+    "characterCannotRegenerate": "Chapter blueprints already exist. Character cards cannot be regenerated.\n\nBlueprint generation depends on character data. Regenerating character cards would invalidate all existing blueprints and written chapters.\nTo modify characters, please edit existing character cards manually.",
+    "noFinalizedChapters": "No finalized chapters yet. Cannot perform repair operation.",
+    "canOnlyRepairLatest": "Post-processing repair is only allowed for the latest finalized chapter (Chapter {{chapter}}).\n\nRetroactively repairing Chapter {{target}} would break the linear evolution chain of character states.",
+    "characterCardsMissingForWrite": "No character cards found (no character records in database).\n\nAI writing needs character states as context. Please generate the character map in Story Architecture, or manually create character cards in Character Management."
+  }
+}

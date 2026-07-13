@@ -7,12 +7,14 @@
  * 架构生成 Prompt 来源于 AI_NovelGenerator 项目（经专业优化）
  */
 
+import i18n from '../i18n'
+
 export interface PromptTemplate {
   /** 模板唯一标识 */
   key: string
-  /** 显示名称 */
+  /** 显示名称（i18n key: promptTemplates.{key}.name） */
   name: string
-  /** 用途说明 */
+  /** 用途说明（i18n key: promptTemplates.{key}.description） */
   description: string
   /** 模板内容（支持 {{变量}} 插值） */
   content: string
@@ -22,6 +24,16 @@ export interface PromptTemplate {
   systemRole?: string
   /** 可用变量列表 */
   variables: Record<string, string>
+}
+
+/** 获取翻译后的模板名称 */
+export function getPromptName(key: string): string {
+  return i18n.t(`promptTemplates.${key}.name`, { ns: 'settings' })
+}
+
+/** 获取翻译后的模板描述 */
+export function getPromptDescription(key: string): string {
+  return i18n.t(`promptTemplates.${key}.description`, { ns: 'settings' })
 }
 
 /** 允许用户自定义编辑的模板 Key 列表（其余为系统模板，不可编辑） */

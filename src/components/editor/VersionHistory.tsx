@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { History, RotateCcw, ArrowLeftRight, RefreshCw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useEditorStore } from '../../stores/editor-store'
 import { useProjectStore } from '../../stores/project-store'
 import { Button } from '../ui/Button'
@@ -19,6 +20,7 @@ interface ChapterMeta {
 
 /** 版本历史面板 — 查看章节版本并与当前内容对比 */
 export default function VersionHistory() {
+  const { t } = useTranslation('editors')
   const currentProject = useProjectStore(s => s.currentProject)
   const [chapters, setChapters] = useState<ChapterMeta[]>([])
   const [selectedChapter, setSelectedChapter] = useState<string | null>(null)
@@ -78,7 +80,7 @@ export default function VersionHistory() {
 
     useEditorStore.getState().openFile({
       id: `diff-version-${versionId}`,
-      name: `${versionLabel} vs 当前`,
+      name: `${versionLabel} ${t('versionHistory.vsCurrent')}`,
       type: 'diff',
       originalContent: oldContent,
       content: currentContent,
@@ -103,7 +105,7 @@ export default function VersionHistory() {
   }
 
   const TYPE_LABELS: Record<string, string> = {
-    draft: '草稿', refined: '修稿', reviewed: '审稿', final: '终稿',
+    draft: t('versionHistory.draft'), refined: t('versionHistory.refined'), reviewed: t('versionHistory.reviewed'), final: t('versionHistory.final'),
   }
 
   const TYPE_COLORS: Record<string, string> = {
@@ -116,7 +118,7 @@ export default function VersionHistory() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full gap-2 text-[var(--color-text-muted)]">
-        <RefreshCw size={16} className="animate-spin" /> 加载中...
+        <RefreshCw size={16} className="animate-spin" /> {t('versionHistory.loading')}
       </div>
     )
   }
@@ -124,17 +126,17 @@ export default function VersionHistory() {
   return (
     <div className="h-full flex overflow-hidden">
       {/* 左侧章节列表 */}
-      <div className="flex flex-col flex-shrink-0 w-[200px] border-r border-[var(--color-border)] bg-[var(--color-sidebar)]">
+      <div className="flex flex-col flex-shrink-0 w-[240px] border-r border-[var(--color-border)] bg-[var(--color-sidebar)]">
         <div className="flex items-center px-3 h-9 flex-shrink-0 border-b border-[var(--color-border)]">
           <span className="text-xs font-medium text-[var(--color-text)]">
             <History size={13} className="inline mr-1" />
-            章节列表
+            {t('versionHistory.chapterList')}
           </span>
         </div>
         <div className="flex-1 overflow-y-auto p-1">
           {chapters.length === 0 ? (
             <div className="text-center text-xs text-[var(--color-text-muted)] py-4">
-              暂无章节数据
+              {t('versionHistory.noChapterData')}
             </div>
           ) : (
             chapters.map((ch) => (
@@ -151,7 +153,7 @@ export default function VersionHistory() {
                 <span className="font-mono text-[0.7rem] opacity-50 mr-1">
                   {ch.chapter_number}
                 </span>
-                {ch.title || '未命名'}
+                {ch.title || t('versionHistory.unnamed')}
               </div>
             ))
           )}
@@ -163,11 +165,11 @@ export default function VersionHistory() {
         {selectedChapter ? (
           <div className="max-w-xl mx-auto px-6 py-4">
             <h3 className="text-sm font-bold text-[var(--color-text)] mb-3">
-              版本历史
+              {t('versionHistory.title')}
             </h3>
             {versions.length === 0 ? (
               <div className="text-center text-xs text-[var(--color-text-muted)] py-8">
-                暂无版本记录
+                {t('versionHistory.noVersions')}
               </div>
             ) : (
               <div className="space-y-2">
@@ -187,7 +189,7 @@ export default function VersionHistory() {
                         v{ver.version}
                       </span>
                       <span className="text-[0.7rem] text-[var(--color-text-muted)]">
-                        {ver.word_count} 字
+                        {ver.word_count} {t('versionHistory.chars')}
                       </span>
                       <span className="text-[0.7rem] text-[var(--color-text-muted)]">
                         {new Date(ver.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
@@ -197,16 +199,16 @@ export default function VersionHistory() {
                       <Button
                         variant="outline" size="sm"
                         onClick={() => handleDiff(ver.id, `v${ver.version} ${TYPE_LABELS[ver.type] || ''}`)}
-                        title="与当前版本对比"
+                        title={t('versionHistory.compareTooltip')}
                       >
-                        <ArrowLeftRight size={12} /> 对比
+                        <ArrowLeftRight size={12} /> {t('versionHistory.compare')}
                       </Button>
                       <Button
                         variant="outline" size="sm"
                         onClick={() => handleRevert(ver.id)}
-                        title="回退到此版本"
+                        title={t('versionHistory.revertTooltip')}
                       >
-                        <RotateCcw size={12} /> 回退
+                        <RotateCcw size={12} /> {t('versionHistory.revert')}
                       </Button>
                     </div>
                   </div>
@@ -217,7 +219,7 @@ export default function VersionHistory() {
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
             <History size={36} />
-            <span className="text-sm">选择一个章节</span>
+            <span className="text-sm">{t('versionHistory.selectChapter')}</span>
           </div>
         )}
       </div>

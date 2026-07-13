@@ -3,6 +3,7 @@
  *
  * 用户输入 / 时弹出的命令搜索和选择面板。
  */
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Sparkles, Zap } from 'lucide-react'
 import { searchSlashCommands, type SlashCommand } from '../../../services/agent/intent-router'
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function SlashCommandMenu({ query, onSelect, onClose, position }: Props) {
+  const { t } = useTranslation('panels')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -74,7 +76,7 @@ export default function SlashCommandMenu({ query, onSelect, onClose, position }:
       }}
     >
       <div className="text-[0.68rem] px-3 py-1" style={{ color: 'var(--color-text-muted)' }}>
-        命令
+        {t('agent.commands')}
       </div>
       {results.map((cmd, i) => (
         <button
