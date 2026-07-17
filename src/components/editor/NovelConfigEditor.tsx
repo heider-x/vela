@@ -12,6 +12,28 @@ import { Textarea } from '../ui/Textarea'
 import { NativeSelect } from '../ui/NativeSelect'
 import GenerateConfigDialog from '../dialogs/GenerateConfigDialog'
 
+/** Genre options with i18n labels (values kept in Chinese for backward compatibility) */
+const GENRE_OPTIONS = [
+  { value: '玄幻', labelKey: 'novelConfig.genres.xuanhuan' },
+  { value: '仙侠', labelKey: 'novelConfig.genres.xianxia' },
+  { value: '都市', labelKey: 'novelConfig.genres.urban' },
+  { value: '科幻', labelKey: 'novelConfig.genres.scifi' },
+  { value: '历史', labelKey: 'novelConfig.genres.history' },
+  { value: '军事', labelKey: 'novelConfig.genres.military' },
+  { value: '游戏', labelKey: 'novelConfig.genres.gaming' },
+  { value: '末世', labelKey: 'novelConfig.genres.apocalypse' },
+  { value: '悬疑', labelKey: 'novelConfig.genres.mystery' },
+  { value: '灵异', labelKey: 'novelConfig.genres.paranormal' },
+  { value: '言情', labelKey: 'novelConfig.genres.romance' },
+  { value: '古言', labelKey: 'novelConfig.genres.historicalRomance' },
+  { value: '现言', labelKey: 'novelConfig.genres.modernRomance' },
+  { value: '奇幻', labelKey: 'novelConfig.genres.fantasy' },
+  { value: '武侠', labelKey: 'novelConfig.genres.wuxia' },
+  { value: '轻小说', labelKey: 'novelConfig.genres.lightNovel' },
+  { value: '同人', labelKey: 'novelConfig.genres.fanfic' },
+  { value: '职场', labelKey: 'novelConfig.genres.workplace' },
+] as const
+
 /** 小说配置编辑器 — Tab 内的可视化配置面板 */
 export default function NovelConfigEditor() {
   const { t } = useTranslation('editors')
@@ -50,10 +72,10 @@ export default function NovelConfigEditor() {
     setSaving(true)
     try {
       await saveProject()
-      addLog('info', '📝 小说配置已保存')
+      addLog('info', `📝 ${t('novelConfig.messages.configSaved')}`)
     } catch (error) {
-      console.error('[NovelConfigEditor] 保存失败:', error)
-      addLog('error', `保存失败: ${error}`)
+      console.error('[NovelConfigEditor] Save failed:', error)
+      addLog('error', `${t('novelConfig.messages.saveFailed')}: ${error}`)
     } finally {
       setSaving(false)
     }
@@ -62,7 +84,7 @@ export default function NovelConfigEditor() {
   /** AI 生成配置 — 打开弹框 */
   const handleAIGenerate = () => {
     if (!defaultModelId) {
-      addLog('error', '⚠️ 请先在设置中配置 AI 模型')
+      addLog('error', `⚠️ ${t('novelConfig.messages.noAIModel')}`)
       return
     }
     setShowGenerateConfig(true)
@@ -71,7 +93,7 @@ export default function NovelConfigEditor() {
   /** 单字段 AI 生成 */
   const handleFieldGenerate = async (fieldKey: GeneratableField) => {
     if (!defaultModelId) {
-      addLog('error', '⚠️ 请先在设置中配置 AI 模型')
+      addLog('error', `⚠️ ${t('novelConfig.messages.noAIModel')}`)
       return
     }
     if (generatingField) return // 防止并发
@@ -90,13 +112,11 @@ export default function NovelConfigEditor() {
         },
       })
     } catch (e) {
-      addLog('error', `生成失败：${e}`)
+      addLog('error', `${t('novelConfig.messages.generateFailed')}: ${e}`)
     } finally {
       setGeneratingField(null)
     }
   }
-
-  const genres = ['玄幻', '仙侠', '都市', '科幻', '历史', '军事', '游戏', '末世', '悬疑', '灵异', '言情', '古言', '现言', '奇幻', '武侠', '轻小说', '同人', '职场']
 
   return (
     <div className="h-full overflow-y-auto">
@@ -124,11 +144,13 @@ export default function NovelConfigEditor() {
         {/* 配置表单 */}
         <div className="space-y-5">
           {/* 基本信息 */}
-          <Section title={t('novelConfig.basicInfo')}>
+          <Section title={t('novelConfig.basicInfo')} t={t}>
             <div className="grid grid-cols-3 gap-4">
               <Field label={t('novelConfig.genre')}>
                 <NativeSelect value={config.genre} onChange={(e) => update('genre', e.target.value)}>
-                  {genres.map((g) => <option key={g} value={g}>{g}</option>)}
+                  {GENRE_OPTIONS.map((g) => (
+                    <option key={g.value} value={g.value}>{t(g.labelKey)}</option>
+                  ))}
                 </NativeSelect>
               </Field>
               <Field label={t('novelConfig.subGenre')}>
@@ -145,27 +167,27 @@ export default function NovelConfigEditor() {
             </div>
             <div className="grid grid-cols-4 gap-4 mt-4">
               <Field label={t('novelConfig.plotStructure')} tipItems={[
-                '三幕结构：经典的“建置→对抗→高潮”，适合大多数网文类型',
-                '英雄之旅：神话学十二阶段，适合冒险/成长类，强调内在蜕变',
-                '节拍表：好莱坞十五拍结构，节奏最精细，适合情感张力强的故事',
-                '起承转合：中国传统四段式结构，适合古言/武侠/仙侠',
-                '多线叙事：多条故事线并进交织，适合群像或复杂情节',
-                '自由结构：不限定特定框架，AI 根据内容自适应，适合日常/轻小说',
+                t('novelConfig.plotStructureTips.three_act'),
+                t('novelConfig.plotStructureTips.heros_journey'),
+                t('novelConfig.plotStructureTips.save_the_cat'),
+                t('novelConfig.plotStructureTips.kishotenketsu'),
+                t('novelConfig.plotStructureTips.multi_thread'),
+                t('novelConfig.plotStructureTips.freeform'),
               ]}>
                 <NativeSelect value={config.plotStructure || 'three_act'} onChange={(e) => update('plotStructure', e.target.value as NovelConfig['plotStructure'])}>
-                  <option value="three_act">三幕结构</option>
-                  <option value="heros_journey">英雄之旅</option>
-                  <option value="save_the_cat">节拍表</option>
-                  <option value="kishotenketsu">起承转合</option>
-                  <option value="multi_thread">多线叙事</option>
-                  <option value="freeform">自由结构</option>
+                  <option value="three_act">{t('novelConfig.plotStructureOptions.three_act')}</option>
+                  <option value="heros_journey">{t('novelConfig.plotStructureOptions.heros_journey')}</option>
+                  <option value="save_the_cat">{t('novelConfig.plotStructureOptions.save_the_cat')}</option>
+                  <option value="kishotenketsu">{t('novelConfig.plotStructureOptions.kishotenketsu')}</option>
+                  <option value="multi_thread">{t('novelConfig.plotStructureOptions.multi_thread')}</option>
+                  <option value="freeform">{t('novelConfig.plotStructureOptions.freeform')}</option>
                 </NativeSelect>
               </Field>
               <Field label={t('novelConfig.narrativePOV')} tipItems={[
-                '第一人称："我"视角叙事，代入感最强，信息受限',
-                '第三人称有限视角：跟随主角视角，兼顾代入感和灵活性，最常用',
-                '第三人称全知视角：可自由切换角色内心，适合群像叙事',
-                '多视角轮换：多名角色交替叙事，适合复杂群像故事',
+                t('novelConfig.narrativePOVTips.first_person'),
+                t('novelConfig.narrativePOVTips.third_limited'),
+                t('novelConfig.narrativePOVTips.third_omniscient'),
+                t('novelConfig.narrativePOVTips.multi_pov'),
               ]}>
                 <NativeSelect value={config.narrativePOV || 'third_limited'} onChange={(e) => update('narrativePOV', e.target.value as NovelConfig['narrativePOV'])}>
                   <option value="first_person">{t('novelConfig.narrativePOVOptions.first_person')}</option>
@@ -210,8 +232,9 @@ export default function NovelConfigEditor() {
             aiFieldKey="coreOutline"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
+            t={t}
           >
-            <Textarea value={config.coreOutline} onChange={(e) => update('coreOutline', e.target.value)} placeholder="在此输入你的创作想法，或让 AI 根据这段话一键生成全部配置..." rows={4} />
+            <Textarea value={config.coreOutline} onChange={(e) => update('coreOutline', e.target.value)} placeholder={t('novelConfig.coreOutlinePlaceholder')} rows={4} />
           </Section>
 
           {/* 世界观设定 */}
@@ -221,8 +244,9 @@ export default function NovelConfigEditor() {
             aiFieldKey="worldSetting"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
+            t={t}
           >
-            <Textarea value={config.worldSetting} onChange={(e) => update('worldSetting', e.target.value)} placeholder="描述故事发生的背景、时代、力量体系、社会结构（可简写，AI 生成架构时会自动丰富）..." rows={4} />
+            <Textarea value={config.worldSetting} onChange={(e) => update('worldSetting', e.target.value)} placeholder={t('novelConfig.worldSettingPlaceholder')} rows={4} />
           </Section>
 
           {/* 金手指 */}
@@ -232,8 +256,9 @@ export default function NovelConfigEditor() {
             aiFieldKey="goldenFinger"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
+            t={t}
           >
-            <Textarea value={config.goldenFinger} onChange={(e) => update('goldenFinger', e.target.value)} placeholder="主角的独特优势或故事核心卖点（可简写，架构生成时AI会深度扩展）..." rows={3} />
+            <Textarea value={config.goldenFinger} onChange={(e) => update('goldenFinger', e.target.value)} placeholder={t('novelConfig.goldenFingerPlaceholder')} rows={3} />
           </Section>
 
           {/* 主角人设 */}
@@ -243,8 +268,9 @@ export default function NovelConfigEditor() {
             aiFieldKey="protagonistProfile"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
+            t={t}
           >
-            <Textarea value={config.protagonistProfile} onChange={(e) => update('protagonistProfile', e.target.value)} placeholder="主角的性格特征、背景故事、核心目标..." rows={4} />
+            <Textarea value={config.protagonistProfile} onChange={(e) => update('protagonistProfile', e.target.value)} placeholder={t('novelConfig.protagonistProfilePlaceholder')} rows={4} />
           </Section>
 
           {/* 全局写作要求 */}
@@ -254,11 +280,12 @@ export default function NovelConfigEditor() {
             aiFieldKey="globalGuidance"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
+            t={t}
           >
             <Textarea
               value={config.globalGuidance}
               onChange={(e) => update('globalGuidance', e.target.value)}
-              placeholder="全局的写作风格要求、禁忌事项、特殊规则..."
+              placeholder={t('novelConfig.globalGuidancePlaceholder')}
               rows={6}
             />
           </Section>
@@ -270,18 +297,19 @@ export default function NovelConfigEditor() {
             aiFieldKey="writingStyle"
             generatingField={generatingField}
             onAIGenerate={handleFieldGenerate}
+            t={t}
           >
             <Textarea
               value={config.writingStyle || ''}
               onChange={(e) => update('writingStyle', e.target.value)}
-              placeholder="尚未配置。点击右上角「AI 生成」或手动填写…"
+              placeholder={t('novelConfig.writingStylePlaceholder')}
               rows={6}
             />
           </Section>
 
           {/* 参考作品 */}
-          <Section title={t('novelConfig.referenceWorks')} desc={t('novelConfig.referenceWorksDesc')}>
-            <Textarea value={config.referenceWorks || ''} onChange={(e) => update('referenceWorks', e.target.value)} placeholder="参考哪些作品的风格、设定或机制？（AI 架构生成时会参考）" rows={2} />
+          <Section title={t('novelConfig.referenceWorks')} desc={t('novelConfig.referenceWorksDesc')} t={t}>
+            <Textarea value={config.referenceWorks || ''} onChange={(e) => update('referenceWorks', e.target.value)} placeholder={t('novelConfig.referenceWorksPlaceholder')} rows={2} />
           </Section>
         </div>
       </div>
@@ -307,6 +335,7 @@ function Section({
   aiFieldKey,
   generatingField,
   onAIGenerate,
+  t,
 }: {
   title: string
   desc?: string
@@ -317,6 +346,8 @@ function Section({
   generatingField?: GeneratableField | null
   /** AI 生成回调 */
   onAIGenerate?: (fieldKey: GeneratableField) => void
+  /** i18n translation function */
+  t: (key: string, options?: Record<string, unknown>) => string
 }) {
   const isGenerating = aiFieldKey != null && generatingField === aiFieldKey
   const isAnyGenerating = generatingField != null
@@ -336,13 +367,13 @@ function Section({
             onClick={() => onAIGenerate(aiFieldKey)}
             disabled={isAnyGenerating}
             className="flex-shrink-0 ml-3"
-            title={isGenerating ? '正在生成...' : `AI 生成「${title}」`}
+            title={isGenerating ? t('novelConfig.section.generating') : t('novelConfig.section.aiGenerateFor', { title })}
           >
             {isGenerating
               ? <Loader2 size={11} className="animate-spin" />
               : <Sparkles size={11} />
             }
-            {isGenerating ? '生成中...' : 'AI 生成'}
+            {isGenerating ? t('novelConfig.section.generatingShort') : t('novelConfig.section.aiGenerate')}
           </Button>
         )}
       </div>
@@ -390,12 +421,19 @@ function Field({ label, tipItems, children }: { label: string; tipItems?: string
                   pointerEvents: 'none',
                 }}
               >
-                {tipItems.map((item, i) => (
-                  <div key={i} style={{ paddingLeft: 0 }}>
-                    <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>{item.split('：')[0]}</span>
-                    {'：' + item.split('：').slice(1).join('：')}
-                  </div>
-                ))}
+                {tipItems.map((item, i) => {
+                  // Handle both Chinese "：" and English ":" separators
+                  const separator = item.includes('：') ? '：' : ': '
+                  const parts = item.split(separator)
+                  const title = parts[0]
+                  const rest = parts.slice(1).join(separator)
+                  return (
+                    <div key={i} style={{ paddingLeft: 0 }}>
+                      <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>{title}</span>
+                      {separator + rest}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </span>
