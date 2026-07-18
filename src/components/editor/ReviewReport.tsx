@@ -144,35 +144,29 @@ function parseLegacyReport(text: string, defaultCategory: string): { issues: Rev
 }
 
 // ===== 视觉配置 =====
+// Note: Labels are handled via i18n (see severityLabels below).
+// This constant only holds visual properties (emoji, colors).
 
 const SEVERITY_META: Record<ReviewIssue['severity'], {
-  label: string
   emoji: string
-  actionLabel: string
   colorClass: string
   bgClass: string
   borderClass: string
 }> = {
   error: {
-    label: '严重问题',
     emoji: '🔴',
-    actionLabel: '强烈建议修复',
     colorClass: 'text-red-400',
     bgClass: 'bg-red-500/10',
     borderClass: 'border-red-500/30',
   },
   warning: {
-    label: '改进建议',
     emoji: '🟡',
-    actionLabel: '建议酌情修复',
     colorClass: 'text-yellow-400',
     bgClass: 'bg-yellow-500/10',
     borderClass: 'border-yellow-500/30',
   },
   pass: {
-    label: '检查通过',
     emoji: '🟢',
-    actionLabel: '无需处理',
     colorClass: 'text-green-400',
     bgClass: 'bg-green-500/10',
     borderClass: 'border-green-500/30',
@@ -201,8 +195,8 @@ export default function ReviewReport({ reportText, draftPath, chapterNumber, cha
   const warningCount = issues.filter((i) => i.severity === 'warning').length
   const passCount = issues.filter((i) => i.severity === 'pass').length
 
-  // Translated severity labels
-  const severityLabels: Record<string, { label: string; actionLabel: string }> = {
+  // Translated severity labels (source of truth for all language display)
+  const severityLabels: Record<ReviewIssue['severity'], { label: string; actionLabel: string }> = {
     error: { label: t('reviewReport.severity.error.label'), actionLabel: t('reviewReport.severity.error.actionLabel') },
     warning: { label: t('reviewReport.severity.warning.label'), actionLabel: t('reviewReport.severity.warning.actionLabel') },
     pass: { label: t('reviewReport.severity.pass.label'), actionLabel: t('reviewReport.severity.pass.actionLabel') },
@@ -304,16 +298,17 @@ export default function ReviewReport({ reportText, draftPath, chapterNumber, cha
             <div className="font-medium text-[var(--color-text)] mb-1.5">{t('reviewReport.colorLegendTitle')}</div>
             {(['error', 'warning', 'pass'] as const).map(sev => {
               const meta = SEVERITY_META[sev]
+              const label = severityLabels[sev]
               return (
                 <div key={sev} className="flex items-center gap-2">
                   <span className={cn(
                     'inline-flex items-center gap-1 px-2 py-0.5 rounded',
                     meta.bgClass, meta.colorClass
                   )}>
-                    {meta.emoji} {severityLabels[sev]?.label ?? meta.label}
+                    {meta.emoji} {label.label}
                   </span>
                   <span style={{ color: 'var(--color-text-secondary)' }}>
-                    — {severityLabels[sev]?.actionLabel ?? meta.actionLabel}
+                    — {label.actionLabel}
                   </span>
                 </div>
               )
@@ -353,7 +348,7 @@ export default function ReviewReport({ reportText, draftPath, chapterNumber, cha
                 <div className="space-y-1.5 pl-1">
                   {items.map((item, i) => {
                     const sevMeta = SEVERITY_META[item.severity]
-                    const translatedMeta = severityLabels[item.severity] ?? sevMeta
+                    const label = severityLabels[item.severity]
                     return (
                       <div
                         key={i}
@@ -369,7 +364,7 @@ export default function ReviewReport({ reportText, draftPath, chapterNumber, cha
                             <span
                               className={cn('ml-2 text-[0.65rem] opacity-70', sevMeta.colorClass)}
                             >
-                              [{translatedMeta.actionLabel}]
+                              [{label.actionLabel}]
                             </span>
                           </div>
                         </div>
