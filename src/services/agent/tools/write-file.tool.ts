@@ -1,25 +1,28 @@
 /**
  * write_file — 写入或修改项目文件
  */
+import i18n from '../../../i18n'
 import { buildAgentTool } from '../tool-registry'
 import { ipc } from '../../ipc-client'
 import { useProjectStore } from '../../../stores/project-store'
 import { validatePath } from './safe-path'
 
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
+
 export const writeFileTool = buildAgentTool({
   name: 'write_file',
-  description: '写入或修改项目内的文件。可用于创建新文件或覆盖已有文件内容。这是一个写入操作，需要用户确认。',
+  description: t('agent.tools.writeFile.desc'),
   source: 'builtin',
   inputSchema: {
     type: 'object',
     properties: {
       file_path: {
         type: 'string',
-        description: '相对于项目根目录的文件路径',
+        description: t('agent.tools.writeFile.filePathDesc'),
       },
       content: {
         type: 'string',
-        description: '要写入的文件内容',
+        description: t('agent.tools.writeFile.contentDesc'),
       },
     },
     required: ['file_path', 'content'],
@@ -31,12 +34,12 @@ export const writeFileTool = buildAgentTool({
     const content = args.content as string
 
     if (!filePath || content === undefined) {
-      return { success: false, content: '', error: '缺少 file_path 或 content 参数' }
+      return { success: false, content: '', error: t('agent.tools.writeFile.missingParams') }
     }
 
     const project = useProjectStore.getState().currentProject
     if (!project) {
-      return { success: false, content: '', error: '没有打开的项目' }
+      return { success: false, content: '', error: t('agent.tools.noProject') }
     }
 
     // 路径安全校验
@@ -47,12 +50,12 @@ export const writeFileTool = buildAgentTool({
 
     const result = await ipc.invoke('fs:write-file', pathCheck.fullPath, content)
     if (!result.success) {
-      return { success: false, content: '', error: result.error ?? '写入失败' }
+      return { success: false, content: '', error: result.error ?? t('agent.tools.writeFile.writeFailed') }
     }
 
     return {
       success: true,
-      content: `✅ 文件已写入：${filePath}（${content.length} 字符）`,
+      content: t('agent.tools.writeFile.written', { path: filePath, count: content.length }),
       artifacts: [{ type: 'file_modified', path: pathCheck.fullPath, name: filePath }],
     }
   },

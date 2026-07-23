@@ -42,6 +42,7 @@
     "noOtherRecent": "暂无其他最近项目",
     "closeProjectTitle": "关闭项目",
     "discardAndClose": "放弃并关闭",
-    "unsavedConfirm": "以下文件有未保存的修改：\n{{names}}\n\n确定要关闭项目吗？未保存的内容将丢失。"
+    "unsavedConfirm": "以下文件有未保存的修改：\n{{names}}\n\n确定要关闭项目吗？未保存的内容将丢失。",
+    "closeProjectConfirm": "以下文件有未保存的修改：\n{{names}}\n\n确定要关闭项目吗？未保存的内容将丢失。"
   }
 }

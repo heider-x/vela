@@ -9,6 +9,7 @@ import zhCNLayout from './locales/zh-CN/layout.json'
 import zhCNPages from './locales/zh-CN/pages.json'
 import zhCNStores from './locales/zh-CN/stores.json'
 import zhCNSettings from './locales/zh-CN/settings.json'
+import zhCNCommands from './locales/zh-CN/commands.json'
 
 import enCommon from './locales/en/common.json'
 import enDialogs from './locales/en/dialogs.json'
@@ -18,6 +19,7 @@ import enLayout from './locales/en/layout.json'
 import enPages from './locales/en/pages.json'
 import enStores from './locales/en/stores.json'
 import enSettings from './locales/en/settings.json'
+import enCommands from './locales/en/commands.json'
 
 import ruCommon from './locales/ru/common.json'
 import ruDialogs from './locales/ru/dialogs.json'
@@ -27,6 +29,7 @@ import ruLayout from './locales/ru/layout.json'
 import ruPages from './locales/ru/pages.json'
 import ruStores from './locales/ru/stores.json'
 import ruSettings from './locales/ru/settings.json'
+import ruCommands from './locales/ru/commands.json'
 
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined'
 
@@ -41,6 +44,7 @@ const i18nConfig: Parameters<typeof i18n.init>[0] = {
       pages: zhCNPages,
       stores: zhCNStores,
       settings: zhCNSettings,
+      commands: zhCNCommands,
     },
     en: {
       common: enCommon,
@@ -51,6 +55,7 @@ const i18nConfig: Parameters<typeof i18n.init>[0] = {
       pages: enPages,
       stores: enStores,
       settings: enSettings,
+      commands: enCommands,
     },
     ru: {
       common: ruCommon,
@@ -61,10 +66,11 @@ const i18nConfig: Parameters<typeof i18n.init>[0] = {
       pages: ruPages,
       stores: ruStores,
       settings: ruSettings,
+      commands: ruCommands,
     },
   },
   fallbackLng: 'zh-CN',
-  ns: ['common', 'dialogs', 'editors', 'panels', 'layout', 'pages', 'stores', 'settings'],
+  ns: ['common', 'dialogs', 'editors', 'panels', 'layout', 'pages', 'stores', 'settings', 'commands'],
   defaultNS: 'common',
   interpolation: {
     escapeValue: false,

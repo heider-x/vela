@@ -246,7 +246,7 @@ export default function WorldBuildingEditor() {
                 onClick={() => openArchFile(f)}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-accent)'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = cardBorderColor}
-                title={`点击查看 — ${f.desc}`}
+                title={t('worldBuilding.clickToViewDesc', { desc: f.desc })}
               >
                 {/* 状态图标 */}
                 {generated

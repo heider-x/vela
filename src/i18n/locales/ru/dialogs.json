@@ -101,7 +101,11 @@
     "characterCardNotRegenerable": "Карточки персонажей нельзя перегенерировать",
     "submitted": "✨ Отправлено: генерация {{steps}}...",
     "noStepSelected": "⚠️ Пожалуйста, выберите хотя бы один шаг",
-    "emptyConfig": "Не задано"
+    "emptyConfig": "Не задано",
+    "willOverride": "Будет перезаписано",
+    "keep": "Сохранить",
+    "pending": "Ожидает",
+    "labelSeparator": ":"
   },
   "directoryConfig": {
     "title": "Генерация черновиков глав",
@@ -135,7 +139,17 @@
     "exported": "✅ Экспортировано в: {{path}}",
     "exportError": "❌ {{error}}",
     "exporting": "Экспорт...",
-    "selectAndExport": "Выбрать директорию и экспортировать"
+    "selectAndExport": "Выбрать директорию и экспортировать",
+    "noProjectError": "Проект не открыт",
+    "noFinalizedChapters": "Нет глав для экспорта (нет финализированных глав)",
+    "foundChapters": "Найдено {{count}} финализированных глав(а)",
+    "exportComplete": "✅ Экспорт завершён: {{path}}",
+    "exportFailed": "❌ Ошибка экспорта: {{error}}"
+  },
+  "versionService": {
+    "chapterFallback": "Глава {{number}}",
+    "noContent": "(Глава ещё не имеет содержимого)",
+    "contentTruncated": "(Содержимое было ошибочно обрезано)"
   },
   "generateConfig": {
     "title": "ИИ-конфигурация романа одной кнопкой",

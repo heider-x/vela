@@ -3,6 +3,7 @@ import { useProjectStore } from '../../../stores/project-store'
 import { getPromptTemplate } from '../../prompt-templates'
 import { DirectoryPromptBuilder } from '../../prompts/prompt-builder'
 import { DirectoryWorkflowParams, ChapterBlueprint, parseTextBlueprints, saveAllBlueprints } from '../directory-workflow'
+import i18n from '../../../i18n'
 
 export class GenerateDirectoryCommand extends BaseWorkflowCommand<ChapterBlueprint[]> {
   constructor(private params: DirectoryWorkflowParams) {
@@ -11,7 +12,7 @@ export class GenerateDirectoryCommand extends BaseWorkflowCommand<ChapterBluepri
 
   async execute({ context, callbacks }: CommandExecuteParams): Promise<ChapterBlueprint[]> {
     const project = useProjectStore.getState().currentProject
-    if (!project) throw new Error('未打开项目')
+    if (!project) throw new Error(i18n.t('common.noProject', { ns: 'commands' }))
 
     const architecture = context.data.architecture as string
     const existingBlueprints = (context.data.existingBlueprints || []) as ChapterBlueprint[]
@@ -32,7 +33,7 @@ export class GenerateDirectoryCommand extends BaseWorkflowCommand<ChapterBluepri
       endChapter = Math.min(this.params.count, totalChapters)
     }
 
-    callbacks.log(`生成第 ${startChapter}–${endChapter} 章蓝图...`)
+    callbacks.log(i18n.t('directory.generatingBlueprintsRange', { ns: 'commands', from: startChapter, to: endChapter }))
 
     // 从当前默认模型获取 maxTokens，动态计算每批次章节数
     const llmStore = (await import('../../../stores/llm-store')).useLLMStore.getState()
@@ -47,15 +48,15 @@ export class GenerateDirectoryCommand extends BaseWorkflowCommand<ChapterBluepri
     let cursor = startChapter
 
     while (cursor <= endChapter) {
-      if (context.cancelled) { callbacks.log('已取消'); break }
+      if (context.cancelled) { callbacks.log(i18n.t('directory.cancelled', { ns: 'commands' })); break }
 
       const batchEnd = Math.min(cursor + batchSize - 1, endChapter)
-      callbacks.log(`  正在生成第 ${cursor}–${batchEnd} 章...`)
+      callbacks.log(`  ${i18n.t('directory.generatingBatch', { ns: 'commands', from: cursor, to: batchEnd })}`)
 
       let prompt: string
       if (cursor === 1 && this.params.mode === 'full') {
         const template = getPromptTemplate('chapter_blueprint')
-        if (!template) throw new Error('模板丢失')
+        if (!template) throw new Error(i18n.t('common.templateMissing', { ns: 'commands' }))
         prompt = new DirectoryPromptBuilder(template)
           .withNovelArchitecture(architecture)
           .withNumberOfChapters(endChapter)
@@ -65,14 +66,14 @@ export class GenerateDirectoryCommand extends BaseWorkflowCommand<ChapterBluepri
           .build()
       } else {
         const template = getPromptTemplate('chapter_blueprint_chunk')
-        if (!template) throw new Error('模板丢失')
+        if (!template) throw new Error(i18n.t('common.templateMissing', { ns: 'commands' }))
 
         const prevAll = [...existingBlueprints, ...newBlueprints]
-        const chapterList = prevAll.slice(-100).map(c => `第${c.chapterNumber}章 ${c.title}：${c.keyEvents}`).join('\n')
+        const chapterList = prevAll.slice(-100).map(c => `${i18n.t('generateDraft.chapterNumberTitle', { ns: 'commands', chapter: c.chapterNumber, title: c.title })}：${c.keyEvents}`).join('\n')
 
         prompt = new DirectoryPromptBuilder(template)
           .withNovelArchitecture(architecture)
-          .withChapterList(chapterList || '（首批生成）')
+          .withChapterList(chapterList || i18n.t('directory.firstBatchPlaceholder', { ns: 'commands' }))
           .withNumberOfChapters(totalChapters)
           .withN(cursor)
           .withM(batchEnd)
@@ -85,7 +86,7 @@ export class GenerateDirectoryCommand extends BaseWorkflowCommand<ChapterBluepri
       callbacks.setProgress(Math.round(((cursor - startChapter) / (endChapter - startChapter + 1)) * 90))
 
       // systemRole 由模板定义，不再硬编码
-      const systemRole = getPromptTemplate('chapter_blueprint')?.systemRole || '你是一位经验丰富的网文架构师。'
+      const systemRole = getPromptTemplate('chapter_blueprint')?.systemRole || i18n.t('directory.systemRoleDefault', { ns: 'commands' })
       const resultText = await this.callLLM(prompt, systemRole, callbacks, { responseFormat: { type: 'json_object' } })
 
       // ★ 关键修复：接受 AI 返回的从 cursor 到 endChapter 范围内的所有有效章节
@@ -103,7 +104,7 @@ export class GenerateDirectoryCommand extends BaseWorkflowCommand<ChapterBluepri
       const actualMaxChapter = parsed.length > 0
         ? Math.max(...parsed.map(p => p.chapterNumber))
         : batchEnd
-      callbacks.log(`  ✅ 第 ${cursor}–${actualMaxChapter} 章完成（${parsed.length} 章）并已保存入库`)
+      callbacks.log(`  ${i18n.t('directory.batchComplete', { ns: 'commands', from: cursor, max: actualMaxChapter, count: parsed.length })}`)
 
       cursor = actualMaxChapter + 1
     }
@@ -111,7 +112,7 @@ export class GenerateDirectoryCommand extends BaseWorkflowCommand<ChapterBluepri
     context.data.newBlueprints = newBlueprints
     context.data.existingBlueprints = existingBlueprints
 
-    callbacks.log(`✅ 共生成 ${newBlueprints.length} 章蓝图`)
+    callbacks.log(i18n.t('directory.totalGenerated', { ns: 'commands', count: newBlueprints.length }))
     return newBlueprints
   }
 }

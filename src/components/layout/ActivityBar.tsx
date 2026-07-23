@@ -83,7 +83,7 @@ export default function ActivityBar() {
     if (dirtyTabs.length > 0) {
       const names = dirtyTabs.map((t: { name: string }) => t.name).join('、')
       const ok = await confirm(
-        `以下文件有未保存的修改：\n${names}\n\n确定要关闭项目吗？未保存的内容将丢失。`,
+        i18n.t('closeProjectConfirm', { ns: 'layout', names }),
         { title: i18n.t('closeProject', { ns: 'layout' }), confirmText: i18n.t('discardAndClose', { ns: 'layout' }), danger: true }
       )
       if (!ok) return

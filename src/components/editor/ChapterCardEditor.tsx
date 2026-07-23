@@ -8,6 +8,7 @@ import { useProjectStore } from '../../stores/project-store'
 import { useWorkflowStore } from '../../stores/workflow-store'
 import { useLayoutStore } from '../../stores/layout-store'
 import { ipc } from '../../services/ipc-client'
+import i18n from '../../i18n'
 import {
   loadDirectoryBlueprints,
   saveChapterBlueprint,
@@ -30,12 +31,33 @@ import { globalEventBus } from '../../shared/event-bus'
 
 const ROLES = ['建置', '铺垫', '发展', '冲突', '高潮', '转折', '收尾']
 
+const ROLE_LABELS: Record<string, string> = {
+  '建置': 'chapterCard.roles.setup',
+  '铺垫': 'chapterCard.roles.setupAlt',
+  '发展': 'chapterCard.roles.development',
+  '冲突': 'chapterCard.roles.conflict',
+  '高潮': 'chapterCard.roles.climax',
+  '转折': 'chapterCard.roles.turning',
+  '收尾': 'chapterCard.roles.resolution',
+}
+
 const ROLE_COLORS: Record<string, string> = {
   高潮: 'bg-red-500/20 text-red-400',
   冲突: 'bg-orange-500/20 text-orange-400',
   转折: 'bg-purple-500/20 text-purple-400',
   建置: 'bg-blue-500/20 text-blue-400',
   收尾: 'bg-green-500/20 text-green-400',
+  climax: 'bg-red-500/20 text-red-400',
+  conflict: 'bg-orange-500/20 text-orange-400',
+  turning: 'bg-purple-500/20 text-purple-400',
+  setup: 'bg-blue-500/20 text-blue-400',
+  setupAlt: 'bg-blue-500/20 text-blue-400',
+  resolution: 'bg-green-500/20 text-green-400',
+}
+
+function getRoleLabel(role: string): string {
+  const key = ROLE_LABELS[role]
+  return key ? i18n.t(key, { ns: 'editors' }) : role
 }
 
 /** 章节蓝图编辑器 — 读写 directory.json */
@@ -314,7 +336,7 @@ export default function ChapterCardEditor() {
                     'text-[0.7rem] px-1 py-0.5 rounded',
                     ROLE_COLORS[bp.role] || 'bg-[var(--color-hover)] text-[var(--color-text-muted)]'
                   )}>
-                    {bp.role}
+                    {getRoleLabel(bp.role)}
                   </span>
                   {bp.userGuidance && (
                     <span
@@ -400,7 +422,7 @@ export default function ChapterCardEditor() {
                   <div>
                     <Label>{t('chapterCard.chapterRole')}</Label>
                     <NativeSelect value={selected.role} onChange={e => updateField('role', e.target.value)}>
-                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      {ROLES.map(r => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
                     </NativeSelect>
                   </div>
                   <div>

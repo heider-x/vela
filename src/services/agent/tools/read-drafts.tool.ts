@@ -1,25 +1,27 @@
 /**
  * read_drafts — 读取草稿内容及状态
  */
+import i18n from '../../../i18n'
 import { buildAgentTool } from '../tool-registry'
 import { ipc } from '../../ipc-client'
 import { useProjectStore } from '../../../stores/project-store'
 
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
 
 export const readDraftsTool = buildAgentTool({
   name: 'read_drafts',
-  description: '读取指定章节的草稿内容。可以获取初稿、修订稿等不同版本。',
+  description: t('agent.tools.readDrafts.desc'),
   source: 'builtin',
   inputSchema: {
     type: 'object',
     properties: {
       chapter_number: {
         type: 'number',
-        description: '章节号（必填）',
+        description: t('agent.tools.readDrafts.chapterNumberDesc'),
       },
       draft_type: {
         type: 'string',
-        description: '草稿类型',
+        description: t('agent.tools.readDrafts.draftTypeDesc'),
         enum: ['draft_v1', 'revised', 'latest'],
         default: 'latest',
       },
@@ -30,7 +32,7 @@ export const readDraftsTool = buildAgentTool({
   execute: async (args) => {
     const project = useProjectStore.getState().currentProject
     if (!project) {
-      return { success: false, content: '', error: '没有打开的项目' }
+      return { success: false, content: '', error: t('agent.tools.noProject') }
     }
 
     const chapterNum = args.chapter_number as number
@@ -41,7 +43,7 @@ export const readDraftsTool = buildAgentTool({
       const draftsResult = await ipc.invoke('db:draft-list', chapterNum)
       const drafts = (Array.isArray(draftsResult) ? draftsResult : []) as unknown as Array<Record<string, unknown>>
       if (!drafts || drafts.length === 0) {
-        return { success: true, content: `第 ${chapterNum} 章暂无草稿。` }
+        return { success: true, content: t('agent.tools.readDrafts.noDrafts', { chapter: chapterNum }) }
       }
 
       let targetId: number | null = null
@@ -61,7 +63,7 @@ export const readDraftsTool = buildAgentTool({
 
         if (!target) {
           const available = drafts.map(d => `v${d.version as number}`).join('、')
-          return { success: false, content: '', error: `未找到 "${draftType}" 类型的草稿。可用版本：${available}` }
+          return { success: false, content: '', error: t('agent.tools.readDrafts.notFound', { type: draftType, available }) }
         }
         targetId = target.id as number
         targetName = `v${target.version as number}`
@@ -69,11 +71,11 @@ export const readDraftsTool = buildAgentTool({
 
       const fullDraft = await ipc.invoke('db:draft-get-full', targetId as number) as { content?: string } | null
       if (!fullDraft) {
-        return { success: false, content: '', error: `读取草稿内容失败：id ${targetId}` }
+        return { success: false, content: '', error: t('agent.tools.readDrafts.readContentFailed', { id: targetId }) }
       }
-      return { success: true, content: `📝 第 ${chapterNum} 章草稿（${targetName}）\n\n${fullDraft.content}` }
+      return { success: true, content: `${t('agent.tools.readDrafts.title', { chapter: chapterNum, version: targetName })}\n\n${fullDraft.content}` }
     } catch (error) {
-      return { success: false, content: '', error: `读取草稿失败：${String(error)}` }
+      return { success: false, content: '', error: t('agent.tools.readDrafts.readFailed', { error: String(error) }) }
     }
   },
 })

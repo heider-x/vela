@@ -42,6 +42,7 @@
     "noOtherRecent": "No other recent projects",
     "closeProjectTitle": "Close Project",
     "discardAndClose": "Discard & Close",
-    "unsavedConfirm": "The following files have unsaved changes:\n{{names}}\n\nAre you sure you want to close the project? Unsaved changes will be lost."
+    "unsavedConfirm": "The following files have unsaved changes:\n{{names}}\n\nAre you sure you want to close the project? Unsaved changes will be lost.",
+    "closeProjectConfirm": "The following files have unsaved changes:\n{{names}}\n\nAre you sure you want to close the project? Unsaved changes will be lost."
   }
 }

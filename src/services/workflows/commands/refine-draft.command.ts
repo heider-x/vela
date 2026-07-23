@@ -3,6 +3,9 @@ import { useProjectStore } from '../../../stores/project-store'
 import { getPromptTemplate } from '../../prompt-templates'
 import { ChapterPromptBuilder } from '../../prompts/prompt-builder'
 import { ipc } from '../../ipc-client'
+import i18n from '../../../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'commands', ...opts })
 
 import type { ChapterInfo } from '../chapter-workflow'
 import {
@@ -28,15 +31,15 @@ export class RefineDraftCommand extends BaseWorkflowCommand<string> {
 
   async execute({ context, callbacks }: CommandExecuteParams): Promise<string> {
     const project = useProjectStore.getState().currentProject
-    if (!project) throw new Error('未打开项目')
+    if (!project) throw new Error(t('common.noProject'))
 
     const draft = this.params.draftContent
-    if (!draft) throw new Error('无草稿内容')
+    if (!draft) throw new Error(t('common.noDraftContent'))
 
-    callbacks.log('正在进行大神级修稿...')
+    callbacks.log(t('refineDraft.refining'))
 
     const template = getPromptTemplate('refine_chapter')
-    if (!template) throw new Error('未找到修稿模板')
+    if (!template) throw new Error(t('refineDraft.templateNotFound'))
 
     const mergedGuidance = this.params.mergedGuidance || project.novelConfig.globalGuidance || ''
     const userPromptBlock = this.params.userRefinePrompt?.trim()
@@ -80,11 +83,11 @@ export class RefineDraftCommand extends BaseWorkflowCommand<string> {
         globalGuidance: mergedGuidance,
       })
       promptBuilder.withCanonContext(renderCanonContext(canon))
-      callbacks.log(`  🛡️ [Canon] 精修已注入一致性上下文（时间线 ${canon.timeline.length} / 角色 ${canon.characterStates.length}）`)
+      callbacks.log(t('canon.refineContextInjected', { timeline: canon.timeline.length, characters: canon.characterStates.length }))
       // 暂存以便后处理
       ;(context.data as Record<string, unknown>).__canonForRefine = canon
     } catch (e) {
-      callbacks.log(`  ⚠️ [Canon] 精修上下文构造失败：${String(e)}`)
+      callbacks.log(t('canon.refineContextFailed', { error: String(e) }))
     }
 
     const refined = await this.callLLMWithBuilder(promptBuilder, callbacks)
@@ -103,16 +106,16 @@ export class RefineDraftCommand extends BaseWorkflowCommand<string> {
           canon: canonForRefine,
           isRewrite: true,
         })
-        callbacks.log(`  🛡️ [Gate] 精修 ${gateResult.verdict}: ${gateResult.report}`)
+        callbacks.log(t('canon.refineGateVerdict', { verdict: gateResult.verdict, report: gateResult.report }))
         if (gateResult.verdict === 'BLOCK') {
-          throw new Error(`精修结果被叙事一致性 Gate 阻止：${gateResult.blockingReasons.join('；')}`)
+          throw new Error(t('refineDraft.gateBlocked', { reasons: gateResult.blockingReasons.join('；') }))
         }
         if (gateResult.verdict === 'REPAIR' && gateResult.repairedContent) {
           finalRefined = gateResult.repairedContent
-          callbacks.log(`  🛡️ [Canon] 精修自动修复 ${gateResult.repairAttempts} 轮后保存修复稿`)
+          callbacks.log(t('canon.refineAutoRepair', { attempts: gateResult.repairAttempts }))
         }
         if (gateResult.issues.length === 0) {
-          callbacks.log(`  ✅ [Canon] 精修一致性检查通过`)
+          callbacks.log(t('canon.refineCheckPassed'))
         }
         const remaining = gateResult.issues.map(i => i.issue)
         if (remaining.length > 0) context.data.consistencyWarnings = remaining
@@ -123,14 +126,14 @@ export class RefineDraftCommand extends BaseWorkflowCommand<string> {
           remaining: gateResult.issues.length,
         }
       } catch (e) {
-        callbacks.log(`  ❌ [Canon] 精修 Gate 异常：${String(e)}`)
+        callbacks.log(t('canon.refineGateError', { error: String(e) }))
         throw e
       }
     }
 
     const { parseDraftMeta } = await import('../chapter-workflow')
     const baseDraft = await parseDraftMeta(this.params.draftPath)
-    if (!baseDraft) throw new Error('找不到基准草稿版本')
+    if (!baseDraft) throw new Error(t('common.baseDraftNotFound'))
 
     const revIndex = await ipc.invoke('db:revision-next-index', baseDraft.id)
 
@@ -151,7 +154,7 @@ export class RefineDraftCommand extends BaseWorkflowCommand<string> {
     const { useEditorStore } = await import('../../../stores/editor-store')
     useEditorStore.getState().openFile({
       id: `diff-${this.params.draftPath}-${createRes.id}`,
-      name: `修稿合并：第${this.params.chapterNumber}章`,
+      name: t('refineDraft.tabName', { chapter: this.params.chapterNumber }),
       type: 'diff',
       filePath: this.params.draftPath,
       originalContent: this.params.draftContent,
@@ -163,7 +166,7 @@ export class RefineDraftCommand extends BaseWorkflowCommand<string> {
 
     context.data.refined = finalRefined
     context.data.refinedPath = this.params.draftPath
-    callbacks.log(`✅ 修稿完成（${finalRefined.length} 字），已生成修订稿版本 r${revIndex}`)
+    callbacks.log(t('refineDraft.completed', { length: finalRefined.length, version: revIndex }))
     return finalRefined
   }
 }

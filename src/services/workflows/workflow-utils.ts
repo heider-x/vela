@@ -10,6 +10,9 @@
 
 import type { StepCallbacks } from '../../stores/workflow-store'
 import { ipc } from '../ipc-client'
+import i18n from '../../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'commands', ...opts })
 
 // ===== 文本处理通用工具 =====
 
@@ -46,13 +49,13 @@ export async function withRetry(
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       if (attempt < maxRetries) {
-        callbacks.log(`  ⚠️ ${label} 第${attempt + 1}次失败，正在重试...（${errMsg}）`)
+        callbacks.log(t('pipeline.retryFailed', { label, attempt: attempt + 1, error: errMsg }))
       } else {
         return { ok: false, error: errMsg, attempts: attempt + 1 }
       }
     }
   }
-  return { ok: false, error: '未知错误', attempts: maxRetries + 1 }
+  return { ok: false, error: t('pipeline.unknownError'), attempts: maxRetries + 1 }
 }
 
 // ===== 后处理流水线 =====
@@ -201,7 +204,7 @@ export async function runPostProcessPipeline(
 
   if (!onlyFailed || !run) {
     // 新建跑批
-    callbacks.log(`  初始化后处理跑批...`)
+    callbacks.log(t('pipeline.initBatch'))
     const createRes = await ipc.invoke('db:post-process-create-run', {
       triggerSourceType: sourceType,
       triggerSourceId: sourceId,
@@ -209,12 +212,12 @@ export async function runPostProcessPipeline(
       steps: steps.map(s => ({ key: s.key, label: s.label, critical: s.critical }))
     })
     if (!createRes.success || !createRes.id) {
-      throw new Error(`创建跑批失败: ${createRes.error}`)
+      throw new Error(t('pipeline.createBatchFailed', { error: createRes.error }))
     }
     run = await ipc.invoke('db:post-process-get-latest-run', sourceType, sourceId)
   }
 
-  if (!run) throw new Error('跑批获取异常')
+  if (!run) throw new Error(t('pipeline.batchGetFailed'))
 
   const runId = run.id
   const runSteps = await ipc.invoke('db:post-process-get-steps', runId)
@@ -225,7 +228,7 @@ export async function runPostProcessPipeline(
 
     // 修复模式：跳过已成功的步骤
     if (onlyFailed && existingStep?.ok) {
-      callbacks.log(`  ⏭️ ${step.label} — 已成功，跳过`)
+      callbacks.log(t('pipeline.stepSkipped', { label: step.label }))
       continue
     }
 
@@ -234,14 +237,14 @@ export async function runPostProcessPipeline(
     if (result.ok) {
       await ipc.invoke('db:post-process-mark-step-ok', runId, step.key)
     } else {
-      await ipc.invoke('db:post-process-mark-step-failed', runId, step.key, result.error || '未知错误')
+      await ipc.invoke('db:post-process-mark-step-failed', runId, step.key, result.error || t('pipeline.unknownError'))
     }
   }
 
   // 返回最终状态汇总供 UI 展示
   const status = await readPostProcessStatus(projectPath, scope)
   if (!status) {
-    throw new Error('汇总状态获取失败')
+    throw new Error(t('pipeline.summaryStatusFailed'))
   }
 
   // 最终汇总
@@ -249,17 +252,17 @@ export async function runPostProcessPipeline(
   const successSteps = Object.values(status.steps).filter(s => s.ok)
 
   callbacks.log('')
-  callbacks.log(`━━━━━━━━━━ ${sourceLabel} 后处理汇总 ━━━━━━━━━━`)
+  callbacks.log(t('pipeline.summaryHeader', { label: sourceLabel }))
   for (const [, r] of Object.entries(status.steps)) {
-    callbacks.log(`  ${r.ok ? '✅' : '❌'} ${r.label}${r.ok ? '' : ` — ${r.error}`}`)
+    callbacks.log(r.ok ? t('pipeline.summaryLineSuccess', { label: r.label }) : t('pipeline.summaryLineFailed', { label: r.label, error: r.error }))
   }
-  callbacks.log(`━━━━━━━━━━ ${successSteps.length}/${Object.keys(status.steps).length} 成功 ━━━━━━━━━━`)
+  callbacks.log(t('pipeline.summaryFooter', { success: successSteps.length, total: Object.keys(status.steps).length }))
 
   if (failedSteps.length > 0) {
-    const failedLabels = failedSteps.map(r => r.label).join('、')
-    callbacks.log(`⚠️ 以下后处理步骤失败：${failedLabels}`)
+    const failedLabels = failedSteps.map(r => r.label).join(', ')
+    callbacks.log(t('pipeline.failedStepsWarning', { labels: failedLabels }))
     if (failedSteps.some(s => s.critical)) {
-      callbacks.log('💡 存在关键步骤失败，后续流程可能被阻断。请在对应页面使用「重试」功能修复')
+      callbacks.log(t('pipeline.criticalFailureHint'))
     }
   }
 

@@ -3,6 +3,7 @@ import { useProjectStore } from '../../../stores/project-store'
 import { getPromptTemplate } from '../../prompt-templates'
 import { ArchitecturePromptBuilder } from '../../prompts/prompt-builder'
 import { ipc } from '../../ipc-client'
+import i18n from '../../../i18n'
 
 import type { NovelConfig } from '../../../shared/ipc-channels'
 
@@ -28,7 +29,7 @@ async function savePartialData(projectPath: string, data: PartialArchData): Prom
 
 function getNovelConfig(): { project: NonNullable<ReturnType<typeof useProjectStore.getState>['currentProject']>; config: NovelConfig } {
   const project = useProjectStore.getState().currentProject
-  if (!project) throw new Error('未打开项目')
+  if (!project) throw new Error(i18n.t('common.noProject', { ns: 'commands' }))
   return { project, config: project.novelConfig }
 }
 
@@ -53,10 +54,10 @@ export class GenerateConfigCommand extends BaseWorkflowCommand<string> {
   }
 
   async execute({ callbacks }: CommandExecuteParams): Promise<string> {
-    callbacks.log('正在调度配置专家 AI，准备解析您的脑洞...')
+    callbacks.log(i18n.t('architecture.dispatchingAI', { ns: 'commands' }))
 
     const template = getPromptTemplate('generate_global_config')
-    if (!template) throw new Error('未找到 generate_global_config 模板')
+    if (!template) throw new Error(i18n.t('common.templateNotFound', { ns: 'commands', key: 'generate_global_config' }))
 
     const promptBuilder = new ArchitecturePromptBuilder(template)
       .withUserIdea(this.idea)
@@ -69,7 +70,7 @@ export class GenerateConfigCommand extends BaseWorkflowCommand<string> {
       { responseFormat: { type: 'json_object' }, thinking: true }
     )
 
-    callbacks.log('解析完成，正在应用到项目配置...')
+    callbacks.log(i18n.t('architecture.parsingComplete', { ns: 'commands' }))
     try {
       const parsed = this.parseJSON<Partial<NovelConfig>>(resultRaw)
 
@@ -97,43 +98,43 @@ export class GenerateConfigCommand extends BaseWorkflowCommand<string> {
       const saved = await useProjectStore.getState().saveProject()
 
       if (saved) {
-        callbacks.log('✅ AI 配置生成并保存成功，请检查各字段后点击「生成架构」')
+        callbacks.log(i18n.t('architecture.configSavedCheckGenerate', { ns: 'commands' }))
       } else {
-        callbacks.log('✅ AI 配置生成成功，请检查各字段后点击「立即保存」')
+        callbacks.log(i18n.t('architecture.configSavedClickSave', { ns: 'commands' }))
       }
     } catch (e) {
-      throw new Error('AI 返回的内容无法解析为 JSON，请重试或缩短输入。详细信息: ' + String(e))
+      throw new Error(i18n.t('architecture.configJsonParseError', { ns: 'commands', detail: String(e) }))
     }
     callbacks.setProgress(100)
-    return '生成的配置已成功应用！'
+    return i18n.t('architecture.configAppliedSuccess', { ns: 'commands' })
   }
 }
 
 export class GenerateCoreSeedCommand extends BaseWorkflowCommand<string> {
   async execute({ context, callbacks }: CommandExecuteParams): Promise<string> {
     const { project, config } = getNovelConfig()
-    callbacks.log('生成故事前提...')
+    callbacks.log(i18n.t('architecture.generatingPremise', { ns: 'commands' }))
 
     const template = getPromptTemplate('premise')
-    if (!template) throw new Error('未找到 premise 模板')
+    if (!template) throw new Error(i18n.t('common.templateNotFound', { ns: 'commands', key: 'premise' }))
 
     const promptBuilder = new ArchitecturePromptBuilder(template)
       .withGenre(config.genre)
       .withSubGenre(config.subGenre || config.genre)
-      .withTopic(config.coreOutline || '（未填写）')
+      .withTopic(config.coreOutline || i18n.t('architecture.unfilled', { ns: 'commands' }))
       .withTargetAudience(config.targetAudience)
       .withNumberOfChapters(config.totalChapters)
       .withWordNumber(config.wordsPerChapter)
-      .withCoreSetting(config.worldSetting || '（未填写）')
-      .withGoldenFinger(config.goldenFinger || '（未填写）')
-      .withProtagonistProfile(config.protagonistProfile || '（未填写）')
-      .withGlobalGuidance(config.globalGuidance || '（未填写）')
+      .withCoreSetting(config.worldSetting || i18n.t('architecture.unfilled', { ns: 'commands' }))
+      .withGoldenFinger(config.goldenFinger || i18n.t('architecture.unfilled', { ns: 'commands' }))
+      .withProtagonistProfile(config.protagonistProfile || i18n.t('architecture.unfilled', { ns: 'commands' }))
+      .withGlobalGuidance(config.globalGuidance || i18n.t('architecture.unfilled', { ns: 'commands' }))
       .withStepGuidance(((context.data.stepGuidance as Record<string, string>) || {}).premise || '')
       .withReferenceWorks(config.referenceWorks || '')
 
     const result = await this.callLLMWithBuilder(promptBuilder, callbacks, undefined, context)
-    if (!result.trim()) throw new Error('故事前提生成失败，AI 返回空内容')
-    if (context.cancelled) throw new Error('工作流已取消')
+    if (!result.trim()) throw new Error(i18n.t('architecture.premiseGenerationFailed', { ns: 'commands' }))
+    if (context.cancelled) throw new Error(i18n.t('base.workflowCancelled', { ns: 'commands' }))
 
     const content = `# 故事前提\n\n${result}\n`
     await writeArchToDb('premise', content)
@@ -143,7 +144,7 @@ export class GenerateCoreSeedCommand extends BaseWorkflowCommand<string> {
     await savePartialData(project.path, partial)
     context.data.partial = partial
 
-    callbacks.log(`✅ 故事前提已生成并写入数据库`)
+    callbacks.log(i18n.t('architecture.premiseSaved', { ns: 'commands' }))
     return result
   }
 }
@@ -156,31 +157,31 @@ export class GenerateCharactersCommand extends BaseWorkflowCommand<string> {
     const premise_result = core?.premise || ''
 
     if (!premise_result || premise_result.includes('待生成') || premise_result.length < 50) {
-      throw new Error('故事前提尚未生成或内容不完整，请返回勾选生成')
+      throw new Error(i18n.t('architecture.premiseNotReady', { ns: 'commands' }))
     }
 
-    callbacks.log('生成角色图谱...')
+    callbacks.log(i18n.t('architecture.generatingCharacters', { ns: 'commands' }))
     const template = getPromptTemplate('character_dynamics')
-    if (!template) throw new Error('未找到 character_dynamics 模板')
+    if (!template) throw new Error(i18n.t('common.templateNotFound', { ns: 'commands', key: 'character_dynamics' }))
 
     const promptBuilder = new ArchitecturePromptBuilder(template)
       .withCoreSeed(premise_result)
       .withGenre(config.genre)
-      .withProtagonistProfile(config.protagonistProfile || '（未填写）')
-      .withGoldenFinger(config.goldenFinger || '（未填写）')
-      .withWorldBuilding(config.worldSetting || '（未填写）')
+      .withProtagonistProfile(config.protagonistProfile || i18n.t('architecture.unfilled', { ns: 'commands' }))
+      .withGoldenFinger(config.goldenFinger || i18n.t('architecture.unfilled', { ns: 'commands' }))
+      .withWorldBuilding(config.worldSetting || i18n.t('architecture.unfilled', { ns: 'commands' }))
       .withNumberOfChapters(config.totalChapters)
-      .withGlobalGuidance(config.globalGuidance || '（未填写）')
+      .withGlobalGuidance(config.globalGuidance || i18n.t('architecture.unfilled', { ns: 'commands' }))
       .withStepGuidance(((context.data.stepGuidance as Record<string, string>) || {}).characters || '')
       .withReferenceWorks(config.referenceWorks || '')
 
     const result = await this.callLLMWithBuilder(promptBuilder, callbacks, undefined, context)
-    if (!result.trim()) throw new Error('角色图谱生成失败')
-    if (context.cancelled) throw new Error('工作流已取消')
+    if (!result.trim()) throw new Error(i18n.t('architecture.charactersGenerationFailed', { ns: 'commands' }))
+    if (context.cancelled) throw new Error(i18n.t('base.workflowCancelled', { ns: 'commands' }))
 
     await writeArchToDb('charactersArch', `# 角色图谱\n\n${result}\n`)
 
-    callbacks.log('📇 正在启动角色卡自动提取流水线...')
+    callbacks.log(i18n.t('architecture.extractingCharacterCards', { ns: 'commands' }))
     const { runArchCharacterExtract } = await import('../architecture-workflow')
     runArchCharacterExtract(project.path, result, config.genre)
 
@@ -189,7 +190,7 @@ export class GenerateCharactersCommand extends BaseWorkflowCommand<string> {
     await savePartialData(project.path, partial)
     context.data.partial = partial
 
-    callbacks.log(`✅ 角色图谱已生成并写入数据库`)
+    callbacks.log(i18n.t('architecture.charactersSaved', { ns: 'commands' }))
     return result
   }
 }
@@ -202,24 +203,24 @@ export class GenerateWorldBuildingCommand extends BaseWorkflowCommand<string> {
     const premise_result = core?.premise || ''
 
     if (!premise_result || premise_result.includes('待生成') || premise_result.length < 50) {
-      throw new Error('故事前提尚未生成或内容不完整，请返回勾选生成')
+      throw new Error(i18n.t('architecture.premiseNotReady', { ns: 'commands' }))
     }
 
-    callbacks.log('生成世界观...')
+    callbacks.log(i18n.t('architecture.generatingWorldbuilding', { ns: 'commands' }))
     const template = getPromptTemplate('world_building')
-    if (!template) throw new Error('模板丢失')
+    if (!template) throw new Error(i18n.t('common.templateMissing', { ns: 'commands' }))
 
     const promptBuilder = new ArchitecturePromptBuilder(template)
       .withCoreSeed(premise_result)
       .withGenre(config.genre)
-      .withCoreSetting(config.worldSetting || '（未填写）')
-      .withGoldenFinger(config.goldenFinger || '（未填写）')
-      .withProtagonistProfile(config.protagonistProfile || '（未填写）')
-      .withGlobalGuidance(config.globalGuidance || '（未填写）')
+      .withCoreSetting(config.worldSetting || i18n.t('architecture.unfilled', { ns: 'commands' }))
+      .withGoldenFinger(config.goldenFinger || i18n.t('architecture.unfilled', { ns: 'commands' }))
+      .withProtagonistProfile(config.protagonistProfile || i18n.t('architecture.unfilled', { ns: 'commands' }))
+      .withGlobalGuidance(config.globalGuidance || i18n.t('architecture.unfilled', { ns: 'commands' }))
       .withStepGuidance(((context.data.stepGuidance as Record<string, string>) || {}).worldbuilding || '')
 
     const result = await this.callLLMWithBuilder(promptBuilder, callbacks, undefined, context)
-    if (context.cancelled) throw new Error('工作流已取消')
+    if (context.cancelled) throw new Error(i18n.t('base.workflowCancelled', { ns: 'commands' }))
 
     await writeArchToDb('worldbuilding', `# 世界观\n\n${result}\n`)
 
@@ -228,7 +229,7 @@ export class GenerateWorldBuildingCommand extends BaseWorkflowCommand<string> {
     await savePartialData(project.path, partial)
     context.data.partial = partial
 
-    callbacks.log(`✅ 世界观已生成并写入数据库`)
+    callbacks.log(i18n.t('architecture.worldbuildingSaved', { ns: 'commands' }))
     return result
   }
 }
@@ -246,13 +247,13 @@ export class GeneratePlotArchitectureCommand extends BaseWorkflowCommand<string>
     const char_dyn = core?.charactersArch || ''
     const world_b = core?.worldbuilding || ''
 
-    if (!premise || premise.includes('待生成')) throw new Error('故事前提未生成')
-    if (!char_dyn || char_dyn.includes('待生成')) throw new Error('角色图谱未生成')
-    if (!world_b || world_b.includes('待生成')) throw new Error('世界观未生成')
+    if (!premise || premise.includes('待生成')) throw new Error(i18n.t('architecture.premiseNotGenerated', { ns: 'commands' }))
+    if (!char_dyn || char_dyn.includes('待生成')) throw new Error(i18n.t('architecture.charactersNotGenerated', { ns: 'commands' }))
+    if (!world_b || world_b.includes('待生成')) throw new Error(i18n.t('architecture.worldbuildingNotGenerated', { ns: 'commands' }))
 
-    callbacks.log('生成情节大纲...')
+    callbacks.log(i18n.t('architecture.generatingSynopsis', { ns: 'commands' }))
     const template = getPromptTemplate('synopsis')
-    if (!template) throw new Error('模板丢失')
+    if (!template) throw new Error(i18n.t('common.templateMissing', { ns: 'commands' }))
 
     const { getPlotStructureGuide, getNarrativePOVLabel } = await import('../architecture-workflow')
     const guide = getPlotStructureGuide(config.plotStructure || 'three_act', config.totalChapters)
@@ -267,11 +268,11 @@ export class GeneratePlotArchitectureCommand extends BaseWorkflowCommand<string>
       .withWordNumber(config.wordsPerChapter)
       .withPlotStructureGuide(guide)
       .withNarrativePov(pov)
-      .withGlobalGuidance(config.globalGuidance || '（未填写）')
+      .withGlobalGuidance(config.globalGuidance || i18n.t('architecture.unfilled', { ns: 'commands' }))
       .withStepGuidance(((context.data.stepGuidance as Record<string, string>) || {}).synopsis || '')
 
     const result = await this.callLLMWithBuilder(promptBuilder, callbacks, undefined, context)
-    if (context.cancelled) throw new Error('工作流已取消')
+    if (context.cancelled) throw new Error(i18n.t('base.workflowCancelled', { ns: 'commands' }))
 
     await writeArchToDb('synopsis', `# 情节大纲\n\n${result}\n`)
 
@@ -284,7 +285,7 @@ export class GeneratePlotArchitectureCommand extends BaseWorkflowCommand<string>
       await ipc.invoke('fs:write-file', `${project.path}/.vela/partial_arch.json`, '{}')
     }
 
-    callbacks.log(`✅ 情节大纲已生成并写入数据库`)
+    callbacks.log(i18n.t('architecture.synopsisSaved', { ns: 'commands' }))
     return result
   }
 }

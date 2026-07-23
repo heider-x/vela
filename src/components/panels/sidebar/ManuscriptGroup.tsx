@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import type { FileNode } from '../../../shared/ipc-channels'
 import { ipc } from '../../../services/ipc-client'
 import { useProjectStore } from '../../../stores/project-store'
+import i18n from '../../../i18n'
 
 import { showSidebarMenu, openChapterFile } from './SidebarShared'
 
@@ -42,7 +43,7 @@ async function readChapterTitle(filePath: string, fallback: string, chapterNumbe
       if (project) {
         const bpResult = await ipc.invoke('db:blueprint-get', chapterNumber)
         if (bpResult) {
-          const display = `第${chapterNumber}章 ${bpResult.title}`
+          const display = i18n.t('manuscript.chapterFormatWithTitle', { number: chapterNumber, title: bpResult.title, ns: 'panels' })
           chapterTitleCache.set(filePath, display)
           return display
         }
@@ -91,7 +92,7 @@ export default function ManuscriptGroup({ files }: { files: FileNode[]; projectP
         missing.map(async (f) => {
           const rawName = f.name.replace(/\.[^.]+$/, '')
           const chMatch = rawName.match(/^chapter_(\d+)$/)
-          const fallback = chMatch ? `第${parseInt(chMatch[1], 10)}章` : rawName
+          const fallback = chMatch ? i18n.t('manuscript.chapterFormat', { number: parseInt(chMatch[1], 10), ns: 'panels' }) : rawName
           const chNum = chMatch ? parseInt(chMatch[1], 10) : undefined
           entries[f.path] = await readChapterTitle(f.path, fallback, chNum)
         })
@@ -106,7 +107,7 @@ export default function ManuscriptGroup({ files }: { files: FileNode[]; projectP
     if (titleMap[f.path]) return titleMap[f.path]
     const rawName = f.name.replace(/\.[^.]+$/, '')
     const chMatch = rawName.match(/^chapter_(\d+)$/)
-    return chMatch ? `第${parseInt(chMatch[1], 10)}章` : rawName
+    return chMatch ? i18n.t('manuscript.chapterFormat', { number: parseInt(chMatch[1], 10), ns: 'panels' }) : rawName
   }
 
   // 只显示正文章节（过滤掉旧的 _notes 文件）

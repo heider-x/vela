@@ -1,5 +1,5 @@
 import type { PromptTemplate } from '../prompt-templates'
-import { BUILTIN_PROMPTS } from '../prompt-templates'
+import { BUILTIN_PROMPTS, getLocalizedContent, getLocalizedSystemRole, getLocalizedSystemSuffix } from '../prompt-templates'
 
 /**
  * 基础抽象 Prompt 建造者
@@ -23,12 +23,12 @@ export class BasePromptBuilder {
 
   /** 获取模板定义的 system role（LLM system message 角色定位） */
   public getSystemRole(): string {
-    return this.template.systemRole || ''
+    return getLocalizedSystemRole(this.template)
   }
 
   /** 打包输出最终经过所有合法性替换的字符串 */
   public build(): string {
-    let result = this.template.content
+    let result = getLocalizedContent(this.template)
     // 修复：转义 value 中的 {{xxx}}，防止再次被 replaceAll 替换（prompt injection）
     const escapeTemplateVars = (v: string) =>
       (v || '').toString().replace(/\{\{/g, '⦃⦃').replace(/\}\}/g, '⦄⦄')
@@ -40,7 +40,7 @@ export class BasePromptBuilder {
 
     // 自动追加 systemSuffix（始终从内置模板获取，与 renderPrompt 行为对齐）
     const builtinTemplate = BUILTIN_PROMPTS.find(p => p.key === this.template.key)
-    const suffix = builtinTemplate?.systemSuffix
+    const suffix = builtinTemplate ? getLocalizedSystemSuffix(builtinTemplate) : undefined
     if (suffix) {
       let renderedSuffix = suffix
       for (const [key, value] of Object.entries(this.variables)) {

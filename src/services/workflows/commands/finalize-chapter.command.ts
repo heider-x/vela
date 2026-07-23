@@ -1,6 +1,9 @@
+import i18n from '../../../i18n'
 import { BaseWorkflowCommand, CommandExecuteParams } from './base-command'
 import { useProjectStore } from '../../../stores/project-store'
 import { useLLMStore } from '../../../stores/llm-store'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'commands', ...opts })
 import { getPromptTemplate } from '../../prompt-templates'
 import { PostProcessPromptBuilder } from '../../prompts/prompt-builder'
 import { ipc } from '../../ipc-client'
@@ -33,7 +36,7 @@ async function callLLMForPostProcess(
   options?: { responseFormat?: { type: string } },
 ): Promise<string> {
   const llmStore = useLLMStore.getState()
-  if (!llmStore.defaultModelId) throw new Error('未配置默认 AI 模型')
+  if (!llmStore.defaultModelId) throw new Error(t('base.noDefaultModel'))
 
   return new Promise<string>((resolve, reject) => {
     let fullContent = ''
@@ -48,7 +51,7 @@ async function callLLMForPostProcess(
           const raw = text || fullContent
           resolve(stripThinkingTags(raw))
         },
-        onError: (err) => reject(new Error(err || '流式生成失败')),
+        onError: (err) => reject(new Error(err || t('base.streamFailed'))),
       },
       undefined,
       options,
@@ -92,7 +95,7 @@ export function buildFinalizePostProcessSteps(
   // ─── 步骤 1: 导入知识库 ───────────────────────────────────────────
   steps.push({
     key: 'kb_import',
-    label: '📚 导入知识库',
+    label: t('finalize.kbImport'),
     critical: true,
     executor: async (callbacks) => {
       const contentFileName = chapterTitle
@@ -100,9 +103,9 @@ export function buildFinalizePostProcessSteps(
         : `chapter_${chapterNumber}.txt`
       const result = await ipc.invoke('kb:import-text', draftContent, contentFileName, _project.path) as { success: boolean; error?: string; chunkCount?: number }
       if (result.success) {
-        callbacks.log(`✅ 正文章节已导入知识库（${result.chunkCount} 块）`)
+        callbacks.log(t('finalize.kbImportDone', { chunks: result.chunkCount }))
       } else {
-        throw new Error(`导入知识库失败: ${result.error}`)
+        throw new Error(t('finalize.kbImportFailed', { error: result.error }))
       }
     },
   })
@@ -112,7 +115,7 @@ export function buildFinalizePostProcessSteps(
   if (notesTemplate) {
     steps.push({
       key: 'chapter_notes',
-      label: '📋 章节剧情要点',
+      label: t('finalize.chapterNotes'),
       critical: true,
       executor: async (callbacks) => {
         const notesBuilder = new PostProcessPromptBuilder(notesTemplate)
@@ -124,7 +127,7 @@ export function buildFinalizePostProcessSteps(
 
         // 写入蓝图 JSON 的 notes 字段
         await ipc.invoke('db:blueprint-update-notes', chapterNumber, cleanNotes)
-        callbacks.log('✅ 本章剧情要点提取完成（已写入蓝图）')
+        callbacks.log(t('finalize.notesExtracted'))
 
         // [Canon] 同步写入章节级结构化摘要，供下一次生成引用
         try {
@@ -145,7 +148,7 @@ export function buildFinalizePostProcessSteps(
   // ─── 步骤 2.5: [Canon] 写回 —— 把本章提取为结构化时间线/角色/事实/剧情线 ────
   steps.push({
     key: 'canon_writeback',
-    label: '🛡️ [Canon] 叙事一致性写回',
+    label: t('finalize.canonWriteback'),
     critical: false,
     executor: async (callbacks) => {
       try {
@@ -173,12 +176,12 @@ export function buildFinalizePostProcessSteps(
           existingNotes,
         })
         if (result.ok) {
-          callbacks.log(`  🛡️ [Canon] 写回成功（事件 ${(blueprint as unknown as { keyEvents?: string })?.keyEvents ? '已抽取' : '见正文'}）`)
+          callbacks.log(t('finalize.canonWritebackSuccess', { events: (blueprint as unknown as { keyEvents?: string })?.keyEvents ? '已抽取' : '见正文' }))
         } else if (result.errors.length > 0) {
-          callbacks.log(`  ⚠️ [Canon] 写回部分失败（${result.errors.length} 项）：${result.errors.slice(0, 3).join('；')}`)
+          callbacks.log(t('finalize.canonWritebackPartial', { count: result.errors.length, errors: result.errors.slice(0, 3).join('；') }))
         }
       } catch (e) {
-        callbacks.log(`  ⚠️ [Canon] 写回异常：${String(e)}`)
+        callbacks.log(t('finalize.canonWritebackError', { error: String(e) }))
       }
     },
   })
@@ -187,14 +190,14 @@ export function buildFinalizePostProcessSteps(
   if (chapterNumber % 5 === 0) {
     steps.push({
       key: 'canon_compression',
-      label: '🧠 [Compression] 长期记忆压缩',
+      label: t('finalize.compression'),
       critical: false,
       executor: async (callbacks: any) => {
         try {
           const { canonStore } = await import('../../narrative-consistency/canon-store');
           const recent = await canonStore.getRecentSummaries(20);
           if (recent.length < 5) {
-            callbacks.log('  ℹ️ [Compression] 不足5章，跳过压缩');
+            callbacks.log(t('finalize.compressionSkip'));
             return;
           }
           // 将前15章合并为压缩摘要
@@ -202,16 +205,16 @@ export function buildFinalizePostProcessSteps(
           const compressed = oldSummaries
             .map((s: any) => '第' + s.chapterNumber + '章：' + (s.summary || '').slice(0, 80))
             .join(' | ');
-          callbacks.log(`  🧠 [Compression] 已压缩 ${oldSummaries.length} 章为长期记忆摘要（${compressed.length} 字）`);
+          callbacks.log(t('finalize.compressionDone', { count: oldSummaries.length, length: compressed.length }));
           // 写入压缩后的 canonical summary
           await ipc.invoke('db:canon-summary-upsert', {
             chapterNumber: -1, // 特殊标记：压缩摘要
-            title: `压缩摘要（1-第${chapterNumber}章）`,
+            title: t('finalize.compressionTitle', { chapter: chapterNumber }),
             summary: compressed,
             createdAt: new Date().toISOString(),
           });
         } catch (e) {
-          callbacks.log(`  ⚠️ [Compression] 压缩异常：${String(e)}`);
+          callbacks.log(t('finalize.compressionError', { error: String(e) }));
         }
       },
     });
@@ -222,7 +225,7 @@ export function buildFinalizePostProcessSteps(
   if (cardTemplate) {
     steps.push({
       key: 'character_cards',
-      label: '🎭 角色状态更新',
+      label: t('finalize.charStateUpdate'),
       critical: false,
       executor: async (callbacks) => {
         // 读取现有角色卡
@@ -265,7 +268,7 @@ export function buildFinalizePostProcessSteps(
                 updatedAtChapter: chapterNumber,
               }
               await ipc.invoke('db:character-update-state', upd.name, newState)
-              callbacks.log(`✅ 更新角色动态状态: ${dbChar.name}`)
+              callbacks.log(t('finalize.charStateUpdated', { name: dbChar.name }))
             }
           }
         }
@@ -293,7 +296,7 @@ export function buildFinalizePostProcessSteps(
             })
           }
           if (newCharCount > 0) {
-            callbacks.log(`✅ 自动提取并登记 ${newCharCount} 名新出场角色`)
+            callbacks.log(t('finalize.newCharsRegistered', { count: newCharCount }))
           }
         }
       },
@@ -304,17 +307,17 @@ export function buildFinalizePostProcessSteps(
   if (chapterNumber % 5 === 0) {
     steps.push({
       key: 'style_analysis',
-      label: '🎨 文风自动学习',
+      label: t('finalize.styleLearning'),
       critical: false,
       executor: async (callbacks) => {
-        callbacks.log('🎨 触发文风自动学习（每5章一次）...')
+        callbacks.log(t('finalize.styleLearningTriggered'))
         const { AnalyzeWritingStyleCommand } = await import('./analyze-style.command')
         await new AnalyzeWritingStyleCommand().execute({
           step: {} as unknown,
           context: { data: {}, cancelled: false },
           callbacks,
         })
-        callbacks.log('✅ 文风分析完成，已更新配置')
+        callbacks.log(t('finalize.styleAnalysisDone'))
       },
     })
   }
@@ -331,17 +334,17 @@ export class FinalizeChapterCommand extends BaseWorkflowCommand<void> {
 
   async execute({ callbacks }: CommandExecuteParams): Promise<void> {
     const project = useProjectStore.getState().currentProject
-    if (!project) throw new Error('未打开项目')
+    if (!project) throw new Error(t('common.noProject'))
 
     const refinedDraftText = this.params.draftContent
-    if (!refinedDraftText) throw new Error('没有定稿内容')
+    if (!refinedDraftText) throw new Error(t('finalize.noFinalizedContent'))
 
-    callbacks.log('\n===== 开始定稿与后处理分析 =====')
+    callbacks.log('\n' + t('finalize.startFinalize'))
 
     // 1. 获取对应草稿。一致性 Gate 必须先通过，才能写入 finalized/物理文件。
     const { parseDraftMeta } = await import('../chapter-workflow')
     const dbDraft = await parseDraftMeta(this.params.draftPath)
-    if (!dbDraft) throw new Error('内部状态流转异常：无法在数据库中定位该草稿源文件或解析路径版本')
+    if (!dbDraft) throw new Error(t('finalize.internalStateError'))
 
     // ==========================================
     // [Gate v2] 叙事一致性强制门禁 — 必须在任何定稿写入之前通过
@@ -365,7 +368,7 @@ export class FinalizeChapterCommand extends BaseWorkflowCommand<void> {
           role: c.role as string,
           currentState: c.currentState as any,
         })),
-        chapterGoal: '定稿第' + this.params.chapterNumber + '章',
+        chapterGoal: t('finalize.chapterGoalPrefix', { chapter: this.params.chapterNumber }),
         previousEnding: '',
         ragContext: '',
         writingStyle: project.novelConfig.writingStyle || '',
@@ -377,18 +380,18 @@ export class FinalizeChapterCommand extends BaseWorkflowCommand<void> {
         canon,
         isRewrite: false,
       })
-      callbacks.log('  [Gate] ' + gateResult.verdict + ': ' + gateResult.report)
+      callbacks.log(t('canon.finalizeGateVerdict', { verdict: gateResult.verdict, report: gateResult.report }))
       if (gateResult.verdict === 'BLOCK') {
-        callbacks.log('  [Gate] BLOCKED - HIGH conflicts. Please refine and retry.')
+        callbacks.log(t('canon.finalizeGateBlocked'))
         return
       }
       if (gateResult.verdict === 'REPAIR' && gateResult.repairedContent) {
         gatedContent = gateResult.repairedContent
-        callbacks.log('  [Gate] REPAIRED (' + gateResult.repairAttempts + ' attempts)')
+        callbacks.log(t('canon.finalizeGateRepaired', { attempts: gateResult.repairAttempts }))
       }
     } catch (e) {
-      callbacks.log('  [Gate] error: ' + String(e))
-      throw new Error(`叙事一致性 Gate 执行失败，定稿已中止：${String(e)}`)
+      callbacks.log(t('canon.finalizeGateError', { error: String(e) }))
+      throw new Error(t('finalize.gateExecutionFailed', { error: String(e) }))
     }
 
     await ipc.invoke('db:draft-update-content', dbDraft.id, gatedContent, gatedContent.length)
@@ -402,16 +405,16 @@ export class FinalizeChapterCommand extends BaseWorkflowCommand<void> {
       const contentToWrite = titleLine + gatedContent.replace(/^#+ .*\n*/, '')
       await ipc.invoke('fs:write-file', physicalPath, contentToWrite)
     } catch (e) {
-      callbacks.log(`⚠️ 写入根目录物理文件失败: ${String(e)}`)
+      callbacks.log(t('finalize.fileWriteFailed', { error: String(e) }))
     }
 
-    callbacks.log(`✅ 定稿内容已正式写入 SQLite 数据库并同步为根目录文件 (第${this.params.chapterNumber}章${safeTitle}.txt)`)
+    callbacks.log(t('finalize.finalizedSaved', { chapter: this.params.chapterNumber, title: safeTitle }))
 
     // 3. 通过 PostProcessPipeline 执行后处理（状态持久化 + 支持重试）
-    callbacks.log('🚀 正在启动后台大模型推演系统更新全书状态...')
+    callbacks.log(t('finalize.launchingPostProcess'))
 
     const scope = getChapterFinalizeScope(this.params.chapterNumber)
-    const sourceLabel = `第${this.params.chapterNumber}章定稿`
+    const sourceLabel = t('finalize.chapterGoalPrefix', { chapter: this.params.chapterNumber })
     const steps = buildFinalizePostProcessSteps(
       project,
       this.params.chapterNumber,
@@ -421,7 +424,7 @@ export class FinalizeChapterCommand extends BaseWorkflowCommand<void> {
 
     await runPostProcessPipeline(project.path, scope, sourceLabel, steps, callbacks)
 
-    callbacks.log('\n🎉 第' + this.params.chapterNumber + '章创作全流程彻底完成！')
+    callbacks.log('\n' + t('finalize.chapterComplete', { chapter: this.params.chapterNumber }))
     useProjectStore.getState().refreshFileTree()
 
     // 通过 EventBus 通知 ProjectService 执行定稿后的统一刷新

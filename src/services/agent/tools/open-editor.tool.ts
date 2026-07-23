@@ -1,26 +1,29 @@
 /**
  * open_editor — 在编辑器中打开文件
  */
+import i18n from '../../../i18n'
 import { buildAgentTool } from '../tool-registry'
 import { useEditorStore } from '../../../stores/editor-store'
 import { useProjectStore } from '../../../stores/project-store'
 import { ipc } from '../../ipc-client'
 import { validatePath } from './safe-path'
 
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
+
 export const openEditorTool = buildAgentTool({
   name: 'open_editor',
-  description: '在 Vela 编辑器中打开指定文件的 Tab 页。用户可以直接在编辑器中查看和编辑内容。',
+  description: t('agent.tools.openEditor.desc'),
   source: 'builtin',
   inputSchema: {
     type: 'object',
     properties: {
       file_path: {
         type: 'string',
-        description: '相对于项目根目录的文件路径',
+        description: t('agent.tools.openEditor.filePathDesc'),
       },
       tab_type: {
         type: 'string',
-        description: 'Tab 类型',
+        description: t('agent.tools.openEditor.tabTypeDesc'),
         enum: ['chapter', 'outline', 'character', 'config', 'arch-file'],
         default: 'chapter',
       },
@@ -34,12 +37,12 @@ export const openEditorTool = buildAgentTool({
     const tabType = (args.tab_type as string) ?? 'chapter'
 
     if (!filePath) {
-      return { success: false, content: '', error: '缺少 file_path 参数' }
+      return { success: false, content: '', error: t('agent.tools.openEditor.missingFilePath') }
     }
 
     const project = useProjectStore.getState().currentProject
     if (!project) {
-      return { success: false, content: '', error: '没有打开的项目' }
+      return { success: false, content: '', error: t('agent.tools.noProject') }
     }
 
     const fullPath_check = validatePath(project.path, filePath)
@@ -51,7 +54,7 @@ export const openEditorTool = buildAgentTool({
     // 读取文件内容
     const result = await ipc.invoke('fs:read-file', fullPath)
     if (!result.success) {
-      return { success: false, content: '', error: `文件读取失败：${result.error}` }
+      return { success: false, content: '', error: t('agent.tools.openEditor.readFailed', { error: result.error }) }
     }
 
     // 在编辑器中打开
@@ -66,7 +69,7 @@ export const openEditorTool = buildAgentTool({
 
     return {
       success: true,
-      content: `✅ 已在编辑器中打开：${fileName}`,
+      content: t('agent.tools.openEditor.opened', { name: fileName }),
       artifacts: [{ type: 'tab_opened', path: fullPath, name: fileName }],
     }
   },

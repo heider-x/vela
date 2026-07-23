@@ -3,6 +3,9 @@ import { useProjectStore } from '../../../stores/project-store'
 import { getPromptTemplate } from '../../prompt-templates'
 import { BasePromptBuilder } from '../../prompts/prompt-builder'
 import { ipc } from '../../ipc-client'
+import i18n from '../../../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'commands', ...opts })
 
 
 /**
@@ -13,16 +16,16 @@ import { ipc } from '../../ipc-client'
 export class AnalyzeWritingStyleCommand extends BaseWorkflowCommand<string> {
   async execute({ callbacks }: CommandExecuteParams): Promise<string> {
     const project = useProjectStore.getState().currentProject
-    if (!project) throw new Error('未打开项目')
+    if (!project) throw new Error(t('common.noProject'))
 
-    callbacks.log('📖 正在采样已有章节正文...')
+    callbacks.log(t('analyzeStyle.samplingChapters'))
 
     // 采样策略：取最近 5 章的正文（从数据库查询）
     const sampleTexts: string[] = []
     try {
       const maxChap = await ipc.invoke('db:draft-get-max-finalized-chapter')
       if (maxChap <= 0) {
-        callbacks.log('⚠️ 无已写章节，无法分析文风')
+        callbacks.log(t('analyzeStyle.noFinalizedChapters'))
         return ''
       }
 
@@ -36,19 +39,19 @@ export class AnalyzeWritingStyleCommand extends BaseWorkflowCommand<string> {
           }
         }
       }
-      callbacks.log(`  已采样 ${sampleTexts.length} 章正文`)
+      callbacks.log(t('analyzeStyle.sampledChapters', { count: sampleTexts.length }))
     } catch {
-      callbacks.log('⚠️ 提取定稿内容失败')
+      callbacks.log(t('analyzeStyle.extractFailed'))
       return ''
     }
 
     if (sampleTexts.length === 0) {
-      callbacks.log('⚠️ 采样文本为空，跳过文风分析')
+      callbacks.log(t('analyzeStyle.emptySample'))
       return ''
     }
 
     const template = getPromptTemplate('analyze_writing_style')
-    if (!template) throw new Error('未找到文风分析模板')
+    if (!template) throw new Error(t('analyzeStyle.templateNotFound'))
 
     const sampleText = sampleTexts.join('\n\n---\n\n')
     const prompt = new BasePromptBuilder(template)
@@ -56,7 +59,7 @@ export class AnalyzeWritingStyleCommand extends BaseWorkflowCommand<string> {
       ; (prompt as unknown as { variables: { sample_text: string } }).variables = { sample_text: sampleText }
     const finalPrompt = prompt.build()
 
-    callbacks.log('🎨 调用 AI 分析文风特征...')
+    callbacks.log(t('analyzeStyle.callingAI'))
     const result = await this.callLLM(
       finalPrompt,
       template.systemRole || '你是一位资深的文学评论家和网文研究者。',
@@ -65,7 +68,7 @@ export class AnalyzeWritingStyleCommand extends BaseWorkflowCommand<string> {
 
     const cleanResult = this.stripThinkingTags(result).trim()
     if (!cleanResult) {
-      callbacks.log('⚠️ 文风分析返回空结果')
+      callbacks.log(t('analyzeStyle.emptyResult'))
       return ''
     }
 
@@ -73,7 +76,7 @@ export class AnalyzeWritingStyleCommand extends BaseWorkflowCommand<string> {
     const { updateNovelConfig, saveProject } = useProjectStore.getState()
     updateNovelConfig({ writingStyle: cleanResult })
     await saveProject()
-    callbacks.log('✅ 文风特征已保存到小说配置')
+    callbacks.log(t('analyzeStyle.saved'))
 
     return cleanResult
   }

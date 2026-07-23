@@ -218,7 +218,8 @@
     "extracting": "提取中...",
     "extractRoles": "提取角色卡",
     "extractRolesTooltip": "角色档案为空，可能是因为上一次生成失败或被删除。点击重新提取",
-    "clickToView": "点击查看"
+    "clickToView": "点击查看",
+    "clickToViewDesc": "点击查看 — {{desc}}"
   },
   "novelConfig": {
     "title": "小说配置",

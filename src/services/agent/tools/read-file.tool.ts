@@ -1,21 +1,24 @@
 /**
  * read_file — 读取项目内的文件内容
  */
+import i18n from '../../../i18n'
 import { buildAgentTool } from '../tool-registry'
 import { ipc } from '../../ipc-client'
 import { useProjectStore } from '../../../stores/project-store'
 import { validatePath } from './safe-path'
 
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
+
 export const readFileTool = buildAgentTool({
   name: 'read_file',
-  description: '读取项目内指定文件的内容。支持读取架构文件、蓝图、角色卡、草稿、配置等任意文本文件。',
+  description: t('agent.tools.readFile.desc'),
   source: 'builtin',
   inputSchema: {
     type: 'object',
     properties: {
       file_path: {
         type: 'string',
-        description: '相对于项目根目录的文件路径，例如 "02_architecture/世界观.md"',
+        description: t('agent.tools.readFile.filePathDesc'),
       },
     },
     required: ['file_path'],
@@ -25,7 +28,7 @@ export const readFileTool = buildAgentTool({
     const filePath = args.file_path as string
     const project = useProjectStore.getState().currentProject
     if (!project) {
-      return { success: false, content: '', error: '没有打开的项目' }
+      return { success: false, content: '', error: t('agent.tools.noProject') }
     }
 
     // 路径安全校验
@@ -36,7 +39,7 @@ export const readFileTool = buildAgentTool({
 
     const result = await ipc.invoke('fs:read-file', pathCheck.fullPath)
     if (!result.success) {
-      return { success: false, content: '', error: result.error ?? '文件读取失败' }
+      return { success: false, content: '', error: result.error ?? t('agent.tools.readFile.readFailed') }
     }
 
     return { success: true, content: result.content }

@@ -115,7 +115,192 @@
     "willExecuteAction": "Will execute: {{tool}}",
     "referenceContext": "Reference Context",
     "commands": "Commands",
-    "error": "Error"
+    "error": "Error",
+    "slash": {
+      "clearName": "Clear Conversation",
+      "clearDesc": "Clear current conversation history",
+      "newName": "New Conversation",
+      "newDesc": "Start a new conversation",
+      "helpName": "Help",
+      "helpDesc": "Show available commands and features",
+      "statusName": "Project Status",
+      "statusDesc": "View current project status and progress"
+    },
+    "mentionTargets": {
+      "architecture": "Story Architecture",
+      "character": "Character Card",
+      "blueprint": "Chapter Blueprint",
+      "knowledge": "Knowledge Base",
+      "chapter": "Current Chapter",
+      "file": "Project File"
+    },
+    "skills": {
+      "optionalArgs": "Optional arguments",
+      "reviewChapter": {
+        "name": "Chapter Review",
+        "desc": "Comprehensive quality review of a specified chapter, covering plot logic, character consistency, pacing, foreshadowing, and more.",
+        "when": "When the user asks to review, check, or evaluate a chapter"
+      },
+      "brainstorm": {
+        "name": "Brainstorm",
+        "desc": "Creative brainstorming on a given topic, generating multiple creative directions and inspiration.",
+        "when": "When the user asks for brainstorming, inspiration, or creative ideas"
+      },
+      "characterAnalysis": {
+        "name": "Character Analysis",
+        "desc": "In-depth analysis of a specified character's personality, motivations, character arc, relationships, and more.",
+        "when": "When the user wants to understand or adjust a character's settings"
+      },
+      "continuityCheck": {
+        "name": "Continuity Check",
+        "desc": "Check for setting consistency and continuity issues in the novel, discovering contradictions and omissions.",
+        "when": "When the user wants to check for setting contradictions or inconsistencies"
+      },
+      "writingCoach": {
+        "name": "Writing Coach",
+        "desc": "Professional writing technique guidance and prose improvement suggestions.",
+        "when": "When the user wants to improve writing skills or learn writing techniques"
+      }
+    },
+    "tools": {
+      "noProject": "No project opened",
+      "missingFilePath": "Missing file path parameter",
+      "pathOutOfBounds": "Path out of bounds: \"{{path}}\" is outside the project directory. Only project files are accessible.",
+      "listChapters": {
+        "desc": "List all chapter status overview in the project, including which chapters have blueprints, drafts, finalized versions, etc. For understanding overall project progress.",
+        "noData": "📊 No chapter data in the project yet. Consider generating story architecture and chapter blueprints first.",
+        "tableHeader": "| Chapter | Blueprint | Draft | Finalized |",
+        "summary": "📊 Chapter Progress Overview",
+        "summaryDetail": "Total: {{total}} chapters, {{blueprints}} blueprints, {{drafts}} drafts, {{finalized}} finalized",
+        "getFailed": "Fetch failed: {{error}}"
+      },
+      "openEditor": {
+        "desc": "Open a specified file's tab in the Vela editor. Users can view and edit content directly in the editor.",
+        "filePathDesc": "File path relative to project root",
+        "tabTypeDesc": "Tab type",
+        "missingFilePath": "Missing file_path parameter",
+        "readFailed": "File read failed: {{error}}",
+        "opened": "✅ Opened in editor: {{name}}"
+      },
+      "readArchitecture": {
+        "desc": "Read the novel's story architecture files (four-part architecture: premise, worldbuilding, character map, plot outline, etc.). Core tool for understanding the novel's overall structure.",
+        "fileNameDesc": "Architecture file name (optional). If empty, lists all architecture files. E.g. \"premise.md\", \"worldbuilding.md\"",
+        "notInitialized": "Project architecture not initialized",
+        "emptyFile": "Architecture file content is empty: {{name}}",
+        "fileContent": "📐 Architecture file: {{name}}",
+        "empty": "⚠️ Architecture is empty, no architecture files yet. Consider generating story architecture via workflow.",
+        "allFiles": "📐 Story Architecture ({{count}} files)",
+        "readFailed": "Failed to read architecture: {{error}}"
+      },
+      "readBlueprint": {
+        "desc": "Read the blueprint for a specified chapter (plot outline, scene allocation, character appearance plan, etc.). Blueprints are detailed plans before writing.",
+        "chapterNumberDesc": "Chapter number (optional). If empty, lists all blueprint files.",
+        "notFound": "Chapter {{chapter}} blueprint not found or failed to read",
+        "title": "📋 Chapter {{chapter}} Blueprint",
+        "empty": "⚠️ Blueprint is empty. Consider generating chapter blueprints via workflow first.",
+        "listTitle": "📋 Blueprint List ({{count}})",
+        "noTitle": "Untitled",
+        "listHint": "Use the chapter_number parameter to read specific chapter blueprint content.",
+        "readFailed": "Failed to read blueprint: {{error}}",
+        "labels": {
+          "title": "Title",
+          "role": "Role",
+          "purpose": "Purpose",
+          "keyEvents": "Key Events",
+          "characters": "Characters",
+          "suspense": "Suspense",
+          "notes": "Notes",
+          "guidance": "User Guidance"
+        }
+      },
+      "readCharacters": {
+        "desc": "Read the novel's character card files. Can get all character list or detailed information for a specified character (background, personality, appearance, character arc, etc.).",
+        "characterNameDesc": "Character name (optional). If empty, lists all characters.",
+        "empty": "⚠️ Character pool is empty, no character cards yet. Consider creating character cards first.",
+        "notFound": "Character \"{{name}}\" not found. Available characters: {{available}}",
+        "cardTitle": "👤 Character Card: {{name}}",
+        "listTitle": "👤 Character List ({{count}})",
+        "listHint": "Use the character_name parameter to read detailed information for a specific character.",
+        "readFailed": "Failed to read character list: {{error}}"
+      },
+      "readDrafts": {
+        "desc": "Read draft content for a specified chapter. Can get different versions like initial draft, revised draft, etc.",
+        "chapterNumberDesc": "Chapter number (required)",
+        "draftTypeDesc": "Draft type",
+        "noDrafts": "Chapter {{chapter}} has no drafts yet.",
+        "notFound": "No draft of type \"{{type}}\" found. Available versions: {{available}}",
+        "readContentFailed": "Failed to read draft content: id {{id}}",
+        "title": "📝 Chapter {{chapter}} Draft ({{version}})",
+        "readFailed": "Failed to read draft: {{error}}"
+      },
+      "readFile": {
+        "desc": "Read the content of a specified file within the project. Supports reading architecture files, blueprints, character cards, drafts, configs, and any other text files.",
+        "filePathDesc": "File path relative to project root, e.g. \"02_architecture/worldbuilding.md\"",
+        "readFailed": "File read failed"
+      },
+      "readProjectState": {
+        "desc": "Read the project's global state information, including novel config, recent chapter summaries, etc. For understanding the overall project overview.",
+        "includeConfigDesc": "Include full novel configuration",
+        "includeSummaryDesc": "Include recent chapter summaries",
+        "projectStatus": "# 📊 Project Status: \"{{name}}\"",
+        "novelConfig": "## Novel Configuration",
+        "configFailed": "⚠️ Failed to get configuration",
+        "chapterSummary": "## Recent Chapter Summaries",
+        "chapterHeading": "### Chapter {{chapter}} {{title}}",
+        "noSummary": "No chapter summaries yet. Summaries are auto-generated and written to blueprints after finalization."
+      },
+      "searchKnowledge": {
+        "desc": "Semantic search in the knowledge base to find related reference materials, setting documents, etc. Suitable for finding world settings, character backgrounds, story materials, etc.",
+        "queryDesc": "Search query, e.g. \"protagonist's golden finger setting\"",
+        "topKDesc": "Number of results to return",
+        "missingQuery": "Missing query parameter",
+        "noResults": "No related results found. Try different keywords, or use read_architecture, read_characters, and other tools to read project data directly.",
+        "resultTitle": "Result {{number}}",
+        "similarity": "Similarity",
+        "source": "Source",
+        "foundCount": "Found {{count}} related results:"
+      },
+      "startWorkflow": {
+        "desc": "Trigger a Vela creative workflow. Supports writing, revision, review, finalization, blueprint generation, and architecture generation workflows. This executes the corresponding multi-step creative process in the AI output panel.",
+        "workflowDesc": "Workflow type",
+        "chapterNumberDesc": "Chapter number (required for writing/revision/review/finalization)",
+        "missingWorkflow": "Missing workflow parameter",
+        "needsChapter": "Workflow {{workflow}} requires the chapter_number parameter",
+        "writeDraft": "Writing",
+        "review": "Review",
+        "refine": "Revision",
+        "finalize": "Finalization",
+        "generateBlueprint": "Blueprint Generation",
+        "generateArchitecture": "Architecture Generation",
+        "chapterInfo": " (Chapter {{chapter}})",
+        "switched": "🚀 Switched to AI Output panel. Please start the \"{{name}}{{chapterInfo}}\" workflow in the panel."
+      },
+      "updateConfig": {
+        "desc": "Update the novel project's configuration information, such as genre, target audience, outline, writing style, etc. This modifies core project settings and requires user confirmation.",
+        "fieldDesc": "Field name to update",
+        "valueDesc": "New value",
+        "missingParams": "Missing field or value parameter",
+        "updateFailed": "Configuration update failed",
+        "updated": "✅ Configuration updated: {{field}} = \"{{value}}\""
+      },
+      "writeFile": {
+        "desc": "Write or modify files within the project. Can be used to create new files or overwrite existing file content. This is a write operation that requires user confirmation.",
+        "filePathDesc": "File path relative to project root",
+        "contentDesc": "File content to write",
+        "missingParams": "Missing file_path or content parameter",
+        "writeFailed": "Write failed",
+        "written": "✅ File written: {{path}} ({{count}} characters)"
+      }
+    },
+    "engine": {
+      "llmFailed": "LLM call failed: {{error}}",
+      "unknownTool": "Unknown tool: {{name}}",
+      "userRejected": "User rejected execution",
+      "execError": "Execution error: {{error}}",
+      "maxRounds": "⚠️ Maximum tool call limit reached, auto-stopped.",
+      "toolTimeout": "Tool execution timeout ({{seconds}}s)",
+      "resultTruncated": "… (Content truncated, full content is {{count}} characters. Use the read_file tool to get the complete file content)"
+    }
   },
   "characters": {
     "protagonist": "🌟 Protagonist",
@@ -182,7 +367,8 @@
     "newProject": "New Project",
     "openProject": "Open Project",
     "openNovelConfig": "Open novel config",
-    "openChapterBlueprint": "Open chapter blueprint"
+    "openChapterBlueprint": "Open chapter blueprint",
+    "blueprintTab": "Chapter Blueprint"
   },
   "common": {
     "refresh": "Refresh",
@@ -216,7 +402,9 @@
     "noFinalizedChapters": "No finalized chapters yet",
     "openChapter": "Open chapter",
     "copyPath": "Copy file path",
-    "clickToOpen": "Click to open"
+    "clickToOpen": "Click to open",
+    "chapterFormat": "Chapter {{number}}",
+    "chapterFormatWithTitle": "Chapter {{number}} {{title}}"
   },
   "draftBox": {
     "title": "Draft Box",

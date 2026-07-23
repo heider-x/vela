@@ -16,7 +16,7 @@ export interface PromptTemplate {
   name: string
   /** 用途说明（i18n key: promptTemplates.{key}.description） */
   description: string
-  /** 模板内容（支持 {{变量}} 插值） */
+  /** 模板内容（支持 {{变量}} 插值）— 中文默认 */
   content: string
   /** 不可编辑的系统约束（输出格式、JSON schema 等），渲染时自动追加到 content 末尾 */
   systemSuffix?: string
@@ -24,6 +24,12 @@ export interface PromptTemplate {
   systemRole?: string
   /** 可用变量列表 */
   variables: Record<string, string>
+  /** Localized content overrides keyed by locale */
+  contentLocalized?: Record<string, string>
+  /** Localized systemRole overrides */
+  systemRoleLocalized?: Record<string, string>
+  /** Localized systemSuffix overrides */
+  systemSuffixLocalized?: Record<string, string>
 }
 
 /** 获取翻译后的模板名称 */
@@ -34,6 +40,24 @@ export function getPromptName(key: string): string {
 /** 获取翻译后的模板描述 */
 export function getPromptDescription(key: string): string {
   return i18n.t(`promptTemplates.${key}.description`, { ns: 'settings' })
+}
+
+/** Получить локализованное содержимое промпта */
+export function getLocalizedContent(template: PromptTemplate): string {
+  const lang = i18n.language
+  return template.contentLocalized?.[lang] || template.contentLocalized?.[lang.split('-')[0]] || template.content
+}
+
+/** Получить локализованную системную роль */
+export function getLocalizedSystemRole(template: PromptTemplate): string {
+  const lang = i18n.language
+  return template.systemRoleLocalized?.[lang] || template.systemRoleLocalized?.[lang.split('-')[0]] || template.systemRole || ''
+}
+
+/** Получить локализованный системный суффикс */
+export function getLocalizedSystemSuffix(template: PromptTemplate): string {
+  const lang = i18n.language
+  return template.systemSuffixLocalized?.[lang] || template.systemSuffixLocalized?.[lang.split('-')[0]] || template.systemSuffix || ''
 }
 
 /** 允许用户自定义编辑的模板 Key 列表（其余为系统模板，不可编辑） */
@@ -100,6 +124,44 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
     "globalGuidance": "全局写作指导与核心禁忌（严格基于{{number_of_chapters}}章规模：前/中/后期各占多少章、小/中/大高潮的具体章节频率、严禁触碰的毒点）",
     "writingStyle": "文风配置（不少于100字，涵盖：叙述节奏快慢与场景切换频率、描写密度偏好、对话风格与口语化程度、用词偏好古风/现代/专业术语、情感基调热血/冷峻/诙谐/沉重、标志性修辞手法与过渡技巧。请根据类型和受众推荐最匹配的写作风格）"
 }`,
+    contentLocalized: {
+      en: `Based on the author's one-line idea or initial concept, please expand and complete a novel's global bestseller configuration following the most mature and commercially dominant web novel core structure.
+
+Author's initial concept:
+{{user_idea}}
+
+Novel scale (IMPORTANT! Design pacing strictly according to these parameters):
+- Planned total chapters: {{number_of_chapters}}
+- Words per chapter: {{word_number}}
+- Approximate total word count: {{number_of_chapters}} × {{word_number}} words
+
+【Core Requirements】
+1. Deep commercial value mining: Extract powerful "satisfaction points" and "emotional pain points" to build a compelling setup-development-twist-resolution arc.
+2. Professional-grade settings: Apply "character graph" and "3D worldbuilding" principles. All settings must serve plot progression and direct conflict — no empty filler.
+3. Market fit: If the author hasn't specified a base genre, infer the most commercially explosive type.
+4. Pacing customization: The early/mid/late chapter ranges and minor/medium/major climax frequencies in globalGuidance must be strictly calculated based on the actual scale of [{{number_of_chapters}} chapters]. Do not use numbers that contradict the actual chapter count.
+5. Smart recommendations: Recommend the most suitable story structure and narrative POV based on the genre and theme.`,
+      ru: `Основываясь на одной идее или начальном наброске автора, пожалуйста, расширьте и дополньте глобальную конфигурацию романа-бестселлера, следуя самой зрелой и коммерчески доминирующей структуре веб-романа.
+
+Начальная идея автора:
+{{user_idea}}
+
+Масштаб романа (ВАЖНО! Пacing проектируйте строго по этим параметрам):
+- Плановое количество глав: {{number_of_chapters}}
+- Слов в главе: {{word_number}}
+- Примерная общая длина: {{number_of_chapters}} × {{word_number}} слов
+
+【Основные требования】
+1. Глубокая挖掘 коммерческой ценности: извлекайте мощные «точки удовлетворения» и «эмоциональные болевые точки» для построения захватывающей арки завязки-развития-кульминации-развязки.
+2. Профессиональные настройки: применяйте принципы «карты персонажей» и «3D-мировоззрения». Все настройки должны служить продвижению сюжета и созданию прямых конфликтов — никакой пустой воды.
+3. Соответствие рынку: если автор не указал базовый жанр, угадайте самый коммерчески взрывной тип.
+4. Кастомизация темпа: диапазоны глав начальной/средней/финальной частей и частота малых/средних/крупных кульминаций в globalGuidance должны быть строго рассчитаны по фактическому масштабу [{{number_of_chapters}} глав]. Не используйте цифры, противорящие реальному количеству глав.
+5. Умные рекомендации: рекомендуйте наиболее подходящую структуру故事 и повествовательную точку зрения на основе жанра и темы.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a top-tier web novel editor and platinum-selling author with ten years of industry experience, skilled at distilling a one-line idea into a complete commercial novel configuration.',
+      ru: 'Вы — ведущий редактор веб-романов и платиновый автор с десятилетним опытом, искусно превращающий одну идею в полную коммерческую конфигурацию романа.'
+    },
   },
 
 
@@ -163,6 +225,82 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 {{reference_works}}`,
     systemSuffix: `★【作者对本步骤的额外指导（如有，最高优先级）】★：
 {{step_guidance}}`,
+    contentLocalized: {
+      en: `Please distill the story premise for this novel. This is a [{{genre}}] novel (sub-genre: {{sub_genre}}).
+
+【Core Setting Parameters】
+- Core outline: {{topic}}
+- Target audience: {{target_audience}}
+- Expected length: approximately {{number_of_chapters}} chapters ({{word_number}} words each)
+- Worldbuilding foundation: {{core_setting}}
+- Golden finger / core selling point: {{golden_finger}}
+- Protagonist profile: {{protagonist_profile}}
+- Global writing requirements and prohibitions: {{global_guidance}}
+
+【Generation Task】
+Generate a 300–500 word structured story premise, strictly following these four sections:
+
+## One-Line Premise (Logline)
+Condense the entire novel's core in 30–50 words: "When [protagonist identity] encounters [triggering event], they must [core action] or else [catastrophic consequence]."
+
+## Core Conflict Chain
+Elaborate: protagonist's initial dilemma → the event that shatters equilibrium → core main-line objective → primary antagonistic forces. (~100 words)
+
+## Golden Finger Positioning
+Detail: how the golden finger is obtained → core mechanics and functions → interaction points with world rules → progression paths and limitations/costs. (~100–150 words)
+
+## Suspense Skeleton
+Describe: the overt conflict line (current biggest threat) + hidden main-line hints (ultimate mystery / deep truth). (~100 words)
+
+【Requirements】
+1. The golden finger must be a core plot-driving mechanism — describe its unique mechanics in detail, no vague hand-waving.
+2. Must embody the protagonist's core desire or obsession derived from their setting.
+3. The conflict chain must include both an overt enemy and a deeper crisis.
+4. Strictly avoid any prohibited elements listed in global writing requirements.
+5. Use the Markdown section headings above as separators; do not add extra commentary.
+
+【Reference Works (if any — match tone and pacing)】
+{{reference_works}}`,
+      ru: `Пожалуйста, сформулируйте сюжетную посылку для этого романа. Это роман жанра [{{genre}}] (поджанр: {{sub_genre}}).
+
+【Параметры основных настроек】
+- Основной конспект: {{topic}}
+- Целевая аудитория: {{target_audience}}
+- Ожидаемый объём: примерно {{number_of_chapters}} глав (по {{word_number}} слов в каждой)
+- Фундамент мироздания: {{core_setting}}
+- Золотой палец / ключевая фишка: {{golden_finger}}
+- Профиль главного героя: {{protagonist_profile}}
+- Глобальные требования и запреты на написание: {{global_guidance}}
+
+【Задание по генерации】
+Создайте структурированную сюжетную посылку из 300–500 слов, строго следуя четырём разделам:
+
+## Однострочная посылка (Логлайн)
+Уместите ядро всего романа в 30–50 слов: «Когда [идентичность героя] сталкивается с [триггерным событием], он должен [ключевое действие], иначе [катастрофическое последствие].»
+
+## Цепь основных конфликтов
+Разверните: начальная дилемма героя → событие, разрушающее равновесие → основная главная цель → главные противостоящие силы. (~100 слов)
+
+## Позиционирование золотого пальца
+Детализируйте: способ получения золотого пальца → основные механики и функции → точки взаимодействия с правилами мира → пути развития и ограничения/цена. (~100–150 слов)
+
+## Каркас интриги
+Опишите: линия явного конфликта (текущая главная угроза) + скрытые подсказки основной линии (тайна финала / глубинная правда). (~100 слов)
+
+【Требования】
+1. Золотой палец должен быть ключевым двигателем сюжета — опишите его уникальные механики подробно, без абстрактных общих фраз.
+2. Должно отражаться основное желание или одержимость героя, вытекающие из его сеттинга.
+3. Цепь конфликтов должна включать как явного врага, так и более глубокую угрозу.
+4. Строго избегайте любых запрещённых элементов из глобальных требований.
+5. Используйте заголовки разделов выше как разделители; не добавляйте лишних комментариев.
+
+【Эталонные произведения (если есть — ориентируйтесь на тон и ритм)】
+{{reference_works}}`
+    },
+    systemRoleLocalized: {
+      en: 'You are a top-tier web novel planning expert and story architect.',
+      ru: 'Вы — ведущий эксперт по планированию веб-романов и архитектор сюжетов.'
+    },
   },
 
   {
@@ -222,6 +360,90 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 {{reference_works}}`,
     systemSuffix: `★【作者对本步骤的额外指导（如有，最高优先级）】★：
 {{step_guidance}}`,
+    contentLocalized: {
+      en: `Based on the story premise, create a highly dramatic core character map for this novel.
+
+【Reference Parameters】
+- Novel genre: {{genre}}
+- Story premise: {{premise}}
+- Protagonist profile: {{protagonist_profile}}
+- Golden finger system: {{golden_finger}}
+- Worldbuilding: {{world_building}}
+- Expected length: approximately {{number_of_chapters}} chapters
+- Global writing requirements: {{global_guidance}}
+
+【Generation Task】
+Design a reasonable number of core characters around the protagonist, proportional to the novel's length (3–4 for short stories, 4–6 for medium/long works). Characters must avoid being one-dimensional. Generate a character map with the following structure:
+
+1. 【The Core: Protagonist】
+- Surface desires vs. ultimate yearning (flesh out both light and dark sides of the personality)
+- Signature physical traits (clothing, aura, distinctive marks, etc.)
+- Golden finger usage style (based on the specific mechanics of "{{golden_finger}}", design unique usage habits or combat/leveling strategies)
+- Soul vulnerability and transformation arc (starting point → endpoint)
+
+2. 【Core Character Camp】
+For each character provide: name/code, background, signature physical traits, tension in their relationship with the protagonist, hidden secrets.
+Character design principles (flexible, not a rigid template — configure based on story needs):
+- At least 1 ally/partner with deep bonds to the protagonist (complementary, not subordinate)
+- At least 1 rival/opponent with opposing ideologies (who has their own legitimate motivations)
+- Optional: 1 hidden wild card / morally grey character (unpredictable allegiance, potential for twists)
+- Optional: add mentor, mastermind, faction spokesperson, etc. as the story requires
+
+3. 【Core Conflict Web】
+Briefly describe how all characters inevitably clash due to survival pressures, resource competition, or ideological conflict within the world.
+
+【Requirements】
+1. Protagonist must strictly match the protagonist profile's tone — no deviations.
+2. All character designs must fit reader expectations for the "{{genre}}" genre.
+3. By default avoid saintly sages, idiotic villains, or pure utility characters (unless the author explicitly requests them).
+4. Return only the character map text — no pleasantries.
+
+【Reference Works (if any)】
+{{reference_works}}`,
+      ru: `На основе сюжетной посылки создайте максимально драматичную карту ключевых персонажей для этого романа.
+
+【Параметры для справки】
+- Жанр романа: {{genre}}
+- Сюжетная посылка: {{premise}}
+- Профиль главного героя: {{protagonist_profile}}
+- Система золотого пальца: {{golden_finger}}
+- Мироздание: {{world_building}}
+- Ожидаемый объём: примерно {{number_of_chapters}} глав
+- Глобальные требования к написанию: {{global_guidance}}
+
+【Задание по генерации】
+Спроектируйте разумное количество ключевых персонажей вокруг героя, пропорциональное объёму романа (3–4 для коротких историй, 4–6 для средних/длинных). Персонажи должны избегать шаблонности. Создайте карту персонажей со следующей структурой:
+
+1. 【Ядро: Главный герой】
+- Поверхностные желания vs. глубинная тоска (раскройте обе стороны личности — светлую и тёмную)
+- Характерные внешние черты (одежда, аура, уникальные приметы и т.д.)
+- Стиль использования золотого пальца (на основе конкретных механик «{{golden_finger}}» придумайте уникальные привычки использования или боевую/прогрессирующую стратегию)
+- Душевная уязвимость и арка трансформации (начальная точка → конечная)
+
+2. 【Лагерь ключевых персонажей】
+Для каждого персонажа укажите: имя/код, предысторию, характерные внешние черты, напряжённость в отношениях с героем, скрытые тайны.
+Принципы проектирования (гибкие, а не шаблон — настраивайте по потребностям истории):
+- Как минимум 1 союзник/партнёр с глубокой связью с героем (дополняющий, а не подчинённый)
+- Как минимум 1 соперник/противник с противоположными идеологиями (имеющий свои обоснованные мотивы)
+- По желанию: 1 скрытый wild card / морально серый персонаж (непредсказуемая позиция, потенциал для переворотов)
+- По желанию: добавьте наставника, интригана, представителя фракции и т.д. по необходимости
+
+3. 【Сеть основных конфликтов】
+Кратко опишите, как все персонажи неизбежно сталкиваются из-за давления выживания, конкуренции за ресурсы или идеологических противоречий в мире.
+
+【Требования】
+1. Главный герой должен строго соответствовать тону профиля — никаких отклонений.
+2. Все персонажи должны соответствовать ожиданиям читателей жанра «{{genre}}».
+3. По умолчанию избегайте безоговорочно святых, тупых злодеев или чисто функциональных персонажей (если автор явно не попросил).
+4. Возвращайте только текст карты персонажей — никаких вступлений.
+
+【Эталонные произведения (если есть)】
+{{reference_works}}`
+    },
+    systemRoleLocalized: {
+      en: 'You are a top-tier web novel planning expert and story architect.',
+      ru: 'Вы — ведущий эксперт по планированию веб-романов и архитектор сюжетов.'
+    },
   },
 
   {
@@ -272,6 +494,72 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 `,
     systemSuffix: `★【作者对本步骤的额外指导（如有，最高优先级）】★：
 {{step_guidance}}`,
+    contentLocalized: {
+      en: `Transform the base settings into a "plot playground" that directly generates conflict.
+
+【Reference Parameters】
+- Novel genre: {{genre}}
+- Story premise: {{premise}}
+- Core worldbuilding: {{core_setting}}
+- Golden finger system: {{golden_finger}}
+- Protagonist positioning: {{protagonist_profile}}
+- Global writing requirements: {{global_guidance}}
+
+【Generation Task】
+Based on the core worldbuilding and the characteristics of the "{{genre}}" genre, construct world settings across the following three dimensions. Every element must "carry built-in conflict points" that directly drive the plot.
+
+1. 【Core Rules & System Exploits】
+- What are the fundamental rules governing this world? (Depending on genre: cultivation system, technology tiers, social structure, supernatural laws, etc.)
+- What is the absolute advantage within these rules? How does the protagonist's golden finger "{{golden_finger}}" create a unique asymmetric edge within this system?
+
+2. 【Class Fractures & Resource Battlegrounds】
+- What irreconcilable faction/class/factional oppositions exist in this world?
+- What is the scarcest core resource? How is it distributed? Where does the protagonist stand, and who must they compete against?
+
+3. 【Metaphor & Hidden Crisis】
+- What is the ultimate catastrophe or greatest mystery behind this world?
+- Are there forbidden knowledge, historical lies, or suppressed truths that happen to intersect with the protagonist's destiny?
+
+【Requirements】
+1. All settings must revolve around the core appeal of the "{{genre}}" genre — no empty settings that can't be woven into the narrative.
+2. The interaction between golden finger and world rules must be specific and actionable — no vague generalities.
+3. Strictly follow global writing requirements and prohibitions.
+4. Return only the worldbuilding text — no irrelevant code or explanations.`,
+      ru: `Преобразуйте базовые настройки в «сюжетную площадку», непосредственно порождающую конфликты.
+
+【Параметры для справки】
+- Жанр романа: {{genre}}
+- Сюжетная посылка: {{premise}}
+- Основное мироздание: {{core_setting}}
+- Система золотого пальца: {{golden_finger}}
+- Позиционирование героя: {{protagonist_profile}}
+- Глобальные требования к написанию: {{global_guidance}}
+
+【Задание по генерации】
+На основе основного мироздания и характеристик жанра «{{genre}}» постройте настройки мира по трём измерениям. Каждый элемент должен «нести встроенные точки конфликта», непосредственно движущие сюжет.
+
+1. 【Основные правила и уязвимости системы】
+- Каковы фундаментальные правила, управляющие этим миром? (В зависимости от жанра: система культивации, уровни технологии, социальная структура, сверхъестественные законы и т.д.)
+- Какое абсолютное преимущество существует в рамках этих правил? Как золотой палец героя «{{golden_finger}}» создаёт уникальное асимметричное преимущество в этой системе?
+
+2. 【Классовые разломы и ресурсные арены】
+- Какие непримиримые противостояния фракций/классов/лагерей существуют в этом мире?
+- Какой ресурс является самым дефицитным? Как он распределяется? Где находится герой и с кем ему приходится конкурировать?
+
+3. 【Метафора и скрытый кризис】
+- Какова终极ная катастрофа или величайшая тайна, стоящая за этим миром?
+- Существуют ли запретные знания, историческая ложь или скрытая правда, которая пересекается с судьбой героя?
+
+【Требования】
+1. Все настройки должны вращаться вокруг ключевой привлекательности жанра «{{genre}}» — никаких пустых настроек, которые нельзя вплести в повествование.
+2. Взаимодействие золотого пальца и правил мира должно быть конкретным и применимым — никаких абстрактных общих фраз.
+3. Строго следуйте глобальным требованиям и запретам на написание.
+4. Возвращайте только текст мироздания — никакого лишнего кода или пояснений.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a top-tier web novel planning expert and story architect.',
+      ru: 'Вы — ведущий эксперт по планированию веб-романов и архитектор сюжетов.'
+    },
   },
 
   {
@@ -323,6 +611,68 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 `,
     systemSuffix: `★【作者对本步骤的额外指导（如有，最高优先级）】★：
 {{step_guidance}}`,
+    contentLocalized: {
+      en: `Integrate all prior outputs into a complete plot synopsis for the entire novel.
+
+【Core Assets】
+- Novel genre: {{genre}}
+- Narrative POV: {{narrative_pov}}
+- Story premise: {{premise}}
+- Character dynamics: {{character_dynamics}}
+- Worldbuilding matrix: {{world_building}}
+- Global writing requirements: {{global_guidance}}
+
+【Scale Parameters (CRITICAL! Structural beats must be based on these)】
+- Planned total chapters: {{number_of_chapters}}
+- Words per chapter: {{word_number}}
+- Approximate total word count: {{number_of_chapters}} × {{word_number}} words
+
+【Story Structure Model — organize the outline strictly according to this structure】
+{{plot_structure_guide}}
+
+【Generation Task】
+Rigorously derive a plot synopsis covering the entire novel. Write "structural turning points," not a detailed scene-by-scene outline. Adjust pacing strategy based on the core appeal of the "{{genre}}" genre.
+
+【Requirements】
+1. Chapter ranges for structural beats must be labeled with specific ranges based on the actual scale of [{{number_of_chapters}} chapters]. Do not use numbers that contradict the actual chapter count.
+2. Each structural beat must specify "what exactly will happen" — no vague generalities.
+3. Pacing strategy must match the "{{genre}}" genre (e.g., power fantasy focuses on face-slapping and leveling rhythm; mystery focuses on clues and reversals; romance focuses on emotion and misunderstandings).
+4. The narrative POV is "{{narrative_pov}}" — the outline design must account for how POV limitations affect information reveal and suspense creation.
+5. Never violate any prohibitions listed in global writing requirements.
+6. Return only the plot synopsis as plain text — no filler or narration.`,
+      ru: `Объедините все предыдущие выходы в полный сюжетный синопсис на весь роман.
+
+【Основные активы】
+- Жанр романа: {{genre}}
+- Точка зрения повествования: {{narrative_pov}}
+- Сюжетная посылка: {{premise}}
+- Динамика персонажей: {{character_dynamics}}
+- Матрица мироздания: {{world_building}}
+- Глобальные требования к написанию: {{global_guidance}}
+
+【Параметры масштаба (КРИТИЧНО! Структурные узлы должны строиться на основе этих данных)】
+- Плановое количество глав: {{number_of_chapters}}
+- Слов в главе: {{word_number}}
+- Примерная общая длина: {{number_of_chapters}} × {{word_number}} слов
+
+【Модель структуры истории — организуйте конспект строго по этой структуре】
+{{plot_structure_guide}}
+
+【Задание по генерации】
+Строгий вывод сюжетного конспекта на весь роман. Пишите «структурные поворотные точки», а не подробный посценарный план. Корректируйте стратегию темпа на основе ключевой привлекательности жанра «{{genre}}».
+
+【Требования】
+1. Диапазоны глав для структурных узлов должны быть обозначены конкретными диапазонами на основе фактического масштаба [{{number_of_chapters}} глав]. Не используйте цифры, противорящие реальному количеству глав.
+2. Каждый структурный узел должен указывать, «что именно произойдёт» — никаких абстрактных общих фраз.
+3. Стратегия темпа должна соответствовать жанру «{{genre}}» (например, фэнтези силы делает акцент на унижении врагов и ритме прокачки; детектив — на уликах и поворотах; романтика — на эмоциях и недопонимании).
+4. Точка зрения повествования — «{{narrative_pov}}» — при проектировании конспекта учитывайте, как ограничения точки зрения влияют на раскрытие информации и создание интриги.
+5. Никогда не нарушайте запреты из глобальных требований к написанию.
+6. Возвращайте только текст сюжетного конспекта — никакой воды или авторских ремарок.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a top-tier web novel planning expert and story architect.',
+      ru: 'Вы — ведущий эксперт по планированию веб-романов и архитектор сюжетов.'
+    },
   },
 
 
@@ -383,6 +733,89 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 
 ★【作者节奏/风格指导（如有，最高优先级）】★：
 {{pacing_guidance}}`,
+    contentLocalized: {
+      en: `Based on our previously derived [Full Novel Architecture Engine], generate a detailed "comprehensive execution blueprint" for chapters 1 through {{number_of_chapters}}.
+
+【Core Anti-Divergence Rules】
+- Novel genre: {{genre}}
+- Global writing requirements: {{global_guidance}} (this is the absolute bottom line!)
+
+【Full Novel Architecture Data Pool】
+{{novel_architecture}}
+
+【Commercial Web Novel Pacing Design Principles】
+1. Golden Three Chapters Rule: Chapter 1 immediately presents a "survival / high-pressure dilemma"; Chapter 2 activates the golden finger / maximum contrast variable; Chapter 3 delivers the first "small face-slapping / breakthrough" with a hook.
+2. Minor Climax Cycle: Strictly enforce a "small cycle every 3–5 chapters."
+3. No filler or diary entries: Every chapter must feature a "substantive plot development."
+4. Suspense Hook Mechanism: Every chapter ending must have a variable that makes readers want to turn the page.
+
+【Output Format】
+Output each chapter strictly and exclusively in the following JSON array format:
+
+{
+  "blueprints": [
+    {
+      "chapterNumber": 1,
+      "title": "An engaging title",
+      "purpose": "The one thing the protagonist most wants to resolve this chapter",
+      "characters": ["Key person A interacting this chapter", "Person B"],
+      "keyEvents": "What the protagonist did, what reversal they encountered, how the golden finger was used. Explain in about 100 words",
+      "suspenseHook": "One sentence describing the cliffhanger left at the end"
+    },
+    {
+      "chapterNumber": 2
+    }
+  ]
+}
+
+Requirements:
+- Keep each chapter's keyEvents within 100–150 words with maximum information density.
+- Output only the final JSON text — no pleasantries or explanations.
+
+★【Author Pacing/Style Guidance (if any, HIGHEST PRIORITY)】★:
+{{pacing_guidance}}`,
+      ru: `На основе ранее выведенного [Полного архитектурного движка романа] создайте подробный «комплексный план выполнения» для глав 1–{{number_of_chapters}}.
+
+【Правила предотклонения от основы】
+- Жанр романа: {{genre}}
+- Глобальные требования к написанию: {{global_guidance}} (это абсолютный запрет!)
+
+【Пул данных архитектуры романа】
+{{novel_architecture}}
+
+【Принципы проектирования темпа коммерческого веб-романа】
+1. Правило первых трёх глав: Глава 1 немедленно представляет «ситуацию выживания / высокого давления»; Глава 2 активирует золотой палец / максимальную переменную контраста; Глава 3 выдаёт первое «маленькое унижение врага / прорыв» с крючком.
+2. Цикл малых кульминаций: строго соблюдайте «малый цикл каждые 3–5 глав».
+3. Никакой воды и дневниковых записей: каждая глава должна содержать «существенное развитие сюжета».
+4. Механизм интриги: каждое завершение главы должно содержать переменную, заставляющую читателя перевернуть страницу.
+
+【Формат вывода】
+Выведите каждую главу строго и исключительно в следующем формате JSON-массива:
+
+{
+  "blueprints": [
+    {
+      "chapterNumber": 1,
+      "title": "Интересный заголовок",
+      "purpose": "То, что герой хочет решить больше всего в этой главе",
+      "characters": ["Ключевой персонаж A", "Персонаж B"],
+      "keyEvents": "Что сделал герой, какой контратаки он столкнулся, как был использован золотой палец. Опишите примерно 100 слов",
+      "suspenseHook": "Одно предложение, описывающее интригу конца главы"
+    }
+  ]
+}
+
+Требования:
+- Удерживайте keyEvents каждой главы в пределах 100–150 слов с максимальной плотностью информации.
+- Выводите только финальный JSON — никаких вступлений или объяснений.
+
+【Руководство автора по темпу/стилю (если есть, ВЫСШИЙ ПРИОРИТЕТ)】★:
+{{pacing_guidance}}`
+    },
+    systemRoleLocalized: {
+      en: 'You are an experienced web novel architect skilled at designing precise chapter blueprints.',
+      ru: 'Вы — опытный архитектор веб-романов, искусно проектирующий точные планы глав.'
+    },
   },
 
   {
@@ -442,6 +875,96 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 
 ★【作者节奏/风格指导（如有，最高优先级）】★：
 {{pacing_guidance}}`,
+    contentLocalized: {
+      en: `Based on the [Full Novel Architecture Engine] and the [Existing Blueprint Progress], generate an extremely detailed "comprehensive execution blueprint" for the next chapters: Chapter {{n}} through Chapter {{m}}.
+
+【Core Anti-Divergence Rules】
+- Novel genre: {{genre}}
+- Total novel scale: {{number_of_chapters}} chapters
+- Global writing requirements: {{global_guidance}} (this is the absolute bottom line!)
+
+【Full Novel Architecture Data Pool】
+{{novel_architecture}}
+
+【Previous Plot Progress & Continuity Check】
+Below is the preceding chapter summary (abridged to prevent losing sight of the main plot):
+{{chapter_list}}
+
+【This Generation Task: Relay Derivation】
+Pick up seamlessly from the last chapter's plot and rigorously derive Chapter {{n}} through Chapter {{m}}.
+1. Continuous Minor Climax Rule: Maintain the rhythm of one minor climax every 3–5 chapters.
+2. Foreshadowing Enforcement: If previous chapters left a crisis hanging, it must detonate or resolve here.
+3. No filler: Every chapter must have substantive progress.
+
+【Output Format】
+Output each chapter strictly and exclusively in the following JSON array format:
+
+{
+  "blueprints": [
+    {
+      "chapterNumber": n,
+      "title": "An engaging title",
+      "purpose": "The one thing the protagonist most wants to resolve this chapter",
+      "characters": ["Key person A interacting this chapter", "Person B"],
+      "keyEvents": "What specifically happened, how the golden finger operated. About 100 words",
+      "suspenseHook": "The hook left at the end"
+    }
+  ]
+}
+
+Requirements:
+- Strictly maintain contextual continuity — no contradictions.
+- Output only the final JSON text — no explanations.
+
+★【Author Pacing/Style Guidance (if any, HIGHEST PRIORITY)】★:
+{{pacing_guidance}}`,
+      ru: `На основе [Полного архитектурного движка романа] и [Текущего прогресса плана] создайте максимально подробный «комплексный план выполнения» для следующих глав: Глава {{n}}–{{m}}.
+
+【Правила предотклонения от основы】
+- Жанр романа: {{genre}}
+- Общий масштаб романа: {{number_of_chapters}} глав
+- Глобальные требования к написанию: {{global_guidance}} (это абсолютный запрет!)
+
+【Пул данных архитектуры романа】
+{{novel_architecture}}
+
+【Предыдущий прогресс сюжета и проверка непрерывности】
+Ниже приведён краткий обзор предыдущих глав (сжатый, чтобы не потерять основную сюжетную линию):
+{{chapter_list}}
+
+【Задание по генерации: ретрансляция】
+Плавно перенмите от сюжета последней главы и строго выведите Главы {{n}}–{{m}}.
+1. Правило непрерывных малых кульминаций: поддерживайте ритм одной малой кульминации каждые 3–5 глав.
+2. Обязательное раскрытие зацепок: если в предыдущих главах остался кризис — он должен здесь взорваться или разрешиться.
+3. Никакой воды: каждая глава должна содержать существенное развитие.
+
+【Формат вывода】
+Выведите каждую главу строго и исключительно в следующем формате JSON-массива:
+
+{
+  "blueprints": [
+    {
+      "chapterNumber": n,
+      "title": "Интересный заголовок",
+      "purpose": "То, что герой хочет решить больше всего в этой главе",
+      "characters": ["Ключевой персонаж A", "Персонаж B"],
+      "keyEvents": "Что конкретно произошло, как работал золотой палец. Примерно 100 слов",
+      "suspenseHook": "Крючок, оставленный в конце"
+    }
+  ]
+}
+
+Требования:
+- Строго соблюдайте контекстуальную непрерывность — никаких противоречий.
+- Выводите только финальный JSON — никаких объяснений.
+
+★【Руководство автора по темпу/стилю (если есть, ВЫСШИЙ ПРИОРИТЕТ)】★:
+{{pacing_guidance}}`
+    },
+    systemRoleLocalized: {
+      en: 'You are an experienced web novel architect skilled at designing precise chapter blueprints.',
+      ru: 'Вы — опытный архитектор веб-романов, искусно проектирующий точные планы глав.'
+    },
   },
 
   // ================================================================
@@ -498,6 +1021,56 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 - “仿佛”、“犹如”、“宛如”全章合计不超过3次
 - 对话必须区分角色语气：不同角色的说话方式必须有辨识度
 - 禁止在结尾添加与正文无关的哲理感悟或旁白总结`,
+    contentLocalized: {
+      en: `Begin writing the first chapter (the hook chapter) of this novel.
+
+【Full Novel Setting Pool】
+{{architecture}}
+
+【This Chapter's Info】
+{{chapter_info}}
+
+【Future Chapter Outline Preview】(for awareness only — DO NOT write any future content in this chapter!)
+{{future_blueprints}}
+
+【Global Writing Requirements】
+{{global_guidance}}
+
+【Web Novel "Golden First Chapter" Creation Rules】
+1. Open with high energy (golden 3 seconds): Never use lengthy worldbuilding exposition. The opening sentence must dive straight into an action, a high-pressure interrogation, a chase, or a moment of sharp ironic contrast.
+2. Cleverly introduce the golden finger: At the protagonist's deepest point of desperation, reveal the golden finger in a way that builds anticipation.
+3. Motion over stillness (action and dialogue driven): Never use dry omniscient narration — replace everything with "character dialogue + body language + action interaction."
+4. Avoid prohibited elements: Strictly adhere to global writing requirements.
+
+【Writing Style Requirements (if any, follow strictly)】
+{{writing_style}}`,
+      ru: `Начните писать первую главу (зацепляющую главу) этого романа.
+
+【Пул настроек романа】
+{{architecture}}
+
+【Информация об этой главе】
+{{chapter_info}}
+
+【Предварительный просмотр конспектов будущих глав】(только для ознакомления — НЕ пишите ничего из будущего в этой главе!)
+{{future_blueprints}}
+
+【Глобальные требования к написанию】
+{{global_guidance}}
+
+【Правила создания «Золотой первой главы» веб-романа】
+1. Откройте с высокой энергией (золотые 3 секунды): никогда не используйте пространные описания мира. Первое предложение должно сразу погрузить в действие, допрос под давлением, погоню или момент острого иронического контраста.
+2. Изящно представьте золотой палец: в самой глубокой точке отчаяния героя покажите золотой палец так, чтобы это создало ожидание.
+3. Движение вместо статики (через действия и диалоги): никогда не используйте сухое всеведущее повествование — замените всё на «диалоги персонажей + язык тела + действия».
+4. Избегайте запрещённых элементов: строго следуйте глобальным требованиям.
+
+【Требования к стилю (если есть, строго соблюдайте)】
+{{writing_style}}`
+    },
+    systemRoleLocalized: {
+      en: 'You are a masterful web novel author, skilled at writing gripping, page-turning commercial fiction.',
+      ru: 'Вы — мастерски владеющий пером автор веб-романов, искусно пишущий захватывающую, увлекательную коммерческую прозу.'
+    },
   },
 
   {
@@ -563,6 +1136,72 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 - "仿佛"、"犹如"、"宛如"全章合计不超过3次
 - 对话必须区分角色语气：不同角色的说话方式必须有辨识度
 - 禁止在结尾添加与正文无关的哲理感悟或旁白总结`,
+    contentLocalized: {
+      en: `You are continuing serialization with the latest chapter.
+
+【★★★ Narrative Consistency Canon Context (MUST follow strictly · HIGHEST PRIORITY) ★★★】
+{{canon_context}}
+
+【Plot Memory Bank & Prior Breakpoint Context】
+- [Global plot progress]: {{global_summary}}
+- [Character state monitoring]: {{character_states}}
+- [Recent three chapters brief]: {{short_summary}}
+★【Last paragraph of the previous chapter (CRITICAL — opening must connect seamlessly)】★:
+{{previous_ending}}
+
+【This Chapter's Writing Direction & Core Task】
+{{chapter_info}}
+
+【Future Chapter Outline Preview】(for awareness only — DO NOT write any future content in this chapter!)
+{{future_blueprints}}
+
+【Knowledge Base Materials (if any)】
+{{filtered_context}}
+
+【Core Serialization Update Rules】
+1. Seamless sentence bridging: Your first paragraph must naturally and smoothly continue from the previous chapter's ending — absolutely no scene jumps or abrupt POV shifts.
+2. Action and body language driven: Use dynamic descriptions to push the plot. Don't write "they talked for a long time" — use the sound of a sword drawn, tea dripping, pupils contracting.
+3. Execute this chapter's core conflict: In approximately {{word_number}} words, thoroughly play out this chapter's objective — no bland diary entries.
+4. Suspense cliffhanger technique: The final paragraph must land on a minor climax or sudden twist.
+5. Iron-bottom rule: Never violate [Global Writing Requirements]: {{global_guidance}}.
+
+【Writing Style Requirements (if any, follow strictly)】
+{{writing_style}}`,
+      ru: `Вы продолжаете сериал сlatest главой.
+
+【★★★ Контекст канона нарративной согласованности (СТРОГО соблюдать · ВЫСШИЙ ПРИОРИТЕТ) ★★★】
+{{canon_context}}
+
+【Банк памяти сюжета и контекст предыдущей точки разрыва】
+- [Глобальный прогресс сюжета]: {{global_summary}}
+- [Мониторинг состояния персонажей]: {{character_states}}
+- [Краткое содержание последних трёх глав]: {{short_summary}}
+★【Последний абзац предыдущей главы (КРИТИЧНО — начало должно бесшовно продолжать)】★:
+{{previous_ending}}
+
+【Направление написания этой главы и основная задача】
+{{chapter_info}}
+
+【Предварительный просмотр конспектов будущих глав】(только для ознакомления — НЕ пишите ничего из будущего в этой главе!)
+{{future_blueprints}}
+
+【Материалы из базы знаний (если есть)】
+{{filtered_context}}
+
+【Основные правила обновления сериала】
+1. Бесшовное соединение предложений: ваш первый абзац должен естественно и плавно продолжать концовку предыдущей главы — абсолютно никаких скачков сцены или резких переключений точки зрения.
+2. Через действия и язык тела: используйте динамичные описания для продвижения сюжета. Не пишите «они долго разговаривали» — используйте звук вынутого меча, капающий чай, резкое сужение зрачков.
+3. Выполните основной конфликт этой главы: в объёме примерно {{word_number}} слов тщательно разыграйте цель этой главы — никаких скучных дневниковых записей.
+4. Техника интриги: последний абзац должен завершиться малой кульминацией или внезапным поворотом.
+5. Железное правило: никогда не нарушайте [Глобальные требования к написанию]: {{global_guidance}}.
+
+【Требования к стилю (если есть, строго соблюдайте)】
+{{writing_style}}`
+    },
+    systemRoleLocalized: {
+      en: 'You are a masterful web novel author, skilled at writing gripping, page-turning commercial fiction.',
+      ru: 'Вы — мастерски владеющий пером автор веб-романов, искусно пишущий захватывающую, увлекательную коммерческую прозу.'
+    },
   },
 
   // ================================================================
@@ -618,6 +1257,68 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 
 请直接输出精修后的全文章节内容。强制要求纯文本，禁止使用任何 Markdown 语法符号，严禁剧本式对话。【严禁】任何开场白或解释文字。
 **【强制排版底线】：段落与段落之间必须保留一个空行作为分隔，绝不允许不留空行的连续长段落。**`,
+    contentLocalized: {
+      en: `Please perform a [polish and detail enrichment] pass on this chapter draft.
+
+【★★★ Narrative Consistency Canon Context (MUST NOT violate during polish) ★★★】
+{{canon_context}}
+
+【Plot Context】
+- Current global progress summary: {{global_summary}}
+- Recent chapters review: {{short_summary}}
+
+【This Chapter's Info】
+{{chapter_info}}
+
+【Polish Requirements】
+1. Sensory Presence: Strengthen environmental descriptions through "five senses" details (sight, sound, smell, touch, taste) — reject bland, watered-down narration.
+2. Setting Integration: Skillfully weave golden finger usage details into combat or strategy scenes, showcasing the protagonist's differentiated advantage.
+3. Emotional Tension: Amplify the antagonist's oppressive presence and the protagonist's counterforce. Follow the "build-up before the payoff" rule, but deliver maximum satisfaction at the climax.
+4. Vocabulary Upgrade: Use more precise, cinematic action verbs. Show emotions through actions and details (Show, Don't Tell).
+5. Hook and Pacing: Check whether the ending has a strong hook (Hook) that gives readers a compelling urge to continue reading.
+6. Anti-Filler Substitution: Polish means vocabulary substitution and enhanced sensory presence — NOT padding the word count with bloated exposition or sermon-like exposition. Target approximately {{word_number}} words. If you find verbose action descriptions or preachy exposition, cut decisively — never infinitely expand and drag down the pacing.
+
+【Global Writing Prohibitions】
+{{global_guidance}}
+
+【Original Draft to Polish】
+{{draft_content}}
+
+【Writing Style Requirements (if any, polish strictly toward this style)】
+{{writing_style}}`,
+      ru: `Пожалуйста, выполните этап [шлифовки и обогащения деталями] для этого черновика главы.
+
+【★★★ Контекст канона нарративной согласованности (НЕ НАРУШАТЬ при шлифовке) ★★★】
+{{canon_context}}
+
+【Контекст сюжета】
+- Краткое содержание текущего глобального прогресса: {{global_summary}}
+- Обзор последних глав: {{short_summary}}
+
+【Информация об этой главе】
+{{chapter_info}}
+
+【Требования к шлифовке】
+1. Ощущение присутствия: усильте описания окружения через детали «пяти чувств» (зрение, слух, обоняние, осязание, вкус) — отбрасывайте водянистое повествование.
+2. Интеграция сеттинга: искусно вплетайте детали использования золотого пальца в боевые или стратегические сцены, демонстрируя дифференцированное преимущество героя.
+3. Эмоциональное напряжение: усиливайте давящее присутствие антагониста и контрудар героя. Следуйте правилу «нарастание перед кульминацией», но обеспечивайте максимальное удовлетворение в кульминационный момент.
+4. Обновление словаря: используйте более точные, кинематографичные глаголы действия. Покажите эмоции через действия и детали (Покажи, а не расскажи).
+5. Крючок и темп: проверьте, есть ли в конце сильный крючок (Hook), дающий читателю непреодолимое желание продолжить чтение.
+6. Антиводозамена: шлифовка — это замена слов и усиление ощущения присутствия — А НЕ наращивание объёма пространными описаниями или поучительными отступлениями. Целевой объём: примерно {{word_number}} слов. Если встречается многословное описание действий или поучительная проповедь —果断 сокращайте, никогда не раздувайте бесконечно и не замедляйте темп.
+
+【Глобальные запреты на написание】
+{{global_guidance}}
+
+【Исходный черновик для шлифовки】
+{{draft_content}}
+
+【Требования к стилю (если есть, при шлифовке строго приближайтесь к этому стилю)】
+{{writing_style}}`
+    },
+    systemRoleLocalized: {
+      en: 'You are a seasoned literary editor, skilled at elevating ordinary drafts to platinum-quality masterpieces.',
+      ru: 'Вы — опытный литературный редактор, искусно превращающий обычные черновики в произведения платинового качества.'
+    },
 
   },
 
@@ -683,6 +1384,76 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
 
 severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致酌情修复, pass=该维度通过无问题。
 每个 category 至少输出一条记录。quote 字段在 pass 时可省略。`,
+    contentLocalized: {
+      en: `Please review the following chapter.
+
+【Chapter Under Review】
+{{chapter_content}}
+
+【Character States】
+{{character_states}}
+
+【Global Summary】
+{{global_summary}}
+
+
+【Established Facts Baseline (for cross-validation — all facts take precedence here; this chapter must not contradict them)】
+{{canon_context}}
+
+【Worldbuilding】
+{{world_building}}
+
+【Review Principles】
+
+1. Evidence-based review: Only report problems with clear textual evidence. Each problem must cite a specific sentence from the original text.
+2. Quality over quantity: For dimensions with no issues, output a single record with severity "pass." Don't pad the count.
+3. Check consistency only — no style critique: Do not report style preferences, writing suggestions, or creative advice. Only report verifiable factual contradictions.
+4. Objective and verifiable: Each problem you report must be confirmable by a third-party editor.
+
+【Check Dimensions】
+
+1. Plot Continuity: Does this chapter's plot contradict earlier content (global summary)? Are there self-contradictions within the chapter?
+2. Plot Logic: Do cause-and-effect relationships hold up? Are character motivations plausible? Are there common-sense errors?
+3. Character States: Are character behaviors, abilities, locations, and emotions consistent with the character state files?
+4. Cross-Chapter Continuity: Are foreshadowing and suspense lines consistent? Are there abrupt plot developments without established cause?
+5. Foreshadowing Completeness: Are there any foreshadowed elements from prior chapters that should have been resolved but weren't? Are there new settings that conflict with the established foreshadowing system?`,
+      ru: `Пожалуйста, проверьте следующую главу.
+
+【Проверяемая глава】
+{{chapter_content}}
+
+【Состояния персонажей】
+{{character_states}}
+
+【Глобальное резюме】
+{{global_summary}}
+
+
+【Базовый набор установленных фактов (для перекрёстной проверки — все факты здесь имеют приоритет; эта глава не должна им противоречить)】
+{{canon_context}}
+
+【Мироздание】
+{{world_building}}
+
+【Принципы проверки】
+
+1. Проверка на основе доказательств: сообщайте только о проблемах с чёткой текстовой поддержкой. Каждая проблема должна цитировать конкретное предложение из оригинального текста.
+2. Качество важнее количества: для измерений без проблем выводите одну запись со severity «pass». Не наращивайте количество.
+3. Проверяйте только согласованность — без критики стиля: не сообщайте о предпочтениях стиля, советах по написанию или творческих рекомендациях. Только проверяемые фактологические противоречия.
+4. Объективность и проверяемость: каждая проблема, о которой вы сообщаете, должна быть подтверждаема сторонним редактором.
+
+【Измерения для проверки】
+
+1. Непрерывность сюжета: противоречит ли сюжет этой главы предыдущему контенту (глобальное резюме)? Есть ли внутренние противоречия?
+2. Логика сюжета: выдерживают ли причинно-следственные связи? Правдоподобны ли мотивации персонажей? Есть ли ошибки здравого смысла?
+3. Состояния персонажей: соответствуют ли поведение, способности, местоположение и эмоции персонажей файлам состояний?
+4. Сквозная непрерывность: последовательны ли линии предвестий и интриг? Есть ли резкие сюжетные повороты без установленной причины?
+5. Полнота предвестий: остались ли какие-либо элементы из предыдущих глав, которые должны были быть раскрыты, но не были? Есть ли новые настройки, противоречащие установленной системе предвестий?`
+    },
+    systemRoleLocalized: {
+      en: 'You are a meticulous, impartial quality control editor. You check only objective factual issues — you never evaluate subjective writing quality.',
+      ru: 'Вы — тщательный, беспристрастный редактор контроля качества. Вы проверяете только объективные фактологические проблемы — никогда не оцениваете субъективное качество текста.'
+    },
   },
 
   // ================================================================
@@ -725,6 +1496,68 @@ severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致�
 标志性手法：……
 
 不要添加任何无关解释或客套话。`,
+    contentLocalized: {
+      en: `Please carefully read the following novel text sample and deeply analyze the author's writing style characteristics.
+
+【Text Sample】
+{{sample_text}}
+
+【Analysis Dimensions & Output Requirements】
+Analyze across the following 7 dimensions, using 2–3 precise sentences per dimension with 1 original-text quote as evidence (total 300–500 words):
+
+1. Narrative Pacing: overall narrative speed, scene transition frequency, paragraph length preferences
+2. Descriptive Density: ratio of environment/action/psychological descriptions
+3. Dialogue Style: proportion of dialogue in the text, level of colloquialism, use of dialect or distinctive speech patterns
+4. Vocabulary Preference: classical/literary phrasing vs. modern slang vs. technical jargon, overall lexical richness
+5. Emotional Tone: overall lean toward hot-blooded / cool and detached / witty / somber / lighthearted
+6. Narrative POV Habits: primary person used, frequency of POV switches, frequency of internal monologue
+7. Signature Techniques: the author's distinctive rhetorical devices, common transitional techniques, unique paragraph structures
+
+【Output Format】
+Output the analysis as plain text using the following format:
+
+Narrative Pacing: …
+Descriptive Density: …
+Dialogue Style: …
+Vocabulary Preference: …
+Emotional Tone: …
+Narrative POV: …
+Signature Techniques: …
+
+Do not add any irrelevant explanations or pleasantries.`,
+      ru: `Пожалуйста, внимательно прочитайте следующий образец текста романа и глубоко проанализируйте стилистические особенности автора.
+
+【Образец текста】
+{{sample_text}}
+
+【Измерения анализа и требования к выводу】
+Проанализируйте по следующим 7 измерениям, используя 2–3 точных предложения на измерение с 1 цитатой из оригинала в качестве доказательства (всего 300–500 слов):
+
+1. Ритм повествования: общая скорость повествования, частота переключения сцен, предпочтения по длине абзацев
+2. Плотность описаний: соотношение описаний окружения / действий / переживаний
+3. Стиль диалогов: доля диалогов в тексте, уровень разговорности, использование диалекта или характерной речи
+4. Лексические предпочтения: литературная / архаичная речь vs. современный сленг vs. профессиональный жаргон, общая лексическая насыщенность
+5. Эмоциональный тон: общий уклон в сторону героического / холодно-отстранённого / ироничного / мрачного / лёгкого
+6. Привычки точки зрения: основное лицо повествования, частота переключений точки зрения, частота внутреннего монолога
+7. Фирменные приёмы: характерные риторические устройства автора, типичные переходы, уникальная структура абзацев
+
+【Формат вывода】
+Выведите анализ в виде простого текста в следующем формате:
+
+Ритм повествования: …
+Плотность описаний: …
+Стиль диалогов: …
+Лексические предпочтения: …
+Эмоциональный тон: …
+Точка зрения: …
+Фирменные приёмы: …
+
+Не добавляйте лишних пояснений или вступлений.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a seasoned literary critic and web novel researcher, skilled at precisely capturing an author\'s writing style fingerprint.',
+      ru: 'Вы — опытный литературный критик и исследователь веб-романов, искусно точно определяющий стилистический «отпечаток» автора.'
+    },
   },
 
   {
@@ -763,6 +1596,50 @@ severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致�
 
 请直接输出修复后的全文章节内容。强制要求纯文本，严禁剧本式格式，【严禁】任何开场白、解释文字。
 **【强制排版底线】：段落与段落之间必须保留一个空行作为分隔，绝对不允许连续文本不留空行。**`,
+    contentLocalized: {
+      en: `Please perform a **targeted fix** on the draft based on the issues listed in the review report.
+
+【★★★ Narrative Consistency Canon Context (MUST NOT violate during repair) ★★★】
+{{canon_context}}
+
+【Review Report】
+{{review_report}}
+
+【Draft to Repair】
+{{draft_content}}
+
+【Global Writing Requirements】
+{{global_guidance}}
+
+【Repair Principles】
+1. Fix ONLY the problems explicitly identified in the review report — address them one by one.
+2. Do NOT perform any polishing or rewriting beyond what the review report mentions.
+3. Preserve the original's style, pacing, and word count volume.
+4. For each change, maintain the principle of minimal change — fix as little as possible, only addressing the problem itself.`,
+      ru: `Пожалуйста, выполните **точечный ремонт** черновика на основе проблем, перечисленных в отчёте проверки.
+
+【★★★ Контекст канона нарративной согласованности (НЕ НАРУШАТЬ при ремонте) ★★★】
+{{canon_context}}
+
+【Отчёт проверки】
+{{review_report}}
+
+【Черновик для ремонта】
+{{draft_content}}
+
+【Глобальные требования к написанию】
+{{global_guidance}}
+
+【Принципы ремонта】
+1. Исправляйте ТОЛЬКО проблемы, явно указанные в отчёте проверки — решайте их по одной.
+2. НЕ проводите никакой дополнительной шлифовки или переписывания сверх того, что указано в отчёте.
+3. Сохраняйте стиль, темп и объём оригинала.
+4. Для каждого изменения соблюдайте принцип минимальных изменений — исправляйте как можно меньше, только устраняя саму проблему.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a meticulous fiction editor, skilled at precisely fixing specific textual issues without over-rewriting.',
+      ru: 'Вы — тщательный редактор художественной литературы, искусно точно исправляющий конкретные текстовые проблемы без избыточного переписывания.'
+    },
   },
 
 
@@ -815,6 +1692,80 @@ severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致�
 - [钩] ...
 
 严格按格式输出，内容精炼，每项不超过 30 字。`,
+    contentLocalized: {
+      en: `Please generate an accurate set of [Structured Chapter Notes] for the following chapter.
+
+【Chapter Text】
+Chapter {{chapter_number}}: {{chapter_title}}
+{{chapter_content}}
+
+---
+
+Please output strictly in the following Markdown format without any additional explanation:
+
+# Chapter {{chapter_number}} Notes
+
+## Plot Beats
+(List irreversible key plot developments in this chapter, annotated with [Type])
+- [Trigger] …
+- [Turning Point] …
+- [Outcome] …
+
+## Character Dynamics
+(Record the main characters appearing this chapter and their changes in a table)
+| Character | This Chapter's Change / Status |
+|-----------|-------------------------------|
+| Character Name | Specific change description |
+
+## New Settings
+(World-building / power systems / rules first introduced or confirmed in this chapter; omit if none)
+- …
+
+## Foreshadowing & Hooks
+(Foreshadowed elements marked [Planted]; cliffhangers left for readers marked [Hook]; omit if none)
+- [Planted] …
+- [Hook] …
+
+Output strictly in format, keep content concise, each item no more than 30 words.`,
+      ru: `Пожалуйста, создайте точный набор [Структурированных заметок к главе] для следующей главы.
+
+【Текст главы】
+Глава {{chapter_number}}: {{chapter_title}}
+{{chapter_content}}
+
+---
+
+Выведите строго в следующем формате Markdown без каких-либо дополнительных пояснений:
+
+# Заметки к главе {{chapter_number}}
+
+## Сюжетные узлы
+(Перечислите необратимые ключевые сюжетные события этой главы с пометкой [Тип])
+- [Триггер] …
+- [Поворотный момент] …
+- [Исход] …
+
+## Динамика персонажей
+(Зафиксируйте основных персонажей этой главы и их изменения в таблице)
+| Персонаж | Изменение / Статус за эту главу |
+|----------|----------------------------------|
+| Имя персонажа | Описание конкретного изменения |
+
+## Новые настройки
+(Мироздание / системы сил / правила, впервые введённые или подтверждённые в этой главе; опустите, если нет)
+- …
+
+## Предвестия и крючки
+(Предвестия — пометка [Заложено]; интриги для читателей — пометка [Крючок]; опустите, если нет)
+- [Заложено] …
+- [Крючок] …
+
+Выводите строго по формату, содержание краткое, каждый пункт не более 30 слов.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a professional web novel structural analyst.',
+      ru: 'Вы — профессиональный структурный аналитик веб-романов.'
+    },
   },
 
   // ================================================================
@@ -887,6 +1838,124 @@ severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致�
 }
 
 如果本章无任何角色发生状态变化且无新角色，返回 {"updates": [], "newCharacters": []}。`,
+    contentLocalized: {
+      en: `Based on the chapter content, return the latest states of characters who underwent changes in this chapter in JSON format.
+
+【This Chapter's Content (Chapter {{chapter_number}})】
+{{chapter_content}}
+
+【Existing Character Cards (Basic Info)】
+{{existing_cards_json}}
+
+---
+
+【Task Requirements】
+1. Analyze and extract in \`updates\` the state changes of existing characters (found among the provided character cards).
+2. Analyze and extract in \`newCharacters\` any important new characters appearing in this chapter (exclude background extras or dead characters with no further impact).
+3. \`currentState\` field description:
+   - location: current location / faction (string)
+   - powerLevel: cultivation level / ability tier (string)
+   - physicalState: physical condition including injuries / buffs / appearance changes (string)
+   - mentalState: psychological state, current wish / fear / mindset (string)
+   - keyItems: currently held key items / resources (string)
+   - recentEvents: most important event in this chapter (string, under 50 words)
+   - updatedAtChapter: fixed value {{chapter_number}} (number)
+
+【Output Format (JSON)】
+{
+  "updates": [
+    {
+      "name": "Exact name of existing character",
+      "currentState": {
+        "location": "...",
+        "powerLevel": "...",
+        "physicalState": "...",
+        "mentalState": "...",
+        "keyItems": "...",
+        "recentEvents": "...",
+        "updatedAtChapter": {{chapter_number}}
+      }
+    }
+  ],
+  "newCharacters": [
+    {
+      "name": "New character name",
+      "role": "protagonist/antagonist/supporting/minor",
+      "currentState": {
+        "location": "...",
+        "powerLevel": "...",
+        "physicalState": "...",
+        "mentalState": "...",
+        "keyItems": "...",
+        "recentEvents": "...",
+        "updatedAtChapter": {{chapter_number}}
+      }
+    }
+  ]
+}
+
+If no characters had state changes and no new characters appeared, return {"updates": [], "newCharacters": []}.`,
+      ru: `На основе содержания главы верните в формате JSON最新的 состояния персонажей, которые изменились в этой главе.
+
+【Содержание этой главы (Глава {{chapter_number}})】
+{{chapter_content}}
+
+【Существующие карточки персонажей (основная информация)】
+{{existing_cards_json}}
+
+---
+
+【Требования к заданию】
+1. Проанализируйте и извлеките в \`updates\` изменения состояний существующих персонажей (среди предоставленных карточек).
+2. Проанализируйте и извлеките в \`newCharacters\` любых важных новых персонажей, появившихся в этой главе (исключайте фоновых extras или мёртвых персонажей без дальнейшего влияния).
+3. Описание поля \`currentState\`:
+   - location: текущее местоположение / фракция (строка)
+   - powerLevel: уровень культивации / уровень способностей (строка)
+   - physicalState: физическое состояние, включая травмы / баффы / внешние изменения (строка)
+   - mentalState: психологическое состояние, текущее желание / страх / настрой (строка)
+   - keyItems: текущие ключевые предметы / ресурсы (строка)
+   - recentEvents: важнейшее событие главы (строка, до 50 слов)
+   - updatedAtChapter: фиксированное значение {{chapter_number}} (число)
+
+【Формат вывода (JSON)】
+{
+  "updates": [
+    {
+      "name": "Точное имя существующего персонажа",
+      "currentState": {
+        "location": "...",
+        "powerLevel": "...",
+        "physicalState": "...",
+        "mentalState": "...",
+        "keyItems": "...",
+        "recentEvents": "...",
+        "updatedAtChapter": {{chapter_number}}
+      }
+    }
+  ],
+  "newCharacters": [
+    {
+      "name": "Имя нового персонажа",
+      "role": "protagonist/antagonist/supporting/minor",
+      "currentState": {
+        "location": "...",
+        "powerLevel": "...",
+        "physicalState": "...",
+        "mentalState": "...",
+        "keyItems": "...",
+        "recentEvents": "...",
+        "updatedAtChapter": {{chapter_number}}
+      }
+    }
+  ]
+}
+
+Если ни один персонаж не изменил состояние и новых персонажей нет, верните {"updates": [], "newCharacters": []}.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a meticulous novel character file manager, skilled at tracking multi-dimensional state changes across characters.',
+      ru: 'Вы — тщательный менеджер файлов персонажей романа, искусно отслеживающий многомерные изменения состояний.'
+    },
   },
 
   // ================================================================
@@ -958,6 +2027,126 @@ severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致�
 1. characterCards 仅包含主角和重要配角（3-8人），不要填写次要龙套
 2. 所有字段基于内容推断，未能确定的字段填写"（待确认）"
 3. currentState 应基于最新内容（结尾采样）推断，不是初始状态`,
+    contentLocalized: {
+      en: `Based on the following existing novel content excerpts, reverse-engineer the complete setting system of this novel to support continuation work.
+
+【Existing Content Sample】
+{{sample_content}}
+
+---
+
+Please return the analysis results strictly in the following JSON format:
+
+{
+  "novelConfig": {
+    "genre": "Primary genre (fantasy / xianxia / urban / sci-fi / historical / mystery / gaming / military / wuxia / realism / other)",
+    "targetAudience": "Target audience (male-oriented / female-oriented / general)",
+    "subGenre": "Sub-genre and tags",
+    "coreOutline": "Core outline (150+ words, including main-line objective, core conflict, story trajectory)",
+    "worldSetting": "World background and power system",
+    "goldenFinger": "Protagonist's golden finger / core ability system",
+    "protagonistProfile": "Protagonist profile (personality, background, core motivation)",
+    "globalGuidance": "Global writing style and pacing requirements inferred from existing content"
+  },
+  "architectureFiles": {
+    "premise": "Core story premise text (under 200 words, highly condensed)",
+    "characters": "Known main characters' relationship web and dynamics analysis",
+    "worldbuilding": "Worldbuilding matrix (power system, class structure, key locations)",
+    "synopsis": "Known plot trajectory analysis (including completed portions and inferred future trajectory)"
+  },
+  "characterCards": [
+    {
+      "name": "Character name",
+      "role": "protagonist/antagonist/supporting/minor",
+      "gender": "Gender",
+      "age": "Age or life stage",
+      "appearance": "Appearance description",
+      "personality": "Personality traits",
+      "background": "Backstory",
+      "abilities": "Abilities / skills",
+      "motivation": "Core motivation",
+      "relationships": "Relationship web",
+      "arc": "Known growth trajectory",
+      "notes": "Other notes",
+      "currentState": {
+        "location": "Last known location",
+        "powerLevel": "Current level / ability tier",
+        "physicalState": "Current physical condition",
+        "mentalState": "Current psychological state",
+        "keyItems": "Currently held key items",
+        "recentEvents": "Most recent important events",
+        "updatedAtChapter": 0
+      }
+    }
+  ]
+}
+
+Requirements:
+1. characterCards should only include the protagonist and key supporting characters (3–8), not minor extras.
+2. All fields are inferred from the content; undetermined fields should be filled with "(TBD)".
+3. currentState should be inferred from the latest content (ending sample), not the initial state.`,
+      ru: `На основе следующих отрывков из существующего романа выполните обратное проектирование полной системы настроек этого романа для поддержки работы по продолжению.
+
+【Образец существующего содержания】
+{{sample_content}}
+
+---
+
+Выведите результаты анализа строго в следующем формате JSON:
+
+{
+  "novelConfig": {
+    "genre": "Основной жанр (фэнтези / сянься / городское / научная фантастика / исторический / детектив / игровые / военный / уся / реализм / другое)",
+    "targetAudience": "Целевая аудитория (мужская / женская / универсальная)",
+    "subGenre": "Поджанр и теги",
+    "coreOutline": "Основной конспект (150+ слов, включая главную цель, основной конфликт, траекторию истории)",
+    "worldSetting": "Фон мира и система сил",
+    "goldenFinger": "Золотой палец героя / система основных способностей",
+    "protagonistProfile": "Профиль героя (характер, предыстория, основная мотивация)",
+    "globalGuidance": "Глобальные требования к стилю и темпу, выведенные из существующего контента"
+  },
+  "architectureFiles": {
+    "premise": "Текст основной сюжетной посылки (до 200 слов, высоко концентрированный)",
+    "characters": "Известная сеть отношений и динамика ключевых персонажей",
+    "worldbuilding": "Матрица мироздания (система сил, классовая структура, ключевые локации)",
+    "synopsis": "Анализ известной траектории сюжета (включая завершённые части и предполагаемую дальнейшую траекторию)"
+  },
+  "characterCards": [
+    {
+      "name": "Имя персонажа",
+      "role": "protagonist/antagonist/supporting/minor",
+      "gender": "Пол",
+      "age": "Возраст или этап жизни",
+      "appearance": "Описание внешности",
+      "personality": "Черты характера",
+      "background": "Предыстория",
+      "abilities": "Способности / навыки",
+      "motivation": "Основная мотивация",
+      "relationships": "Сеть отношений",
+      "arc": "Известная траектория развития",
+      "notes": "Другие заметки",
+      "currentState": {
+        "location": "Последнее известное местоположение",
+        "powerLevel": "Текущий уровень",
+        "physicalState": "Текущее физическое состояние",
+        "mentalState": "Текущее психологическое состояние",
+        "keyItems": "Текущие ключевые предметы",
+        "recentEvents": "Последние важные события",
+        "updatedAtChapter": 0
+      }
+    }
+  ]
+}
+
+Требования:
+1. characterCards должны включать только главного героя и ключевых второстепенных персонажей (3–8), не фоновых extras.
+2. Все поля выводятся из содержания; неопределённые поля заполняются «(уточнить)».
+3. currentState выводится из самого позднего контента (образец финала), а не из начального состояния.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a top-tier web novel editor and seasoned literary analyst, skilled at reverse-engineering setting systems from existing works.',
+      ru: 'Вы — ведущий редактор веб-романов и опытный литературный аналитик, искусно выполняющий обратное проектирование систем настроек из существующих произведений.'
+    },
   },
 
   // ================================================================
@@ -1019,6 +2208,104 @@ severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致�
 }
 
 如果图谱中没有任何可提取的角色，返回 {"characters": []}。`,
+    contentLocalized: {
+      en: `Please extract all important characters' structured information from the following character dynamics text.
+
+【Character Dynamics Text】
+{{character_dynamics}}
+
+【Novel Genre】
+{{genre}}
+
+【Task Requirements】
+1. Extract all clearly described characters in the dynamics (protagonist, antagonist, key supporting characters) — do not omit any.
+2. Do not extract background extras or characters mentioned only in passing.
+3. All fields are extracted from the dynamics text. If the dynamics do not explicitly describe appearance, you MUST infer and provide a rich signature appearance description based on the character's background and personality (appearance must NEVER be left blank or marked as unknown). Other minor fields that cannot be determined may be left as empty strings.
+4. The role field may only have these values: protagonist, antagonist, supporting, minor.
+5. currentState represents the character's initial state (at story start); updatedAtChapter is fixed at 0.
+
+【Output Format】
+Must return a JSON object in the following format (characters array contains all characters):
+{
+  "characters": [
+    {
+      "name": "Character name",
+      "role": "protagonist",
+      "gender": "Gender",
+      "age": "Age or age range",
+      "appearance": "Physical description",
+      "personality": "Personality traits",
+      "background": "Backstory",
+      "abilities": "Abilities / skills / cultivation",
+      "motivation": "Core motivation and desires",
+      "relationships": "Relationships with other characters",
+      "arc": "Expected character arc / growth trajectory",
+      "notes": "Other supplementary notes",
+      "currentState": {
+        "location": "Initial location",
+        "powerLevel": "Initial level / ability tier",
+        "physicalState": "Initial physical condition",
+        "mentalState": "Initial psychological state",
+        "keyItems": "Initially held items",
+        "recentEvents": "Background events before story start",
+        "updatedAtChapter": 0
+      }
+    }
+  ]
+}
+
+If the dynamics contain no extractable characters, return {"characters": []}.`,
+      ru: `Пожалуйста, извлеките всю структурированную информацию о важных персонажах из следующего текста динамики персонажей.
+
+【Текст динамики персонажей】
+{{character_dynamics}}
+
+【Жанр романа】
+{{genre}}
+
+【Требования к заданию】
+1. Извлеките всех чётко описанных персонажей (главного героя, антагониста, ключевых второстепенных) — не пропускайте ни одного.
+2. Не извлекайте фоновых extras или персонажей, упомянутых лишь мимоходом.
+3. Все поля извлекаются из текста динамики. Если динамика не описывает внешность, вы ОБЯЗАНЫ вывести и предоставить богатое описание характерной внешности на основе предыстории и характера персонажа (внешность НИКОГДА не должна оставаться пустой или помечаться как неизвестная). Другие второстепенные поля, которые невозможно определить, могут быть оставлены пустыми строками.
+4. Поле role может принимать только значения: protagonist, antagonist, supporting, minor.
+5. currentState отражает начальное состояние персонажа (в начале истории); updatedAtChapter фиксируется на 0.
+
+【Формат вывода】
+Обязательно верните объект JSON в следующем формате (массив characters содержит всех персонажей):
+{
+  "characters": [
+    {
+      "name": "Имя персонажа",
+      "role": "protagonist",
+      "gender": "Пол",
+      "age": "Возраст или возрастная категория",
+      "appearance": "Описание внешности",
+      "personality": "Черты характера",
+      "background": "Предыстория",
+      "abilities": "Способности / навыки / уровень культивации",
+      "motivation": "Основная мотивация и желания",
+      "relationships": "Отношения с другими персонажами",
+      "arc": "Ожидаемая арка персонажа / траектория развития",
+      "notes": "Другие дополнительные заметки",
+      "currentState": {
+        "location": "Начальное местоположение",
+        "powerLevel": "Начальный уровень",
+        "physicalState": "Начальное физическое состояние",
+        "mentalState": "Начальное психологическое состояние",
+        "keyItems": "Начальные предметы",
+        "recentEvents": "Предысторические события до начала истории",
+        "updatedAtChapter": 0
+      }
+    }
+  ]
+}
+
+Если в динамике нет извлекаемых персонажей, верните {"characters": []}.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a professional novel data structuring expert.',
+      ru: 'Вы — профессиональный эксперт по структурированию данных романа.'
+    },
   },
 
   // ================================================================
@@ -1067,6 +2354,74 @@ severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致�
 2. characters 只列主要互动角色名（3-5个），不要列龙套。
 3. role 从正文的叙事功能判断（建置/发展/转折/高潮/结局/过渡等）。
 4. 仅输出 JSON，不要任何额外文字。`,
+    contentLocalized: {
+      en: `Please read the following existing chapter text and extract structured blueprint information from it.
+
+【Global Novel Setting Summary】
+{{novel_config_summary}}
+
+【Chapter Info】
+- Chapter number: {{chapter_number}}
+- Split chapter title: {{chapter_title}}
+
+【This Chapter's Full Text】
+{{chapter_content}}
+
+---
+
+Please output this chapter's blueprint strictly in the following JSON format:
+
+{
+  "chapterNumber": {{chapter_number}},
+  "title": "Precise chapter title distilled from the text (retain if the split title is already good)",
+  "role": "This chapter's role in the overall novel (setup / development / turning point / climax / resolution / transition, etc.)",
+  "purpose": "The core problem the protagonist most wants to solve this chapter (one sentence)",
+  "characters": ["Important character names appearing in this chapter"],
+  "keyEvents": "Summary of core events in this chapter (100–150 words, including cause-and-effect and outcome)",
+  "suspenseHook": "Cliffhanger or hook left at the end (one sentence)"
+}
+
+Requirements:
+1. keyEvents must be extracted from the actual text — do not fabricate.
+2. characters should only list main interacting characters (3–5), not extras.
+3. role is determined by the narrative function in the text (setup / development / turning point / climax / resolution / transition, etc.).
+4. Output only JSON — no additional text.`,
+      ru: `Пожалуйста, прочитайте следующий текст существующей главы и извлеките из него структурированную информацию о плане.
+
+【Общая сводка настроек романа】
+{{novel_config_summary}}
+
+【Информация о главе】
+- Номер главы: {{chapter_number}}
+- Заголовок по разбиению: {{chapter_title}}
+
+【Полный текст этой главы】
+{{chapter_content}}
+
+---
+
+Выведите план этой главы строго в следующем формате JSON:
+
+{
+  "chapterNumber": {{chapter_number}},
+  "title": "Точный заголовок главы, извлечённый из текста (сохраните, если заголовок по разбиению уже хорош)",
+  "role": "Роль этой главы в общем романе (завязка / развитие / поворотный момент / кульминация / развязка / переход и т.д.)",
+  "purpose": "Основная проблема, которую герой хочет решить в этой главе (одно предложение)",
+  "characters": ["Имена важных персонажей, появляющихся в этой главе"],
+  "keyEvents": "Краткое изложение основных событий главы (100–150 слов, включая причинно-следственные связи и результат)",
+  "suspenseHook": "Интрига или крючок, оставленный в конце (одно предложение)"
+}
+
+Требования:
+1. keyEvents должны быть извлечены из фактического текста — не придумывайте.
+2. characters должны включать только основных взаимодействующих персонажей (3–5), не фоновых extras.
+3. role определяется повествовательной функцией в тексте (завязка / развитие / поворотный момент / кульминация / развязка / переход и т.д.).
+4. Выводите только JSON — никакого дополнительного текста.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a professional web novel structural analyst, skilled at extracting structured blueprint information from prose.',
+      ru: 'Вы — профессиональный структурный аналитик веб-романов, искусно извлекающий структурированную информацию о плане из прозы.'
+    },
   },
 
   // ================================================================
@@ -1164,6 +2519,166 @@ severity 取值：error=严重矛盾强烈建议修复, warning=轻微不一致�
 2. 所有字段基于检索片段推断，未能确定的填写"（待确认）"
 3. currentState 应基于最新章节推断当前状态，而非初始状态
 4. plotStructure 和 narrativePOV 请根据实际叙事特征判断，而非猜测`,
+    contentLocalized: {
+      en: `Based on the following precisely extracted key passages from the novel, reverse-engineer the complete setting system of this novel.
+
+【Chapter 1 Full Text (opening style reference)】
+{{first_chapter}}
+
+【Latest Chapter Full Text (current progress reference)】
+{{latest_chapter}}
+
+【Total chapters】{{total_chapters}}
+
+【Vector Search Selected Passages — Worldbuilding & Power System】
+{{sampled_worldview}}
+
+【Vector Search Selected Passages — Protagonist Settings & Golden Finger】
+{{sampled_protagonist}}
+
+【Vector Search Selected Passages — Core Conflicts & Antagonist Forces】
+{{sampled_conflict}}
+
+【Vector Search Selected Passages — Writing Style & Narrative Techniques】
+{{sampled_style}}
+
+---
+
+Please return the analysis results strictly in the following JSON format:
+
+{
+  "novelConfig": {
+    "genre": "Primary genre (fantasy / xianxia / urban / sci-fi / historical / mystery / gaming / military / wuxia / realism / other)",
+    "targetAudience": "Target audience (male-oriented / female-oriented / general)",
+    "subGenre": "Sub-genre and tags",
+    "plotStructure": "Story structure (three_act / heros_journey / save_the_cat / kishotenketsu / multi_thread / freeform)",
+    "narrativePOV": "Narrative POV (third_limited / first_person / third_omniscient / multi_pov)",
+    "coreOutline": "Core outline (150+ words, including main-line objective, core conflict, story trajectory)",
+    "worldSetting": "World background and power system",
+    "goldenFinger": "Protagonist's golden finger / core ability system",
+    "protagonistProfile": "Protagonist profile (personality, background, core motivation)",
+    "globalGuidance": "Global writing style and pacing requirements inferred from existing content"
+  },
+  "architectureFiles": {
+    "premise": "Core story premise text (under 200 words, highly condensed)",
+    "characters": "Known main characters' relationship web and dynamics analysis",
+    "worldbuilding": "Worldbuilding matrix (power system, class structure, key locations)",
+    "synopsis": "Known plot trajectory analysis (including completed portions and inferred future trajectory)"
+  },
+  "characterCards": [
+    {
+      "name": "Character name",
+      "role": "protagonist/antagonist/supporting/minor",
+      "gender": "Gender",
+      "age": "Age or life stage",
+      "appearance": "Appearance description",
+      "personality": "Personality traits",
+      "background": "Backstory",
+      "abilities": "Abilities / skills",
+      "motivation": "Core motivation",
+      "relationships": "Relationship web",
+      "arc": "Known growth trajectory",
+      "notes": "Other notes",
+      "currentState": {
+        "location": "Last known location",
+        "powerLevel": "Current level / ability tier",
+        "physicalState": "Current physical condition",
+        "mentalState": "Current psychological state",
+        "keyItems": "Currently held key items",
+        "recentEvents": "Most recent important events",
+        "updatedAtChapter": 0
+      }
+    }
+  ]
+}
+
+Requirements:
+1. characterCards should only include the protagonist and key supporting characters (3–8), not minor extras.
+2. All fields are inferred from the retrieved passages; undetermined fields should be filled with "(TBD)".
+3. currentState should be inferred from the latest chapter, not the initial state.
+4. Determine plotStructure and narrativePOV based on actual narrative characteristics, not guesses.`,
+      ru: `На основе следующих точно извлечённых ключевых отрывков из романа выполните обратное проектирование полной системы настроек этого романа.
+
+【Полный текст Главы 1 (образец начального стиля)】
+{{first_chapter}}
+
+【Полный текст последней главы (образец текущего прогресса)】
+{{latest_chapter}}
+
+【Общее количество глав】{{total_chapters}}
+
+【Избранные отрывки из векторного поиска — Мироздание и система сил】
+{{sampled_worldview}}
+
+【Избранные отрывки из векторного поиска — Настройки героя и золотой палец】
+{{sampled_protagonist}}
+
+【Избранные отрывки из векторного поиска — Основные конфликты и противостоящие силы】
+{{sampled_conflict}}
+
+【Избранные отрывки из векторного поиска — Стиль написания и повествовательные приёмы】
+{{sampled_style}}
+
+---
+
+Выведите результаты анализа строго в следующем формате JSON:
+
+{
+  "novelConfig": {
+    "genre": "Основной жанр (фэнтези / сянься / городское / научная фантастика / исторический / детектив / игровые / военный / уся / реализм / другое)",
+    "targetAudience": "Целевая аудитория (мужская / женская / универсальная)",
+    "subGenre": "Поджанр и теги",
+    "plotStructure": "Структура истории (three_act / heros_journey / save_the_cat / kishotenketsu / multi_thread / freeform)",
+    "narrativePOV": "Точка зрения повествования (third_limited / first_person / third_omniscient / multi_pov)",
+    "coreOutline": "Основной конспект (150+ слов, включая главную цель, основной конфликт, траекторию истории)",
+    "worldSetting": "Фон мира и система сил",
+    "goldenFinger": "Золотой палец героя / система основных способностей",
+    "protagonistProfile": "Профиль героя (характер, предыстория, основная мотивация)",
+    "globalGuidance": "Глобальные требования к стилю и темпу, выведенные из существующего контента"
+  },
+  "architectureFiles": {
+    "premise": "Текст основной сюжетной посылки (до 200 слов, высоко концентрированный)",
+    "characters": "Известная сеть отношений и динамика ключевых персонажей",
+    "worldbuilding": "Матрица мироздания (система сил, классовая структура, ключевые локации)",
+    "synopsis": "Анализ известной траектории сюжета (включая завершённые части и предполагаемую дальнейшую траекторию)"
+  },
+  "characterCards": [
+    {
+      "name": "Имя персонажа",
+      "role": "protagonist/antagonist/supporting/minor",
+      "gender": "Пол",
+      "age": "Возраст или этап жизни",
+      "appearance": "Описание внешности",
+      "personality": "Черты характера",
+      "background": "Предыстория",
+      "abilities": "Способности / навыки",
+      "motivation": "Основная мотивация",
+      "relationships": "Сеть отношений",
+      "arc": "Известная траектория развития",
+      "notes": "Другие заметки",
+      "currentState": {
+        "location": "Последнее известное местоположение",
+        "powerLevel": "Текущий уровень",
+        "physicalState": "Текущее физическое состояние",
+        "mentalState": "Текущее психологическое состояние",
+        "keyItems": "Текущие ключевые предметы",
+        "recentEvents": "Последние важные события",
+        "updatedAtChapter": 0
+      }
+    }
+  ]
+}
+
+Требования:
+1. characterCards должны включать только главного героя и ключевых второстепенных персонажей (3–8), не фоновых extras.
+2. Все поля выводятся из полученных отрывков; неопределённые поля заполняются «(уточнить)».
+3. currentState выводится из последней главы, а не из начального состояния.
+4. Определите plotStructure и narrativePOV на основе фактических повествовательных характеристик, а не догадок.`
+    },
+    systemRoleLocalized: {
+      en: 'You are a top-tier web novel editor and seasoned literary analyst, skilled at reverse-engineering setting systems from existing works.',
+      ru: 'Вы — ведущий редактор веб-романов и опытный литературный аналитик, искусно выполняющий обратное проектирование систем настроек из существующих произведений.'
+    },
   },
 ]
 
@@ -1345,14 +2860,14 @@ export async function deleteProjectCustomPrompt(projectPath: string, key: string
 
 /** 渲染 Prompt 模板（填充变量 + 自动追加内置 systemSuffix + 空段落裁剪） */
 export function renderPrompt(template: PromptTemplate, variables: Record<string, string>): string {
-  let content = template.content
+  let content = getLocalizedContent(template)
   for (const [key, value] of Object.entries(variables)) {
     content = content.replaceAll(`{{${key}}}`, value)
   }
 
   // 自动追加系统约束（始终从内置模板获取，不受用户自定义影响）
   const builtinTemplate = BUILTIN_PROMPTS.find(p => p.key === template.key)
-  const suffix = builtinTemplate?.systemSuffix
+  const suffix = builtinTemplate ? getLocalizedSystemSuffix(builtinTemplate) : undefined
   if (suffix) {
     let renderedSuffix = suffix
     for (const [key, value] of Object.entries(variables)) {

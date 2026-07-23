@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { ipc } from '../services/ipc-client'
+import i18n from '../i18n'
 
 export type Theme = 'light' | 'galaxy' | 'paper' | 'dark'
 
@@ -20,45 +21,47 @@ export interface FontOption {
   preview: string
 }
 
+const tFont = (key: string) => i18n.t(key, { ns: 'settings' })
+
 /** 所有内置字体（界面 + 写作共用） */
 export const FONT_OPTIONS: FontOption[] = [
   {
     id: 'inter',
     label: 'Inter',
     labelEn: 'Inter',
-    desc: '精心设计的现代 UI 字体，英文排版优秀，界面首选',
+    desc: tFont('fonts.inter.desc'),
     family: "'Inter', system-ui, sans-serif",
     preview: 'Aa Bb 文字 123',
   },
   {
     id: 'noto-sans-sc',
-    label: '思源黑体',
+    label: tFont('fonts.noto-sans-sc.label'),
     labelEn: 'Noto Sans SC',
-    desc: '黑体风格，中英文兼顾，简洁现代，科幻都市题材适用',
+    desc: tFont('fonts.noto-sans-sc.desc'),
     family: "'Noto Sans SC', sans-serif",
     preview: '思源黑体 Sans',
   },
   {
     id: 'lxgw-wenkai',
-    label: '霞鹜文楷',
+    label: tFont('fonts.lxgw-wenkai.label'),
     labelEn: 'LXGW WenKai',
-    desc: '楷体风格，温润典雅，最适合中文小说写作',
+    desc: tFont('fonts.lxgw-wenkai.desc'),
     family: "'LXGW WenKai', serif",
     preview: '春花秋月何时了',
   },
   {
     id: 'noto-serif-sc',
-    label: '思源宋体',
+    label: tFont('fonts.noto-serif-sc.label'),
     labelEn: 'Noto Serif SC',
-    desc: '宋体风格，字形端正，印刷质感强，正式文稿首选',
+    desc: tFont('fonts.noto-serif-sc.desc'),
     family: "'Noto Serif SC', serif",
     preview: '往事如云烟，归零',
   },
   {
     id: 'system',
-    label: '系统默认',
+    label: tFont('fonts.system.label'),
     labelEn: 'System UI',
-    desc: 'macOS 使用苹方/SF Pro，原生手感，无需字体文件',
+    desc: tFont('fonts.system.desc'),
     family: 'system-ui, -apple-system, sans-serif',
     preview: 'Aa Bb 苹方 123',
   },
