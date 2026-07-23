@@ -21,6 +21,7 @@ import zhCNLayout from '../locales/zh-CN/layout.json'
 import zhCNPages from '../locales/zh-CN/pages.json'
 import zhCNStores from '../locales/zh-CN/stores.json'
 import zhCNSettings from '../locales/zh-CN/settings.json'
+import zhCNCommands from '../locales/zh-CN/commands.json'
 
 import enCommon from '../locales/en/common.json'
 import enDialogs from '../locales/en/dialogs.json'
@@ -30,6 +31,7 @@ import enLayout from '../locales/en/layout.json'
 import enPages from '../locales/en/pages.json'
 import enStores from '../locales/en/stores.json'
 import enSettings from '../locales/en/settings.json'
+import enCommands from '../locales/en/commands.json'
 
 import ruCommon from '../locales/ru/common.json'
 import ruDialogs from '../locales/ru/dialogs.json'
@@ -39,8 +41,9 @@ import ruLayout from '../locales/ru/layout.json'
 import ruPages from '../locales/ru/pages.json'
 import ruStores from '../locales/ru/stores.json'
 import ruSettings from '../locales/ru/settings.json'
+import ruCommands from '../locales/ru/commands.json'
 
-const NAMESPACES = ['common', 'dialogs', 'editors', 'panels', 'layout', 'pages', 'stores', 'settings'] as const
+const NAMESPACES = ['common', 'dialogs', 'editors', 'panels', 'layout', 'pages', 'stores', 'settings', 'commands'] as const
 
 const ZH_CN_FILES: Record<string, Record<string, unknown>> = {
   common: zhCNCommon,
@@ -51,6 +54,7 @@ const ZH_CN_FILES: Record<string, Record<string, unknown>> = {
   pages: zhCNPages,
   stores: zhCNStores,
   settings: zhCNSettings,
+  commands: zhCNCommands,
 }
 
 const EN_FILES: Record<string, Record<string, unknown>> = {
@@ -62,6 +66,7 @@ const EN_FILES: Record<string, Record<string, unknown>> = {
   pages: enPages,
   stores: enStores,
   settings: enSettings,
+  commands: enCommands,
 }
 
 const RU_FILES: Record<string, Record<string, unknown>> = {
@@ -73,6 +78,7 @@ const RU_FILES: Record<string, Record<string, unknown>> = {
   pages: ruPages,
   stores: ruStores,
   settings: ruSettings,
+  commands: ruCommands,
 }
 
 // Helper: recursively collect all leaf keys from a nested object
