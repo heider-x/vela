@@ -6,6 +6,9 @@
  */
 
 import { ipc } from './ipc-client'
+import i18n from '../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'dialogs', ...opts })
 
 export type ArchStepKey = 'premise' | 'characters' | 'worldbuilding' | 'synopsis'
 
@@ -15,10 +18,10 @@ export const ARCH_FILES: Array<{
   emoji: string
   desc: string
 }> = [
-    { key: 'premise', label: '故事前提', emoji: '🎯', desc: 'Logline · 核心冲突链 · 金手指定位 · 悬念骨架' },
-    { key: 'characters', label: '角色图谱', emoji: '👥', desc: '角色弧光 · 关系网络 · 矛盾交织' },
-    { key: 'worldbuilding', label: '世界观', emoji: '🌍', desc: '核心规则 · 阶层断层 · 深层危机' },
-    { key: 'synopsis', label: '情节大纲', emoji: '🗺️', desc: '三幕结构 · 拐点节奏 · 伏笔闭环' },
+    { key: 'premise', label: t('architectureConfirm.premise'), emoji: '🎯', desc: t('architectureConfirm.premiseDesc') },
+    { key: 'characters', label: t('architectureConfirm.characterMap'), emoji: '👥', desc: t('architectureConfirm.characterMapDesc') },
+    { key: 'worldbuilding', label: t('architectureConfirm.worldbuilding'), emoji: '🌍', desc: t('architectureConfirm.worldbuildingDesc') },
+    { key: 'synopsis', label: t('architectureConfirm.synopsis'), emoji: '🗺️', desc: t('architectureConfirm.synopsisDesc') },
   ]
 
 /**

@@ -7,7 +7,10 @@
  * 3. 路由用户消息到对应的处理逻辑
  */
 
+import i18n from '../../i18n'
 import { skillRegistry, type LoadedSkill } from './skill-registry'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
 
 // ===== 类型定义 =====
 
@@ -51,26 +54,26 @@ export interface ParsedMention {
 const BUILTIN_COMMANDS: SlashCommand[] = [
   {
     name: 'clear',
-    displayName: '清空对话',
-    description: '清空当前对话历史',
+    displayName: t('agent.slash.clearName'),
+    description: t('agent.slash.clearDesc'),
     source: 'builtin_command',
   },
   {
     name: 'new',
-    displayName: '新对话',
-    description: '开始一个新的对话',
+    displayName: t('agent.slash.newName'),
+    description: t('agent.slash.newDesc'),
     source: 'builtin_command',
   },
   {
     name: 'help',
-    displayName: '帮助',
-    description: '显示可用的命令和功能列表',
+    displayName: t('agent.slash.helpName'),
+    description: t('agent.slash.helpDesc'),
     source: 'builtin_command',
   },
   {
     name: 'status',
-    displayName: '项目状态',
-    description: '查看当前项目的状态和进度',
+    displayName: t('agent.slash.statusName'),
+    description: t('agent.slash.statusDesc'),
     source: 'builtin_command',
   },
 ]
@@ -145,12 +148,12 @@ export function parseSlashCommand(input: string): {
  */
 export function getAllMentionTargets(): MentionTarget[] {
   return [
-    { type: 'architecture', displayName: '故事架构', value: 'architecture', icon: '📐' },
-    { type: 'character', displayName: '角色卡', value: 'characters', icon: '👤' },
-    { type: 'blueprint', displayName: '章节蓝图', value: 'blueprints', icon: '📋' },
-    { type: 'knowledge', displayName: '知识库', value: 'knowledge', icon: '📚' },
-    { type: 'chapter', displayName: '当前章节', value: 'current_chapter', icon: '📝' },
-    { type: 'file', displayName: '项目文件', value: 'file', icon: '📄' },
+    { type: 'architecture', displayName: t('agent.mentionTargets.architecture'), value: 'architecture', icon: '📐' },
+    { type: 'character', displayName: t('agent.mentionTargets.character'), value: 'characters', icon: '👤' },
+    { type: 'blueprint', displayName: t('agent.mentionTargets.blueprint'), value: 'blueprints', icon: '📋' },
+    { type: 'knowledge', displayName: t('agent.mentionTargets.knowledge'), value: 'knowledge', icon: '📚' },
+    { type: 'chapter', displayName: t('agent.mentionTargets.chapter'), value: 'current_chapter', icon: '📝' },
+    { type: 'file', displayName: t('agent.mentionTargets.file'), value: 'file', icon: '📄' },
   ]
 }
 

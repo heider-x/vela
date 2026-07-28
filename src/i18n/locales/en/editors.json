@@ -218,7 +218,8 @@
     "extracting": "Extracting...",
     "extractRoles": "Extract Character Cards",
     "extractRolesTooltip": "Character data is empty, possibly due to a failed generation or deletion. Click to re-extract.",
-    "clickToView": "Click to view"
+    "clickToView": "Click to view",
+    "clickToViewDesc": "Click to view — {{desc}}"
   },
   "novelConfig": {
     "title": "Novel Configuration",

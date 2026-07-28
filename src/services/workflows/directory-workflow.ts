@@ -3,6 +3,9 @@ import { useProjectStore } from '../../stores/project-store'
 import { ipc } from '../ipc-client'
 import type { BlueprintData } from '../../../electron/repositories/blueprint-repository'
 import { stripThinkingTags } from './workflow-utils'
+import i18n from '../../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'commands', ...opts })
 
 // ==========================================
 // 1. 结构与类型导出 (保留对外的向后兼容)
@@ -13,7 +16,7 @@ export type ChapterBlueprint = BlueprintData
 const EMPTY_BLUEPRINT: ChapterBlueprint = {
   chapterNumber: 0,
   title: '',
-  role: '发展',
+  role: '',
   purpose: '',
   keyEvents: '',
   characters: [],
@@ -59,8 +62,8 @@ export function parseTextBlueprints(content: string, startNum: number, endNum: n
           .map((p: Record<string, unknown>) => ({
             ...EMPTY_BLUEPRINT,
             chapterNumber: Number(p.chapterNumber || p.chapter_number || 0),
-            title: String(p.title || `第${p.chapterNumber}章`),
-            role: String(p.role || '发展'),
+            title: String(p.title || t('workflowDefs.chapterTitleFallback', { chapter: p.chapterNumber })),
+            role: String(p.role || t('workflowDefs.dirDefaultRole')),
             purpose: String(p.purpose || ''),
             keyEvents: String(p.keyEvents || p.key_events || ''),
             characters: Array.isArray(p.characters) ? p.characters : [],
@@ -114,18 +117,18 @@ export async function getBlueprintCount(): Promise<number> {
 export function createDirectoryWorkflow(params: DirectoryWorkflowParams = { mode: 'full' }): WorkflowDefinition {
   return {
     type: 'directory',
-    title: params.mode === 'append' ? `📋 续写章节蓝图${params.startChapter ? `（从第 ${params.startChapter} 章）` : ''}` : '📋 生成章节蓝图（全量）',
+    title: params.mode === 'append' ? t('workflowDefs.dirAppendTitle', { chapter: params.startChapter || '' }) : t('workflowDefs.dirFullTitle'),
     steps: [
       {
-        name: '读取架构',
-        description: `从 SQLite 加载项目架构信息`,
+        name: t('workflowDefs.dirStepReadArch'),
+        description: t('workflowDefs.dirStepReadArchDesc'),
         executor: async (_step, context, callbacks) => {
           const project = useProjectStore.getState().currentProject
-          if (!project) throw new Error('未打开项目')
+          if (!project) throw new Error(t('common.noProject'))
 
-          callbacks.log('读取项目架构信息...')
+          callbacks.log(t('workflowDefs.dirReadingArch'))
           const core = await ipc.invoke('db:project-core-get')
-          if (!core) throw new Error('项目核心数据未初始化')
+          if (!core) throw new Error(t('workflowDefs.dirCoreDataNotInit'))
 
           const parts: string[] = []
           if (core.premise && core.premise.length > 50) parts.push(core.premise)
@@ -133,7 +136,7 @@ export function createDirectoryWorkflow(params: DirectoryWorkflowParams = { mode
           if (core.worldbuilding && core.worldbuilding.length > 50) parts.push(core.worldbuilding)
           if (core.synopsis && core.synopsis.length > 50) parts.push(core.synopsis)
 
-          if (parts.length === 0) throw new Error('项目主要架构均未生成')
+          if (parts.length === 0) throw new Error(t('workflowDefs.dirArchNotGenerated'))
 
           context.data.architecture = parts.join('\n\n---\n\n')
           // 注入节奏指导到 context，供 Command 读取
@@ -141,33 +144,33 @@ export function createDirectoryWorkflow(params: DirectoryWorkflowParams = { mode
           if (params.mode === 'append') {
             const existing = await loadDirectoryBlueprints()
             context.data.existingBlueprints = existing
-            callbacks.log(`已加载 ${existing.length} 章已有蓝图`)
+            callbacks.log(t('workflowDefs.dirLoadedBlueprints', { count: existing.length }))
           }
-          return `架构加载完成（${parts.length} 段）`
+          return t('workflowDefs.dirArchLoaded', { count: parts.length })
         },
       },
       {
-        name: '生成蓝图',
-        description: '基于架构文件生成全书章节蓝图',
+        name: t('workflowDefs.dirStepGenerate'),
+        description: t('workflowDefs.dirStepGenerateDesc'),
         executor: async (_step, context, callbacks) => {
           const { GenerateDirectoryCommand } = await import('./commands/directory.command')
           const cmd = new GenerateDirectoryCommand(params)
           const blueprints = await cmd.execute({ step: _step, context, callbacks })
           // 返回可读摘要字符串（step.result 必须是 string，否则 AIOutputPanel 渲染会崩溃）
-          return `已生成 ${blueprints.length} 章蓝图`
+          return t('workflowDefs.dirGeneratedBlueprints', { count: blueprints.length })
         },
       },
       {
-        name: '保存蓝图',
-        description: `将章节蓝图批量写入 SQLite 数据库`,
+        name: t('workflowDefs.dirStepSave'),
+        description: t('workflowDefs.dirStepSaveDesc'),
         executor: async (_step, context, callbacks) => {
           const project = useProjectStore.getState().currentProject
-          if (!project) throw new Error('未打开项目')
+          if (!project) throw new Error(t('common.noProject'))
 
           const newBlueprints = context.data.newBlueprints as ChapterBlueprint[]
           const existingBlueprints = context.data.existingBlueprints as ChapterBlueprint[]
 
-          callbacks.log('保存蓝图到数据库...')
+          callbacks.log(t('workflowDefs.dirSavingBlueprints'))
 
           let merged: ChapterBlueprint[]
           if (params.mode === 'full') {
@@ -182,13 +185,13 @@ export function createDirectoryWorkflow(params: DirectoryWorkflowParams = { mode
 
           await saveAllBlueprints(merged)
           useProjectStore.getState().refreshFileTree()
-          return '已保存蓝图'
+          return t('workflowDefs.dirBlueprintsSaved')
         },
       },
     ],
     onComplete: {
       mode: 'silent',
-      message: params.mode === 'append' ? '✅ 续写蓝图生成完成' : '✅ 全书章节蓝图已生成完成！',
+      message: params.mode === 'append' ? t('workflowDefs.dirCompletedAppend') : t('workflowDefs.dirCompletedFull'),
     },
   }
 }

@@ -1,21 +1,23 @@
 /**
  * read_architecture — 读取故事架构文件
  */
+import i18n from '../../../i18n'
 import { buildAgentTool } from '../tool-registry'
 import { ipc } from '../../ipc-client'
 import { useProjectStore } from '../../../stores/project-store'
 
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
 
 export const readArchitectureTool = buildAgentTool({
   name: 'read_architecture',
-  description: '读取小说的故事架构文件（四段式架构：故事前提、世界观、角色图谱、剧情大纲等）。是理解小说全局结构的核心工具。',
+  description: t('agent.tools.readArchitecture.desc'),
   source: 'builtin',
   inputSchema: {
     type: 'object',
     properties: {
       file_name: {
         type: 'string',
-        description: '架构文件名（可选）。不填则列出所有架构文件。例如 "故事前提.md"、"世界观.md"',
+        description: t('agent.tools.readArchitecture.fileNameDesc'),
       },
     },
   },
@@ -23,7 +25,7 @@ export const readArchitectureTool = buildAgentTool({
   execute: async (args) => {
     const project = useProjectStore.getState().currentProject
     if (!project) {
-      return { success: false, content: '', error: '没有打开的项目' }
+      return { success: false, content: '', error: t('agent.tools.noProject') }
     }
 
     const fileName = args.file_name as string | undefined
@@ -31,7 +33,7 @@ export const readArchitectureTool = buildAgentTool({
     try {
       const core = await ipc.invoke('db:project-core-get')
       if (!core) {
-        return { success: false, content: '', error: '项目架构未初始化' }
+        return { success: false, content: '', error: t('agent.tools.readArchitecture.notInitialized') }
       }
 
       if (fileName) {
@@ -47,9 +49,9 @@ export const readArchitectureTool = buildAgentTool({
         else if (isSynopsis) property = core.synopsis
 
         if (!property) {
-          return { success: false, content: '', error: `架构文件内容为空：${fileName}` }
+          return { success: false, content: '', error: t('agent.tools.readArchitecture.emptyFile', { name: fileName }) }
         }
-        return { success: true, content: `📐 架构文件：${fileName}\n\n${property}` }
+        return { success: true, content: `${t('agent.tools.readArchitecture.fileContent', { name: fileName })}\n\n${property}` }
       }
 
       const contents: string[] = []
@@ -59,12 +61,12 @@ export const readArchitectureTool = buildAgentTool({
       if (core.synopsis) contents.push(`## 📄 synopsis.md\n\n${core.synopsis}`)
 
       if (contents.length === 0) {
-        return { success: true, content: '⚠️ 架构为空，暂无架构文件。建议通过工作流生成故事架构。' }
+        return { success: true, content: t('agent.tools.readArchitecture.empty') }
       }
 
-      return { success: true, content: `📐 故事架构（${contents.length} 个文件）\n\n${contents.join('\n\n---\n\n')}` }
+      return { success: true, content: `${t('agent.tools.readArchitecture.allFiles', { count: contents.length })}\n\n${contents.join('\n\n---\n\n')}` }
     } catch (error) {
-      return { success: false, content: '', error: `读取架构失败：${String(error)}` }
+      return { success: false, content: '', error: t('agent.tools.readArchitecture.readFailed', { error: String(error) }) }
     }
   },
 })

@@ -17,6 +17,7 @@ import { useProjectStore } from '../../stores/project-store'
 import { readPostProcessStatus, type PostProcessStatus } from '../../services/workflows/workflow-utils'
 import { cn } from '../../lib/utils'
 import { globalEventBus } from '../../shared/event-bus'
+import i18n from '../../i18n'
 
 interface PostProcessStatusPanelProps {
   /** 状态文件 scope 标识，如 'chapter_1_finalize' */
@@ -167,7 +168,7 @@ export function PostProcessStatusPanel({
               <div className="flex items-center gap-1.5 shrink-0">
                 {step.ok ? (
                   <span className="text-[10px] text-[var(--color-text-muted)]">
-                    {step.completedAt ? new Date(step.completedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : ''}
+                    {step.completedAt ? new Date(step.completedAt).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' }) : ''}
                   </span>
                 ) : (
                   <>
@@ -194,7 +195,7 @@ export function PostProcessStatusPanel({
             <div className="flex items-center gap-1 text-[10px] text-[var(--color-text-muted)]">
               <Clock size={10} />
               <span>
-                {t('lastAttempt')} {new Date(status.updatedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                {t('lastAttempt')} {new Date(status.updatedAt).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
             {onRetry && (

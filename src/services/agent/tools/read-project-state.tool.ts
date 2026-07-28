@@ -1,26 +1,28 @@
 /**
  * read_project_state — 读取项目全局状态
  */
+import i18n from '../../../i18n'
 import { buildAgentTool } from '../tool-registry'
 import { useProjectStore } from '../../../stores/project-store'
 import { ipc } from '../../ipc-client'
 
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
 
 export const readProjectStateTool = buildAgentTool({
   name: 'read_project_state',
-  description: '读取项目的全局状态信息，包括小说配置、近章要点等。用于了解项目的整体概况。',
+  description: t('agent.tools.readProjectState.desc'),
   source: 'builtin',
   inputSchema: {
     type: 'object',
     properties: {
       include_config: {
         type: 'boolean',
-        description: '是否包含完整的小说配置',
+        description: t('agent.tools.readProjectState.includeConfigDesc'),
         default: true,
       },
       include_summary: {
         type: 'boolean',
-        description: '是否包含近章要点',
+        description: t('agent.tools.readProjectState.includeSummaryDesc'),
         default: true,
       },
     },
@@ -29,20 +31,20 @@ export const readProjectStateTool = buildAgentTool({
   execute: async (args) => {
     const project = useProjectStore.getState().currentProject
     if (!project) {
-      return { success: false, content: '', error: '没有打开的项目' }
+      return { success: false, content: '', error: t('agent.tools.noProject') }
     }
 
     const includeConfig = (args.include_config as boolean) !== false
     const includeSummary = (args.include_summary as boolean) !== false
 
-    const parts: string[] = [`# 📊 项目状态：《${project.name}》\n`]
+    const parts: string[] = [`${t('agent.tools.readProjectState.projectStatus', { name: project.name })}\n`]
 
     if (includeConfig) {
       // 读取小说配置
       try {
         const core = await ipc.invoke('db:project-core-get')
         if (core) {
-          parts.push(`## 小说配置\n\`\`\`json\n${JSON.stringify({
+          parts.push(`${t('agent.tools.readProjectState.novelConfig')}\n\`\`\`json\n${JSON.stringify({
             projectName: core.projectName,
             genre: core.genre,
             subGenre: core.subGenre,
@@ -56,7 +58,7 @@ export const readProjectStateTool = buildAgentTool({
         }
       } catch {
         // Fallback
-        parts.push(`## 小说配置\n⚠️ 获取配置失败`)
+        parts.push(`${t('agent.tools.readProjectState.novelConfig')}\n${t('agent.tools.readProjectState.configFailed')}`)
       }
     }
 
@@ -70,7 +72,7 @@ export const readProjectStateTool = buildAgentTool({
           const sorted = bps.sort((a, b) => b.chapterNumber - a.chapterNumber)
           for (const bp of sorted) {
             if (bp.notes && bp.notes.trim()) {
-              notesParts.unshift(`### 第${bp.chapterNumber}章 ${bp.title || ''}\n${bp.notes}`)
+              notesParts.unshift(t('agent.tools.readProjectState.chapterHeading', { chapter: bp.chapterNumber, title: bp.title || '' }) + `\n${bp.notes}`)
               if (notesParts.length >= 5) break
             }
           }
@@ -78,9 +80,9 @@ export const readProjectStateTool = buildAgentTool({
       } catch { /* 忽略 */ }
 
       if (notesParts.length > 0) {
-        parts.push(`## 近章要点\n${notesParts.join('\n\n')}`)
+        parts.push(`${t('agent.tools.readProjectState.chapterSummary')}\n${notesParts.join('\n\n')}`)
       } else {
-        parts.push(`## 近章要点\n暂无章节要点。章节要点会在定稿后自动生成并写入蓝图。`)
+        parts.push(`${t('agent.tools.readProjectState.chapterSummary')}\n${t('agent.tools.readProjectState.noSummary')}`)
       }
     }
 

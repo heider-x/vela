@@ -11,7 +11,10 @@
  * 但简化为 Vela 的 Electron + React 架构。
  */
 
+import i18n from '../../i18n'
 import { toolRegistry, type ToolResult, type ToolArtifact } from './tool-registry'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
 
 // ===== 常量 =====
 
@@ -103,7 +106,7 @@ export async function runAgentLoop(
   while (rounds < MAX_TOOL_ROUNDS) {
     // 检查中止信号
     if (abortSignal?.aborted) {
-      callbacks.onDone(fullAssistantText + '\n\n_（已停止生成）_', allToolCalls, allArtifacts)
+      callbacks.onDone(fullAssistantText + '\n\n_(' + t('agent.generationStopped') + ')_', allToolCalls, allArtifacts)
       return
     }
 
@@ -114,13 +117,13 @@ export async function runAgentLoop(
     try {
       llmResponse = await generateFn(messages, modelId)
     } catch (error) {
-      callbacks.onError(`LLM 调用失败：${String(error)}`)
+      callbacks.onError(t('agent.engine.llmFailed', { error: String(error) }))
       return
     }
 
     // 检查中止
     if (abortSignal?.aborted) {
-      callbacks.onDone(fullAssistantText + '\n\n_（已停止生成）_', allToolCalls, allArtifacts)
+      callbacks.onDone(fullAssistantText + '\n\n_(' + t('agent.generationStopped') + ')_', allToolCalls, allArtifacts)
       return
     }
 
@@ -166,7 +169,7 @@ export async function runAgentLoop(
       const tool = toolRegistry.get(tc.name)
       if (!tool) {
         toolCallInfo.status = 'failed'
-        toolCallInfo.error = `未知工具：${tc.name}`
+        toolCallInfo.error = t('agent.engine.unknownTool', { name: tc.name })
         callbacks.onToolCallComplete(toolCallInfo)
         observationParts.push(`<tool_result name="${tc.name}" error="true">\n未知工具：${tc.name}。可用工具：${toolRegistry.listAll().map(t => t.name).join(', ')}\n</tool_result>`)
         continue
@@ -183,7 +186,7 @@ export async function runAgentLoop(
         const confirmed = await callbacks.onToolCallConfirmRequired(toolCallInfo)
         if (!confirmed) {
           toolCallInfo.status = 'failed'
-          toolCallInfo.error = '用户拒绝执行'
+          toolCallInfo.error = t('agent.engine.userRejected')
           callbacks.onToolCallComplete(toolCallInfo)
           observationParts.push(`<tool_result name="${tc.name}" error="true">\n用户拒绝了此操作\n</tool_result>`)
           continue
@@ -214,7 +217,7 @@ export async function runAgentLoop(
         }
       } catch (error) {
         toolCallInfo.status = 'failed'
-        toolCallInfo.error = `执行异常：${String(error)}`
+        toolCallInfo.error = t('agent.engine.execError', { error: String(error) })
         callbacks.onToolCallComplete(toolCallInfo)
         observationParts.push(`<tool_result name="${tc.name}" error="true">\n执行异常：${String(error)}\n</tool_result>`)
       }
@@ -228,7 +231,7 @@ export async function runAgentLoop(
 
   // 达到最大循环次数
   if (rounds >= MAX_TOOL_ROUNDS) {
-    fullAssistantText += '\n\n⚠️ 已达到最大工具调用次数限制，自动停止。'
+    fullAssistantText += '\n\n' + t('agent.engine.maxRounds')
   }
 
   callbacks.onDone(fullAssistantText, allToolCalls, allArtifacts)
@@ -328,7 +331,7 @@ async function executeToolWithTimeout(
   return Promise.race([
     executeFn(args),
     new Promise<ToolResult>((_, reject) =>
-      setTimeout(() => reject(new Error(`工具执行超时（${timeoutMs / 1000}s）`)), timeoutMs)
+      setTimeout(() => reject(new Error(t('agent.engine.toolTimeout', { seconds: timeoutMs / 1000 }))), timeoutMs)
     ),
   ])
 }
@@ -338,5 +341,5 @@ async function executeToolWithTimeout(
  */
 function truncateResult(content: string, maxChars: number): string {
   if (content.length <= maxChars) return content
-  return content.slice(0, maxChars) + `\n\n…（内容已截断，完整内容共 ${content.length} 字符。可使用 read_file 工具获取完整文件内容）`
+  return content.slice(0, maxChars) + '\n\n' + t('agent.engine.resultTruncated', { count: content.length })
 }

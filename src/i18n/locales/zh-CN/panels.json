@@ -115,7 +115,192 @@
     "willExecuteAction": "将执行操作：{{tool}}",
     "referenceContext": "引用上下文",
     "commands": "命令",
-    "error": "错误"
+    "error": "错误",
+    "slash": {
+      "clearName": "清空对话",
+      "clearDesc": "清空当前对话历史",
+      "newName": "新对话",
+      "newDesc": "开始一个新的对话",
+      "helpName": "帮助",
+      "helpDesc": "显示可用的命令和功能列表",
+      "statusName": "项目状态",
+      "statusDesc": "查看当前项目的状态和进度"
+    },
+    "mentionTargets": {
+      "architecture": "故事架构",
+      "character": "角色卡",
+      "blueprint": "章节蓝图",
+      "knowledge": "知识库",
+      "chapter": "当前章节",
+      "file": "项目文件"
+    },
+    "skills": {
+      "optionalArgs": "可选的参数",
+      "reviewChapter": {
+        "name": "章节审阅",
+        "desc": "对指定章节进行全面的质量审阅，包括剧情逻辑、角色一致性、节奏感、伏笔呼应等多个维度。",
+        "when": "用户要求审阅、检查、评估某个章节时"
+      },
+      "brainstorm": {
+        "name": "脑暴创意",
+        "desc": "针对指定话题进行创意脑暴，生成多个创意方向和灵感。",
+        "when": "用户要求头脑风暴、找灵感、想创意时"
+      },
+      "characterAnalysis": {
+        "name": "角色分析",
+        "desc": "深入分析指定角色的性格、动机、角色弧、人物关系等。",
+        "when": "用户想深入了解或调整角色设定时"
+      },
+      "continuityCheck": {
+        "name": "连续性检查",
+        "desc": "检查小说中的设定一致性和连续性问题，发现矛盾和遗漏。",
+        "when": "用户想检查设定有没有矛盾、是否有不一致的地方时"
+      },
+      "writingCoach": {
+        "name": "写作教练",
+        "desc": "提供专业的写作技巧指导和文笔改善建议。",
+        "when": "用户想提高写作水平、求教写作技巧时"
+      }
+    },
+    "tools": {
+      "noProject": "没有打开的项目",
+      "missingFilePath": "缺少文件路径参数",
+      "pathOutOfBounds": "路径越界：「{{path}}」超出了项目目录范围。只能访问项目内的文件。",
+      "listChapters": {
+        "desc": "列出项目中所有章节的状态概览，包括哪些章节有蓝图、有草稿、已定稿等信息。用于了解项目整体进度。",
+        "noData": "📊 项目中暂无任何章节数据。建议先生成故事架构和章节蓝图。",
+        "tableHeader": "| 章节 | 蓝图 | 草稿 | 定稿 |",
+        "summary": "📊 章节进度概览",
+        "summaryDetail": "总计：{{total}} 个章节，{{blueprints}} 个蓝图，{{drafts}} 个草稿，{{finalized}} 个定稿",
+        "getFailed": "获取失败: {{error}}"
+      },
+      "openEditor": {
+        "desc": "在 Vela 编辑器中打开指定文件的 Tab 页。用户可以直接在编辑器中查看和编辑内容。",
+        "filePathDesc": "相对于项目根目录的文件路径",
+        "tabTypeDesc": "Tab 类型",
+        "missingFilePath": "缺少 file_path 参数",
+        "readFailed": "文件读取失败：{{error}}",
+        "opened": "✅ 已在编辑器中打开：{{name}}"
+      },
+      "readArchitecture": {
+        "desc": "读取小说的故事架构文件（四段式架构：故事前提、世界观、角色图谱、剧情大纲等）。是理解小说全局结构的核心工具。",
+        "fileNameDesc": "架构文件名（可选）。不填则列出所有架构文件。例如 \"故事前提.md\"、\"世界观.md\"",
+        "notInitialized": "项目架构未初始化",
+        "emptyFile": "架构文件内容为空：{{name}}",
+        "fileContent": "📐 架构文件：{{name}}",
+        "empty": "⚠️ 架构为空，暂无架构文件。建议通过工作流生成故事架构。",
+        "allFiles": "📐 故事架构（{{count}} 个文件）",
+        "readFailed": "读取架构失败：{{error}}"
+      },
+      "readBlueprint": {
+        "desc": "读取指定章节的蓝图（剧情大纲、场景分配、角色出场计划等）。蓝图是写稿前的详细规划。",
+        "chapterNumberDesc": "章节号（可选）。不填则列出所有蓝图文件。",
+        "notFound": "第 {{chapter}} 章蓝图不存在或读取失败",
+        "title": "📋 第 {{chapter}} 章蓝图",
+        "empty": "⚠️ 蓝图为空。建议先通过工作流生成章节蓝图。",
+        "listTitle": "📋 蓝图列表（{{count}} 个）",
+        "noTitle": "无标题",
+        "listHint": "使用 chapter_number 参数可以读取具体章节蓝图的内容。",
+        "readFailed": "读取蓝图失败：{{error}}",
+        "labels": {
+          "title": "标题",
+          "role": "作用",
+          "purpose": "目的",
+          "keyEvents": "关键事件",
+          "characters": "角色",
+          "suspense": "悬念",
+          "notes": "备注",
+          "guidance": "用户指引"
+        }
+      },
+      "readCharacters": {
+        "desc": "读取小说的角色卡档案。可以获取所有角色列表或指定角色的详细信息（背景、性格、外貌、角色弧等）。",
+        "characterNameDesc": "角色名称（可选）。不填则列出所有角色。",
+        "empty": "⚠️ 角色池为空，暂无角色卡。建议先创建角色卡。",
+        "notFound": "未找到角色 \"{{name}}\"。可用角色：{{available}}",
+        "cardTitle": "👤 角色卡：{{name}}",
+        "listTitle": "👤 角色列表（{{count}} 个）",
+        "listHint": "使用 character_name 参数可以读取具体角色的详细信息。",
+        "readFailed": "读取角色列表失败：{{error}}"
+      },
+      "readDrafts": {
+        "desc": "读取指定章节的草稿内容。可以获取初稿、修订稿等不同版本。",
+        "chapterNumberDesc": "章节号（必填）",
+        "draftTypeDesc": "草稿类型",
+        "noDrafts": "第 {{chapter}} 章暂无草稿。",
+        "notFound": "未找到 \"{{type}}\" 类型的草稿。可用版本：{{available}}",
+        "readContentFailed": "读取草稿内容失败：id {{id}}",
+        "title": "📝 第 {{chapter}} 章草稿（{{version}}）",
+        "readFailed": "读取草稿失败：{{error}}"
+      },
+      "readFile": {
+        "desc": "读取项目内指定文件的内容。支持读取架构文件、蓝图、角色卡、草稿、配置等任意文本文件。",
+        "filePathDesc": "相对于项目根目录的文件路径，例如 \"02_architecture/世界观.md\"",
+        "readFailed": "文件读取失败"
+      },
+      "readProjectState": {
+        "desc": "读取项目的全局状态信息，包括小说配置、近章要点等。用于了解项目的整体概况。",
+        "includeConfigDesc": "是否包含完整的小说配置",
+        "includeSummaryDesc": "是否包含近章要点",
+        "projectStatus": "# 📊 项目状态：《{{name}}》",
+        "novelConfig": "## 小说配置",
+        "configFailed": "⚠️ 获取配置失败",
+        "chapterSummary": "## 近章要点",
+        "chapterHeading": "### 第{{chapter}}章 {{title}}",
+        "noSummary": "暂无章节要点。章节要点会在定稿后自动生成并写入蓝图。"
+      },
+      "searchKnowledge": {
+        "desc": "在知识库中进行语义搜索，查找与查询相关的参考资料、设定文档等。适用于查找世界观设定、角色背景、故事素材等。",
+        "queryDesc": "搜索查询语句，例如 \"主角的金手指设定\"",
+        "topKDesc": "返回结果数量",
+        "missingQuery": "缺少 query 参数",
+        "noResults": "未找到相关结果。请尝试使用不同的关键词搜索，或尝试使用 read_architecture、read_characters 等工具直接读取项目数据。",
+        "resultTitle": "结果 {{number}}",
+        "similarity": "相似度",
+        "source": "来源",
+        "foundCount": "找到 {{count}} 条相关结果："
+      },
+      "startWorkflow": {
+        "desc": "触发 Vela 创作工作流。支持写稿、修稿、审稿、定稿、生成蓝图等工作流。这将在 AI 输出面板中执行对应的多步骤创作流程。",
+        "workflowDesc": "工作流类型",
+        "chapterNumberDesc": "章节号（写稿/修稿/审稿/定稿必填）",
+        "missingWorkflow": "缺少 workflow 参数",
+        "needsChapter": "{{workflow}} 工作流需要指定 chapter_number 参数",
+        "writeDraft": "写稿",
+        "review": "审稿",
+        "refine": "修稿",
+        "finalize": "定稿",
+        "generateBlueprint": "生成蓝图",
+        "generateArchitecture": "生成架构",
+        "chapterInfo": "（第 {{chapter}} 章）",
+        "switched": "🚀 已切换到 AI 输出面板。请在面板中启动「{{name}}{{chapterInfo}}」工作流。"
+      },
+      "updateConfig": {
+        "desc": "更新小说项目的配置信息，如类型、目标读者、大纲、写作风格等。这会修改项目核心设定，需要用户确认。",
+        "fieldDesc": "要更新的字段名",
+        "valueDesc": "新值",
+        "missingParams": "缺少 field 或 value 参数",
+        "updateFailed": "配置更新失败",
+        "updated": "✅ 配置已更新：{{field}} = \"{{value}}\""
+      },
+      "writeFile": {
+        "desc": "写入或修改项目内的文件。可用于创建新文件或覆盖已有文件内容。这是一个写入操作，需要用户确认。",
+        "filePathDesc": "相对于项目根目录的文件路径",
+        "contentDesc": "要写入的文件内容",
+        "missingParams": "缺少 file_path 或 content 参数",
+        "writeFailed": "写入失败",
+        "written": "✅ 文件已写入：{{path}}（{{count}} 字符）"
+      }
+    },
+    "engine": {
+      "llmFailed": "LLM 调用失败：{{error}}",
+      "unknownTool": "未知工具：{{name}}",
+      "userRejected": "用户拒绝执行",
+      "execError": "执行异常：{{error}}",
+      "maxRounds": "⚠️ 已达到最大工具调用次数限制，自动停止。",
+      "toolTimeout": "工具执行超时（{{seconds}}s）",
+      "resultTruncated": "…（内容已截断，完整内容共 {{count}} 字符。可使用 read_file 工具获取完整文件内容）"
+    }
   },
   "characters": {
     "protagonist": "🌟 主角",
@@ -182,7 +367,8 @@
     "newProject": "新建项目",
     "openProject": "打开项目",
     "openNovelConfig": "打开小说配置",
-    "openChapterBlueprint": "打开章节蓝图"
+    "openChapterBlueprint": "打开章节蓝图",
+    "blueprintTab": "章节蓝图"
   },
   "common": {
     "refresh": "刷新",
@@ -216,7 +402,9 @@
     "noFinalizedChapters": "暂无定稿章节",
     "openChapter": "打开章节",
     "copyPath": "复制文件路径",
-    "clickToOpen": "点击打开"
+    "clickToOpen": "点击打开",
+    "chapterFormat": "第{{number}}章",
+    "chapterFormatWithTitle": "第{{number}}章 {{title}}"
   },
   "draftBox": {
     "title": "草稿箱",

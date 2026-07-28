@@ -101,7 +101,11 @@
     "characterCardNotRegenerable": "Character cards cannot be regenerated",
     "submitted": "✨ Submitted: generating {{steps}}...",
     "noStepSelected": "⚠️ Please select at least one step",
-    "emptyConfig": "Not set"
+    "emptyConfig": "Not set",
+    "willOverride": "Will overwrite",
+    "keep": "Keep",
+    "pending": "Pending",
+    "labelSeparator": ":"
   },
   "directoryConfig": {
     "title": "Generate Chapter Blueprints",
@@ -135,7 +139,17 @@
     "exported": "✅ Exported to: {{path}}",
     "exportError": "❌ {{error}}",
     "exporting": "Exporting...",
-    "selectAndExport": "Choose Directory & Export"
+    "selectAndExport": "Choose Directory & Export",
+    "noProjectError": "No project open",
+    "noFinalizedChapters": "No chapters to export (no finalized chapters)",
+    "foundChapters": "Found {{count}} finalized chapter(s)",
+    "exportComplete": "✅ Export complete: {{path}}",
+    "exportFailed": "❌ Export failed: {{error}}"
+  },
+  "versionService": {
+    "chapterFallback": "Chapter {{number}}",
+    "noContent": "(Chapter has no content yet)",
+    "contentTruncated": "(Content was truncated in error)"
   },
   "generateConfig": {
     "title": "AI One-Click Novel Configuration",

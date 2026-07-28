@@ -6,6 +6,9 @@
  */
 
 import { ipc } from './ipc-client'
+import i18n from '../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'dialogs', ...opts })
 
 /** 章节元数据（从数据库返回） */
 export interface ChapterRecord {
@@ -32,7 +35,7 @@ export async function getChapters(): Promise<ChapterRecord[]> {
   return blueprints.map(bp => ({
     chapter_id: String(bp.chapterNumber),
     file_path: '',
-    file_name: String(bp.title || `第 ${bp.chapterNumber} 章`),
+    file_name: String(bp.title || t('versionService.chapterFallback', { number: bp.chapterNumber })),
     updated_at: '',
     chapter_number: bp.chapterNumber as number,
     status: 'draft',
@@ -62,9 +65,9 @@ export async function getVersionContent(versionId: number): Promise<string | nul
 /** 获取章节最新内容（取代之前的文件读取） */
 export async function getChapterLatestContent(chapterNumber: number): Promise<string> {
   const draft = (await ipc.invoke('db:draft-get-latest', chapterNumber)) as { id?: number } | null
-  if (!draft || draft.id === undefined) return '（章节尚无内容）'
+  if (!draft || draft.id === undefined) return t('versionService.noContent')
   const full = (await ipc.invoke('db:draft-get-full', draft.id)) as { content?: string } | null
-  return full?.content || '（内容被错误截断）'
+  return full?.content || t('versionService.contentTruncated')
 }
 
 /** 回退到某个历史版本，创建新草稿 */

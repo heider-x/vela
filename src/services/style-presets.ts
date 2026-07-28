@@ -4,6 +4,9 @@
  * 预定义的写作风格模板，应用后自动填充 NovelConfig 相关字段
  */
 import type { NovelConfig } from '../shared/ipc-channels'
+import i18n from '../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'settings', ...opts })
 
 /** 风格预设 */
 export interface StylePreset {
@@ -19,9 +22,9 @@ export interface StylePreset {
 export const STYLE_PRESETS: StylePreset[] = [
   {
     id: 'male-hot-blood',
-    name: '男频热血',
+    name: t('stylePresets.male-hot-blood.name'),
     emoji: '🔥',
-    description: '爽快升级、打脸装逼、逆袭崛起',
+    description: t('stylePresets.male-hot-blood.description'),
     overrides: {
       genre: '玄幻',
       subGenre: '东方玄幻',
@@ -39,9 +42,9 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: 'female-romance',
-    name: '女频言情',
+    name: t('stylePresets.female-romance.name'),
     emoji: '💕',
-    description: '甜宠暧昧、双向奔赴、情感细腻',
+    description: t('stylePresets.female-romance.description'),
     overrides: {
       genre: '言情',
       subGenre: '现代言情',
@@ -59,9 +62,9 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: 'ancient-xianxia',
-    name: '古风仙侠',
+    name: t('stylePresets.ancient-xianxia.name'),
     emoji: '⚔️',
-    description: '修仙问道、古韵悠长、仙凡羁绊',
+    description: t('stylePresets.ancient-xianxia.description'),
     overrides: {
       genre: '仙侠',
       subGenre: '修真文明',
@@ -79,9 +82,9 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: 'modern-urban',
-    name: '现代都市',
+    name: t('stylePresets.modern-urban.name'),
     emoji: '🏙️',
-    description: '商战职场、都市生活、现实质感',
+    description: t('stylePresets.modern-urban.description'),
     overrides: {
       genre: '都市',
       subGenre: '都市生活',
@@ -99,9 +102,9 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: 'hard-scifi',
-    name: '硬核科幻',
+    name: t('stylePresets.hard-scifi.name'),
     emoji: '🚀',
-    description: '星际探索、科技硬核、未来文明',
+    description: t('stylePresets.hard-scifi.description'),
     overrides: {
       genre: '科幻',
       subGenre: '星际文明',
@@ -119,9 +122,9 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: 'suspense-mystery',
-    name: '悬疑推理',
+    name: t('stylePresets.suspense-mystery.name'),
     emoji: '🔍',
-    description: '层层反转、逻辑缜密、智商在线',
+    description: t('stylePresets.suspense-mystery.description'),
     overrides: {
       genre: '悬疑',
       subGenre: '推理悬疑',

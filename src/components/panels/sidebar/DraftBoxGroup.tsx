@@ -112,7 +112,8 @@ function DraftChapterGroup({
   // 已定稿的草稿存在时，章节显示绿色标记
   const hasFinalized = drafts.some(d => d.status === 'finalized')
   const baseTitle = bpTitle || drafts[0]?.chapterTitle || ''
-  const displayTitle = baseTitle.startsWith(`第${chapterNumber}章`) ? baseTitle : (baseTitle ? `第${chapterNumber}章 ${baseTitle}` : `第${chapterNumber}章`)
+  const chapterPrefix = t('manuscript.chapterFormat', { number: chapterNumber })
+  const displayTitle = baseTitle.startsWith(chapterPrefix) ? baseTitle : (baseTitle ? `${chapterPrefix} ${baseTitle}` : chapterPrefix)
 
   return (
     <div>

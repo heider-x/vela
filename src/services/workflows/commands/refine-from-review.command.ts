@@ -3,6 +3,9 @@ import { useProjectStore } from '../../../stores/project-store'
 import { getPromptTemplate } from '../../prompt-templates'
 import { ChapterPromptBuilder } from '../../prompts/prompt-builder'
 import { ipc } from '../../ipc-client'
+import i18n from '../../../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'commands', ...opts })
 
 import {
   buildCanonContext,
@@ -27,12 +30,12 @@ export class RefineFromReviewCommand extends BaseWorkflowCommand<string> {
 
   async execute({ callbacks, context }: CommandExecuteParams): Promise<string> {
     const project = useProjectStore.getState().currentProject
-    if (!project) throw new Error('未打开项目')
+    if (!project) throw new Error(t('common.noProject'))
 
-    callbacks.log('正在根据审稿报告精准修复...')
+    callbacks.log(t('refineFromReview.repairing'))
 
     const template = getPromptTemplate('refine_from_review')
-    if (!template) throw new Error('未找到审稿修复模板')
+    if (!template) throw new Error(t('refineFromReview.templateNotFound'))
 
     const userPromptBlock = this.params.userRefinePrompt?.trim()
       ? `★【用户额外修稿指导（绝对优先级）】★：\n${this.params.userRefinePrompt}`
@@ -72,10 +75,10 @@ export class RefineFromReviewCommand extends BaseWorkflowCommand<string> {
         globalGuidance: project.novelConfig.globalGuidance || '',
       })
       promptBuilder.withCanonContext(renderCanonContext(canon))
-      callbacks.log(`  🛡️ [Canon] 审稿修复已注入一致性上下文（时间线 ${canon.timeline.length} / 角色 ${canon.characterStates.length}）`)
+      callbacks.log(t('canon.reviewFixContextInjected', { timeline: canon.timeline.length, characters: canon.characterStates.length }))
       ;(context.data as Record<string, unknown>).__canonForReviewRefine = canon
     } catch (e) {
-      callbacks.log(`  ⚠️ [Canon] 审稿修复上下文构造失败：${String(e)}`)
+      callbacks.log(t('canon.reviewFixContextFailed', { error: String(e) }))
     }
 
     const refined = await this.callLLMWithBuilder(promptBuilder, callbacks)
@@ -94,16 +97,16 @@ export class RefineFromReviewCommand extends BaseWorkflowCommand<string> {
           canon: canonForReviewRefine,
           isRewrite: true,
         })
-        callbacks.log(`  🛡️ [Gate] 审稿修复 ${gateResult.verdict}: ${gateResult.report}`)
+        callbacks.log(t('canon.reviewFixGateVerdict', { verdict: gateResult.verdict, report: gateResult.report }))
         if (gateResult.verdict === 'BLOCK') {
-          throw new Error(`审稿修复结果被叙事一致性 Gate 阻止：${gateResult.blockingReasons.join('；')}`)
+          throw new Error(t('refineFromReview.gateBlocked', { reasons: gateResult.blockingReasons.join('；') }))
         }
         if (gateResult.verdict === 'REPAIR' && gateResult.repairedContent) {
           finalRefined = gateResult.repairedContent
-          callbacks.log(`  🛡️ [Canon] 审稿修复自动修复 ${gateResult.repairAttempts} 轮后保存修复稿`)
+          callbacks.log(t('canon.reviewFixAutoRepair', { attempts: gateResult.repairAttempts }))
         }
         if (gateResult.issues.length === 0) {
-          callbacks.log(`  ✅ [Canon] 审稿修复一致性检查通过`)
+          callbacks.log(t('canon.reviewFixCheckPassed'))
         }
         const remaining = gateResult.issues.map(i => i.issue)
         if (remaining.length > 0) context.data.consistencyWarnings = remaining
@@ -114,14 +117,14 @@ export class RefineFromReviewCommand extends BaseWorkflowCommand<string> {
           remaining: gateResult.issues.length,
         }
       } catch (e) {
-        callbacks.log(`  ❌ [Canon] 审稿修复 Gate 异常：${String(e)}`)
+        callbacks.log(t('canon.reviewFixGateError', { error: String(e) }))
         throw e
       }
     }
 
     const { parseDraftMeta } = await import('../chapter-workflow')
     const baseDraft = await parseDraftMeta(this.params.draftPath)
-    if (!baseDraft) throw new Error('找不到基准草稿版本')
+    if (!baseDraft) throw new Error(t('common.baseDraftNotFound'))
 
     const revIndex = await ipc.invoke('db:revision-next-index', baseDraft.id)
 
@@ -143,7 +146,7 @@ export class RefineFromReviewCommand extends BaseWorkflowCommand<string> {
     const { useEditorStore } = await import('../../../stores/editor-store')
     useEditorStore.getState().openFile({
       id: `diff-${this.params.draftPath}-${createRes.id}`,
-      name: `审稿修复：第${this.params.chapterNumber}章`,
+      name: t('refineFromReview.tabName', { chapter: this.params.chapterNumber }),
       type: 'diff',
       filePath: this.params.draftPath,
       originalContent: this.params.draftContent,
@@ -153,7 +156,7 @@ export class RefineFromReviewCommand extends BaseWorkflowCommand<string> {
       chapterDir: `vela://draft/ch${this.params.chapterNumber}`,
     })
 
-    callbacks.log(`✅ 审稿修复完成（${finalRefined.length} 字），已生成修订稿版本 r${revIndex}`)
+    callbacks.log(t('refineFromReview.completed', { length: finalRefined.length, version: revIndex }))
     return finalRefined
   }
 }

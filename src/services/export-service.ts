@@ -9,6 +9,9 @@
 import { ipc } from './ipc-client'
 import { useProjectStore } from '../stores/project-store'
 import { useWorkflowStore } from '../stores/workflow-store'
+import i18n from '../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'dialogs', ...opts })
 
 
 export type ExportFormat = 'merged-md' | 'split-md' | 'txt'
@@ -23,7 +26,7 @@ interface ExportOptions {
 /** 导出全书 */
 export async function exportNovel(options: ExportOptions): Promise<{ success: boolean; path?: string; error?: string }> {
   const project = useProjectStore.getState().currentProject
-  if (!project) return { success: false, error: '未打开项目' }
+  if (!project) return { success: false, error: t('export.noProjectError') }
 
   const addLog = useWorkflowStore.getState().addLog
   addLog('info', `📦 开始导出（${formatLabel(options.format)}）...`)
@@ -48,10 +51,10 @@ export async function exportNovel(options: ExportOptions): Promise<{ success: bo
     }
 
     if (chapterContents.length === 0) {
-      return { success: false, error: '无可导出的章节（无定稿章节）' }
+      return { success: false, error: t('export.noFinalizedChapters') }
     }
 
-    addLog('info', `找到 ${chapterContents.length} 个已定稿章节`)
+    addLog('info', t('export.foundChapters', { count: chapterContents.length }))
 
     // 确保输出目录存在
     await ipc.invoke('fs:mkdir', options.outputDir)
@@ -118,19 +121,19 @@ export async function exportNovel(options: ExportOptions): Promise<{ success: bo
       }
     }
 
-    addLog('info', `✅ 导出完成: ${outputPath}`)
+    addLog('info', t('export.exportComplete', { path: outputPath }))
     return { success: true, path: outputPath }
   } catch (error) {
-    addLog('error', `❌ 导出失败: ${error}`)
+    addLog('error', t('export.exportFailed', { error: String(error) }))
     return { success: false, error: String(error) }
   }
 }
 
 function formatLabel(format: ExportFormat): string {
   const labels: Record<ExportFormat, string> = {
-    'merged-md': '合并 Markdown',
-    'split-md': '分章 Markdown',
-    'txt': '纯文本 TXT',
+    'merged-md': t('export.formatMergedMd'),
+    'split-md': t('export.formatSplitMd'),
+    'txt': t('export.formatTxt'),
   }
   return labels[format]
 }

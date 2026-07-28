@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChevronDown, ChevronRight, Globe, FolderOpen, RotateCcw, AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import i18n from '../../i18n'
 import {
   BUILTIN_PROMPTS,
   EDITABLE_PROMPT_KEYS,
@@ -8,6 +9,7 @@ import {
   getPromptSource,
   getPromptName,
   getPromptDescription,
+  getLocalizedContent,
   saveCustomPrompt,
   saveProjectCustomPrompt,
   deleteCustomPrompt,
@@ -18,6 +20,13 @@ import {
 import { useProjectStore } from '../../stores/project-store'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
+
+/** Получить переведённое описание переменной */
+function getVariableDesc(varName: string, fallback: string): string {
+  const key = `promptVariables.${varName}`
+  const translated = i18n.t(key, { ns: 'settings' })
+  return translated !== key ? translated : fallback
+}
 
 // ==================== 来源标签配置 ====================
 
@@ -106,22 +115,23 @@ function TemplateItem({
   onSaved: () => void
 }) {
   const { t } = useTranslation('settings')
-  const [editContent, setEditContent] = useState(currentTemplate.content)
+  const [editContent, setEditContent] = useState(() => getLocalizedContent(currentTemplate))
   const [saving, setSaving] = useState(false)
   const [saveResult, setSaveResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  const localizedContent = getLocalizedContent(currentTemplate)
   const [prevExpanded, setPrevExpanded] = useState(isExpanded)
-  const [prevContent, setPrevContent] = useState(currentTemplate.content)
+  const [prevContent, setPrevContent] = useState(localizedContent)
 
   // 展开时重置编辑内容
-  if (isExpanded !== prevExpanded || currentTemplate.content !== prevContent) {
+  if (isExpanded !== prevExpanded || localizedContent !== prevContent) {
     if (isExpanded) {
-      setEditContent(currentTemplate.content)
+      setEditContent(localizedContent)
       setSaveResult(null)
     }
     setPrevExpanded(isExpanded)
-    setPrevContent(currentTemplate.content)
+    setPrevContent(localizedContent)
   }
 
   // 检查是否有被删除的变量
@@ -188,7 +198,7 @@ function TemplateItem({
     // 依次删除项目级和全局级覆盖
     if (projectPath) await deleteProjectCustomPrompt(projectPath, builtinTemplate.key)
     await deleteCustomPrompt(builtinTemplate.key)
-    setEditContent(builtinTemplate.content)
+    setEditContent(getLocalizedContent(builtinTemplate))
     setSaving(false)
     setSaveResult({ type: 'success', msg: t('prompts.resetDone') })
     onSaved()
@@ -240,22 +250,24 @@ function TemplateItem({
               {t('prompts.availableVariables')}
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {Object.entries(builtinTemplate.variables).map(([varName, desc]) => (
-                <button
-                  key={varName}
-                  onClick={() => insertVariable(varName)}
-                  title={desc}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[0.68rem] transition-colors hover:bg-[var(--color-accent)] hover:text-white outline-none focus:outline-none"
-                  style={{
-                    backgroundColor: 'var(--color-hover)',
-                    color: 'var(--color-text-secondary)',
-                    border: '1px solid var(--color-border)',
-                  }}
-                >
-                  <code className="font-mono">{`{{${varName}}}`}</code>
-                  <span className="opacity-60 max-w-[200px] truncate">{desc}</span>
-                </button>
-              ))}
+              {Object.entries(builtinTemplate.variables).map(([varName, desc]) => {
+                const translatedDesc = getVariableDesc(varName, desc)
+                return (
+                  <button
+                    key={varName}
+                    onClick={() => insertVariable(varName)}
+                    title={translatedDesc}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[0.68rem] transition-colors hover:bg-[var(--color-accent)] hover:text-white outline-none focus:outline-none"
+                    style={{
+                      backgroundColor: 'var(--color-hover)',
+                      color: 'var(--color-text-secondary)',
+                      border: '1px solid var(--color-border)',
+                    }}
+                  >
+                    <span className="max-w-[200px] truncate">{translatedDesc}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 

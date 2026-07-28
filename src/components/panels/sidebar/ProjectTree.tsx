@@ -203,7 +203,7 @@ export default function ProjectTree() {
             key: 'open',
             label: t('projectTree.openChapterBlueprint'),
             icon: <FolderOpen size={13} />,
-            onClick: () => openBuiltinEditor('chapter-card-editor', '章节蓝图', 'chapter-card'),
+            onClick: () => openBuiltinEditor('chapter-card-editor', t('projectTree.blueprintTab'), 'chapter-card'),
           },
         ], e)}
       />

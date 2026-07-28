@@ -182,8 +182,8 @@ export default function ArchitectureConfirmDialog({
             <div className="grid grid-cols-2 gap-1">
               <ConfigRow label={t('architectureConfirm.genre')} value={[config.genre, config.subGenre].filter(Boolean).join(' · ')} />
               <ConfigRow label={t('architectureConfirm.audience')} value={config.targetAudience} />
-              <ConfigRow label={t('architectureConfirm.totalChaptersLabel')} value={`${config.totalChapters} 章`} />
-              <ConfigRow label={t('architectureConfirm.wordsPerChapterLabel')} value={`${config.wordsPerChapter} 字`} />
+              <ConfigRow label={t('architectureConfirm.totalChaptersLabel')} value={`${config.totalChapters} ${t('common.chapters', { ns: 'common' })}`} />
+              <ConfigRow label={t('architectureConfirm.wordsPerChapterLabel')} value={`${config.wordsPerChapter} ${t('common.words', { ns: 'common' })}`} />
             </div>
             {config.coreOutline && (
               <p
@@ -209,7 +209,7 @@ export default function ArchitectureConfirmDialog({
                 className="text-xs underline"
                 style={{ color: 'var(--color-text-muted)' }}
               >
-                全选
+                {t('common.selectAll', { ns: 'common' })}
               </button>
             </div>
 
@@ -312,7 +312,7 @@ export default function ArchitectureConfirmDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isConfirming}>{t('common.cancel')}</Button>
+          <Button variant="outline" onClick={onClose} disabled={isConfirming}>{t('common.cancel', { ns: 'common' })}</Button>
           <Button variant="default" onClick={handleConfirm} disabled={noneSelected || isConfirming}>
             <Wand2 size={13} />
             {isConfirming ? t('architectureConfirm.validating') : t('architectureConfirm.confirmGeneration', { count: selectedSteps.length })}
@@ -327,7 +327,7 @@ function ConfigRow({ label, value }: { label: string; value: string }) {
   const { t } = useTranslation('dialogs')
   return (
     <div className="flex items-center gap-1 text-xs">
-      <span style={{ color: 'var(--color-text-muted)' }}>{label}：</span>
+      <span style={{ color: 'var(--color-text-muted)' }}>{label}{t('architectureConfirm.labelSeparator')}</span>
       <span style={{ color: 'var(--color-text)' }}>{value || t('architectureConfirm.emptyConfig')}</span>
     </div>
   )

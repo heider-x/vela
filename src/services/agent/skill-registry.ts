@@ -10,9 +10,12 @@
  * Skill 格式兼容 Cursor 的 SKILL.md 生态。
  */
 
+import i18n from '../../i18n'
 import { ipc } from '../ipc-client'
 import { useProjectStore } from '../../stores/project-store'
 import { toolRegistry, type AgentTool } from './tool-registry'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
 
 // ===== 类型定义 =====
 
@@ -177,7 +180,7 @@ class SkillRegistryImpl {
           properties: {
             args: {
               type: 'string',
-              description: skill.metadata.argumentHint ?? '可选的参数',
+              description: skill.metadata.argumentHint ?? t('agent.skills.optionalArgs'),
             },
           },
         },
@@ -288,9 +291,9 @@ function registerBuiltinSkills(registry: SkillRegistryImpl): void {
     {
       metadata: {
         name: 'review-chapter',
-        displayName: '章节审阅',
-        description: '对指定章节进行全面的质量审阅，包括剧情逻辑、角色一致性、节奏感、伏笔呼应等多个维度。',
-        whenToUse: '用户要求审阅、检查、评估某个章节时',
+        displayName: t('agent.skills.reviewChapter.name'),
+        description: t('agent.skills.reviewChapter.desc'),
+        whenToUse: t('agent.skills.reviewChapter.when'),
       },
       content: `# 章节审阅
 
@@ -322,9 +325,9 @@ function registerBuiltinSkills(registry: SkillRegistryImpl): void {
     {
       metadata: {
         name: 'brainstorm',
-        displayName: '脑暴创意',
-        description: '针对指定话题进行创意脑暴，生成多个创意方向和灵感。',
-        whenToUse: '用户要求头脑风暴、找灵感、想创意时',
+        displayName: t('agent.skills.brainstorm.name'),
+        description: t('agent.skills.brainstorm.desc'),
+        whenToUse: t('agent.skills.brainstorm.when'),
       },
       content: `# 创意脑暴
 
@@ -343,9 +346,9 @@ function registerBuiltinSkills(registry: SkillRegistryImpl): void {
     {
       metadata: {
         name: 'character-analysis',
-        displayName: '角色分析',
-        description: '深入分析指定角色的性格、动机、角色弧、人物关系等。',
-        whenToUse: '用户想深入了解或调整角色设定时',
+        displayName: t('agent.skills.characterAnalysis.name'),
+        description: t('agent.skills.characterAnalysis.desc'),
+        whenToUse: t('agent.skills.characterAnalysis.when'),
       },
       content: `# 角色深度分析
 
@@ -364,9 +367,9 @@ function registerBuiltinSkills(registry: SkillRegistryImpl): void {
     {
       metadata: {
         name: 'continuity-check',
-        displayName: '连续性检查',
-        description: '检查小说中的设定一致性和连续性问题，发现矛盾和遗漏。',
-        whenToUse: '用户想检查设定有没有矛盾、是否有不一致的地方时',
+        displayName: t('agent.skills.continuityCheck.name'),
+        description: t('agent.skills.continuityCheck.desc'),
+        whenToUse: t('agent.skills.continuityCheck.when'),
       },
       content: `# 连续性与一致性检查
 
@@ -385,9 +388,9 @@ function registerBuiltinSkills(registry: SkillRegistryImpl): void {
     {
       metadata: {
         name: 'writing-coach',
-        displayName: '写作教练',
-        description: '提供专业的写作技巧指导和文笔改善建议。',
-        whenToUse: '用户想提高写作水平、求教写作技巧时',
+        displayName: t('agent.skills.writingCoach.name'),
+        description: t('agent.skills.writingCoach.desc'),
+        whenToUse: t('agent.skills.writingCoach.when'),
       },
       content: `# 写作教练
 

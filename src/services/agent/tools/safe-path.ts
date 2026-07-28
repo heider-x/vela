@@ -4,6 +4,10 @@
  * 防止路径遍历攻击（../../ 等），确保所有文件操作都在项目根目录内。
  */
 
+import i18n from '../../../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
+
 /**
  * 校验并 resolve 相对路径，确保不会越出项目根目录
  *
@@ -54,12 +58,12 @@ export function validatePath(
   relativePath: string,
 ): { valid: true; fullPath: string } | { valid: false; error: string } {
   if (!relativePath) {
-    return { valid: false, error: '缺少文件路径参数' }
+    return { valid: false, error: t('agent.tools.missingFilePath') }
   }
 
   const result = safePath(projectRoot, relativePath)
   if (result === null) {
-    return { valid: false, error: `路径越界：「${relativePath}」超出了项目目录范围。只能访问项目内的文件。` }
+    return { valid: false, error: t('agent.tools.pathOutOfBounds', { path: relativePath }) }
   }
 
   return { valid: true, fullPath: result }

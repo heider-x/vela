@@ -1,21 +1,23 @@
 /**
  * read_characters — 读取角色卡档案
  */
+import i18n from '../../../i18n'
 import { buildAgentTool } from '../tool-registry'
 import { ipc } from '../../ipc-client'
 import { useProjectStore } from '../../../stores/project-store'
 
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
 
 export const readCharactersTool = buildAgentTool({
   name: 'read_characters',
-  description: '读取小说的角色卡档案。可以获取所有角色列表或指定角色的详细信息（背景、性格、外貌、角色弧等）。',
+  description: t('agent.tools.readCharacters.desc'),
   source: 'builtin',
   inputSchema: {
     type: 'object',
     properties: {
       character_name: {
         type: 'string',
-        description: '角色名称（可选）。不填则列出所有角色。',
+        description: t('agent.tools.readCharacters.characterNameDesc'),
       },
     },
   },
@@ -23,7 +25,7 @@ export const readCharactersTool = buildAgentTool({
   execute: async (args) => {
     const project = useProjectStore.getState().currentProject
     if (!project) {
-      return { success: false, content: '', error: '没有打开的项目' }
+      return { success: false, content: '', error: t('agent.tools.noProject') }
     }
 
     const charName = args.character_name as string | undefined
@@ -32,7 +34,7 @@ export const readCharactersTool = buildAgentTool({
       const charsResult = await ipc.invoke('db:character-get-all')
       const chars = (Array.isArray(charsResult) ? charsResult : []) as unknown as Array<Record<string, unknown>>
       if (!chars || chars.length === 0) {
-        return { success: true, content: '⚠️ 角色池为空，暂无角色卡。建议先创建角色卡。' }
+        return { success: true, content: t('agent.tools.readCharacters.empty') }
       }
 
       if (charName) {
@@ -42,21 +44,21 @@ export const readCharactersTool = buildAgentTool({
         )
         if (!target) {
           const available = chars.map((c) => String(c.name)).join('、')
-          return { success: false, content: '', error: `未找到角色 "${charName}"。可用角色：${available}` }
+          return { success: false, content: '', error: t('agent.tools.readCharacters.notFound', { name: charName, available }) }
         }
 
         const formatted = Object.entries(target)
           .filter(([k, v]) => v && k !== 'id')
           .map(([k, v]) => `**${k}**: ${typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v)}`)
           .join('\n')
-        return { success: true, content: `👤 角色卡：${target.name}\n\n${formatted}` }
+        return { success: true, content: `${t('agent.tools.readCharacters.cardTitle', { name: target.name })}\n\n${formatted}` }
       }
 
       // 列出所有角色
       const list = chars.map((c) => `  - ${c.name} (${c.role})`).join('\n')
-      return { success: true, content: `👤 角色列表（${chars.length} 个）\n${list}\n\n使用 character_name 参数可以读取具体角色的详细信息。` }
+      return { success: true, content: `${t('agent.tools.readCharacters.listTitle', { count: chars.length })}\n${list}\n\n${t('agent.tools.readCharacters.listHint')}` }
     } catch (error) {
-      return { success: false, content: '', error: `读取角色列表失败：${String(error)}` }
+      return { success: false, content: '', error: t('agent.tools.readCharacters.readFailed', { error: String(error) }) }
     }
   },
 })

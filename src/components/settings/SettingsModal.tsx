@@ -199,11 +199,7 @@ function LanguageSection() {
           ))}
         </div>
         <p className="text-xs mt-3" style={{ color: 'var(--color-text-muted)' }}>
-          {currentLang === 'ru'
-            ? 'Язык интерфейса изменится сразу после выбора'
-            : currentLang === 'zh-CN'
-              ? '切换后界面语言将立即生效'
-              : 'Language will change immediately after selection'}
+          {t('language.hint')}
         </p>
       </div>
     </div>
@@ -548,9 +544,9 @@ function ModelForm({
             <option value="openai">OpenAI</option>
             <option value="deepseek">DeepSeek</option>
             <option value="gemini">Google Gemini</option>
-            <option value="ollama">Ollama（本地）</option>
-            <option value="bigmodel">BigModel（智谱）</option>
-            <option value="custom">自定义</option>
+            <option value="ollama">{t('modelsProviders.ollama')}</option>
+            <option value="bigmodel">{t('modelsProviders.bigmodel')}</option>
+            <option value="custom">{t('modelsProviders.custom')}</option>
           </NativeSelect>
         </div>
         <div>

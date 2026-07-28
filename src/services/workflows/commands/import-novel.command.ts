@@ -12,7 +12,10 @@ import { useProjectStore } from '../../../stores/project-store'
 import { getPromptTemplate } from '../../prompt-templates'
 import { ImportPromptBuilder } from '../../prompts/prompt-builder'
 import { ipc } from '../../ipc-client'
+import i18n from '../../../i18n'
 import type { CharacterData } from '../../../../electron/repositories/character-repository'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'commands', ...opts })
 
 /** 拆分后的章节数据（从 context.data 中传递） */
 export interface ImportedChapter {
@@ -33,9 +36,9 @@ export class ImportInitializeCommand extends BaseWorkflowCommand<void> {
 
   async execute({ context, callbacks }: CommandExecuteParams): Promise<void> {
     const project = useProjectStore.getState().currentProject
-    if (!project) throw new Error('未打开项目')
+    if (!project) throw new Error(t('common.noProject'))
 
-    callbacks.log(`📖 开始作为定稿导入 ${this.chapters.length} 章正文到数据库...`)
+    callbacks.log(t('importNovel.importingChapters', { count: this.chapters.length }))
     callbacks.setProgress(5)
 
     // 1. 批量创建草稿并标记为 finalized
@@ -53,14 +56,14 @@ export class ImportInitializeCommand extends BaseWorkflowCommand<void> {
 
       if (i % 10 === 0) {
         callbacks.setProgress(5 + Math.round((i / this.chapters.length) * 40))
-        callbacks.log(`  ✍️ 已导入第 ${ch.number} 章（${ch.wordCount} 字）`)
+        callbacks.log(t('importNovel.importedChapter', { chapter: ch.number, words: ch.wordCount }))
       }
     }
-    callbacks.log(`✅ 全部 ${this.chapters.length} 章已作为定稿导入数据库`)
+    callbacks.log(t('importNovel.allChaptersImported', { count: this.chapters.length }))
     callbacks.setProgress(45)
 
     // 2. 逐章导入知识库（向量化）
-    callbacks.log('🔍 开始构建向量知识库...')
+    callbacks.log(t('importNovel.buildingKB'))
     let successCount = 0
     let failCount = 0
     for (let i = 0; i < this.chapters.length; i++) {
@@ -73,7 +76,7 @@ export class ImportInitializeCommand extends BaseWorkflowCommand<void> {
         if (result.success) {
           successCount++
         } else {
-          callbacks.log(`⚠️ 导入 ${fileName} 失败: ${result.error}`)
+          callbacks.log(t('importNovel.kbImportFailed', { file: fileName, error: result.error }))
           failCount++
         }
       } catch {
@@ -83,7 +86,7 @@ export class ImportInitializeCommand extends BaseWorkflowCommand<void> {
         callbacks.setProgress(45 + Math.round((i / this.chapters.length) * 45))
       }
     }
-    callbacks.log(`✅ 知识库构建完成（成功 ${successCount} 章，失败 ${failCount} 章）`)
+    callbacks.log(t('importNovel.kbBuilt', { success: successCount, fail: failCount }))
     callbacks.setProgress(90)
 
     // 将章节数据存入 context 供后续步骤使用
@@ -102,20 +105,20 @@ export class ImportInitializeCommand extends BaseWorkflowCommand<void> {
 export class InferGlobalSettingsCommand extends BaseWorkflowCommand<void> {
   async execute({ context, callbacks }: CommandExecuteParams): Promise<void> {
     const project = useProjectStore.getState().currentProject
-    if (!project) throw new Error('未打开项目')
+    if (!project) throw new Error(t('common.noProject'))
 
     const chapters = context.data.chapters as ImportedChapter[]
-    if (!chapters || chapters.length === 0) throw new Error('无章节数据')
+    if (!chapters || chapters.length === 0) throw new Error(t('importNovel.noChapterData'))
 
-    callbacks.log('🔍 通过向量知识库检索关键片段...')
+    callbacks.log(t('importNovel.searchingFragments'))
     callbacks.setProgress(5)
 
     // ===== 向量检索采样 =====
     const searchTopics = [
-      { key: 'worldview', query: '世界观 力量体系 修炼等级 境界', label: '世界观与力量体系' },
-      { key: 'protagonist', query: '主角 金手指 核心能力 天赋 系统', label: '主角设定与金手指' },
-      { key: 'conflict', query: '敌人 反派 阴谋 危机 矛盾 对手', label: '核心矛盾与敌对势力' },
-      { key: 'style', query: '视角 叙述 描写 风格 节奏', label: '写作风格与叙事视角' },
+      { key: 'worldview', query: '世界观 力量体系 修炼等级 境界', labelKey: 'importNovel.searchTopicWorldview' },
+      { key: 'protagonist', query: '主角 金手指 核心能力 天赋 系统', labelKey: 'importNovel.searchTopicProtagonist' },
+      { key: 'conflict', query: '敌人 反派 阴谋 危机 矛盾 对手', labelKey: 'importNovel.searchTopicConflict' },
+      { key: 'style', query: '视角 叙述 描写 风格 节奏', labelKey: 'importNovel.searchTopicStyle' },
     ]
 
     const sampledContent: Record<string, string> = {}
@@ -128,12 +131,12 @@ export class InferGlobalSettingsCommand extends BaseWorkflowCommand<void> {
               `[${i + 1}] (${r.fileName}, 相关度 ${(r.score * 100).toFixed(0)}%)\n${r.text}`
             ).join('\n\n')
         } else {
-          sampledContent[topic.key] = '（未检索到相关内容）'
+          sampledContent[topic.key] = t('importNovel.noRelevantContent')
         }
-        callbacks.log(`  ✅ 已检索「${topic.label}」— ${results.length} 条结果`)
+        callbacks.log(t('importNovel.retrievedTopic', { label: t(topic.labelKey), count: results.length }))
       } catch {
-        sampledContent[topic.key] = '（向量检索不可用）'
-        callbacks.log(`  ⚠️ 「${topic.label}」检索失败，将使用降级策略`)
+        sampledContent[topic.key] = t('importNovel.vectorSearchUnavailable')
+        callbacks.log(t('importNovel.topicSearchFailed', { label: t(topic.labelKey) }))
       }
     }
     callbacks.setProgress(20)
@@ -142,10 +145,10 @@ export class InferGlobalSettingsCommand extends BaseWorkflowCommand<void> {
     // 优先使用向量增强版 Prompt
     const template = getPromptTemplate('infer_novel_config_with_vectors')
       || getPromptTemplate('infer_novel_config')
-    if (!template) throw new Error('未找到推演 Prompt 模板')
+    if (!template) throw new Error(t('importNovel.templateNotFound'))
 
-    const firstChapter = chapters[0]?.content?.slice(0, 3000) || '（第一章内容不可用）'
-    const latestChapter = chapters[chapters.length - 1]?.content?.slice(0, 3000) || '（最新章节不可用）'
+    const firstChapter = chapters[0]?.content?.slice(0, 3000) || t('importNovel.firstChapterUnavailable')
+    const latestChapter = chapters[chapters.length - 1]?.content?.slice(0, 3000) || t('importNovel.latestChapterUnavailable')
 
     const prompt = new ImportPromptBuilder(template)
       .withSampledWorldview(sampledContent.worldview || '')
@@ -159,7 +162,7 @@ export class InferGlobalSettingsCommand extends BaseWorkflowCommand<void> {
       .withSampleContent(`【第1章片段】\n${firstChapter}\n\n【最新章节片段】\n${latestChapter}`)
       .build()
 
-    callbacks.log('🧠 正在调用 AI 推演全局小说配置...')
+    callbacks.log(t('importNovel.inferringConfig'))
     callbacks.setProgress(25)
 
     const rawResult = await this.callLLM(
@@ -170,7 +173,7 @@ export class InferGlobalSettingsCommand extends BaseWorkflowCommand<void> {
     )
 
     callbacks.setProgress(70)
-    callbacks.log('📝 正在解析 AI 返回结果并写入项目...')
+    callbacks.log(t('importNovel.parsingResult'))
 
     // ===== 解析 JSON 结果 =====
     const inferResult = this.parseJSON<{
@@ -204,10 +207,18 @@ export class InferGlobalSettingsCommand extends BaseWorkflowCommand<void> {
         }
         await ipc.invoke('project:save', plainData.id, plainData)
       }
-      callbacks.log('✅ 小说配置已更新')
+      callbacks.log(t('importNovel.configUpdated'))
 
       // 生成配置摘要供后续步骤使用
-      context.data.novelConfigSummary = `类型: ${novelConfig.genre || '未知'} | 子类型: ${novelConfig.subGenre || '未知'} | 受众: ${novelConfig.targetAudience || '未知'}\n大纲: ${novelConfig.coreOutline || '（无）'}\n世界观: ${novelConfig.worldSetting || '（无）'}\n金手指: ${novelConfig.goldenFinger || '（无）'}\n主角: ${novelConfig.protagonistProfile || '（无）'}`
+      const noneLabel = t('importNovel.novelConfigSummaryNone')
+      context.data.novelConfigSummary =
+        `${t('importNovel.novelConfigSummaryGenre', { value: novelConfig.genre || noneLabel })} | ` +
+        `${t('importNovel.novelConfigSummarySubGenre', { value: novelConfig.subGenre || noneLabel })} | ` +
+        `${t('importNovel.novelConfigSummaryAudience', { value: novelConfig.targetAudience || noneLabel })}\n` +
+        `${t('importNovel.novelConfigSummaryOutline', { value: novelConfig.coreOutline || noneLabel })}\n` +
+        `${t('importNovel.novelConfigSummaryWorldSetting', { value: novelConfig.worldSetting || noneLabel })}\n` +
+        `${t('importNovel.novelConfigSummaryGoldenFinger', { value: novelConfig.goldenFinger || noneLabel })}\n` +
+        `${t('importNovel.novelConfigSummaryProtagonist', { value: novelConfig.protagonistProfile || noneLabel })}`
     }
 
     // ===== 写入架构信息 =====
@@ -218,7 +229,7 @@ export class InferGlobalSettingsCommand extends BaseWorkflowCommand<void> {
         worldbuilding: inferResult.architectureFiles.world,
         synopsis: inferResult.architectureFiles.synopsis,
       })
-      callbacks.log('✅ 四段式故事架构已持久化到数据库')
+      callbacks.log(t('importNovel.architecturePersisted'))
     }
 
     // ===== 写入角色卡 =====
@@ -248,7 +259,7 @@ export class InferGlobalSettingsCommand extends BaseWorkflowCommand<void> {
       if (cardsToSave.length > 0) {
         await ipc.invoke('db:character-save-all', cardsToSave)
       }
-      callbacks.log(`✅ 已生成 ${createdCount} 张角色卡`)
+      callbacks.log(t('importNovel.cardsGenerated', { count: createdCount }))
     }
 
     callbacks.setProgress(90)
@@ -267,16 +278,16 @@ export class InferBlueprintsPerChapterCommand extends BaseWorkflowCommand<void> 
 
   async execute({ context, callbacks }: CommandExecuteParams): Promise<void> {
     const project = useProjectStore.getState().currentProject
-    if (!project) throw new Error('未打开项目')
+    if (!project) throw new Error(t('common.noProject'))
 
     const chapters = context.data.chapters as ImportedChapter[]
-    const configSummary = (context.data.novelConfigSummary as string) || '（配置概要不可用）'
-    if (!chapters || chapters.length === 0) throw new Error('无章节数据')
+    const configSummary = (context.data.novelConfigSummary as string) || t('importNovel.configSummaryUnavailable')
+    if (!chapters || chapters.length === 0) throw new Error(t('importNovel.noChapterData'))
 
     const template = getPromptTemplate('infer_single_chapter_blueprint')
-    if (!template) throw new Error('未找到单章蓝图推演 Prompt 模板')
+    if (!template) throw new Error(t('importNovel.singleChapterTemplateNotFound'))
 
-    callbacks.log(`📋 开始逐章推演蓝图（共 ${chapters.length} 章，并发限制 ${InferBlueprintsPerChapterCommand.CONCURRENCY_LIMIT}）...`)
+    callbacks.log(t('importNovel.inferringBlueprints', { count: chapters.length, limit: InferBlueprintsPerChapterCommand.CONCURRENCY_LIMIT }))
     callbacks.setProgress(5)
 
     let completedCount = 0
@@ -330,10 +341,10 @@ export class InferBlueprintsPerChapterCommand extends BaseWorkflowCommand<void> 
         await ipc.invoke('db:blueprint-upsert', finalBlueprint)
 
         completedCount++
-        callbacks.log(`  ✅ 第 ${ch.number} 章蓝图已生成`)
+        callbacks.log(t('importNovel.blueprintGenerated', { chapter: ch.number }))
       } catch (err) {
         failedCount++
-        callbacks.log(`  ⚠️ 第 ${ch.number} 章蓝图生成失败: ${err instanceof Error ? err.message : String(err)}`)
+        callbacks.log(t('importNovel.blueprintFailed', { chapter: ch.number, error: err instanceof Error ? err.message : String(err) }))
       }
 
       // 更新进度
@@ -344,8 +355,8 @@ export class InferBlueprintsPerChapterCommand extends BaseWorkflowCommand<void> 
 
     await runWithConcurrency(tasks, InferBlueprintsPerChapterCommand.CONCURRENCY_LIMIT)
 
-    callbacks.log(`\n━━━━━━━━━━ 蓝图推演完成 ━━━━━━━━━━`)
-    callbacks.log(`✅ 成功: ${completedCount} 章 | ⚠️ 失败: ${failedCount} 章`)
+    callbacks.log(`\n${t('importNovel.blueprintSummary')}`)
+    callbacks.log(t('importNovel.blueprintSummaryLine', { success: completedCount, fail: failedCount }))
     callbacks.setProgress(85)
 
     callbacks.setProgress(100)

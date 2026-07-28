@@ -1,14 +1,17 @@
 /**
  * list_chapters — 列出所有章节状态概览
  */
+import i18n from '../../../i18n'
 import { buildAgentTool } from '../tool-registry'
 import { ipc } from '../../ipc-client'
 import { useProjectStore } from '../../../stores/project-store'
 
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'panels', ...opts })
+
 
 export const listChaptersTool = buildAgentTool({
   name: 'list_chapters',
-  description: '列出项目中所有章节的状态概览，包括哪些章节有蓝图、有草稿、已定稿等信息。用于了解项目整体进度。',
+  description: t('agent.tools.listChapters.desc'),
   source: 'builtin',
   inputSchema: {
     type: 'object',
@@ -18,7 +21,7 @@ export const listChaptersTool = buildAgentTool({
   execute: async () => {
     const project = useProjectStore.getState().currentProject
     if (!project) {
-      return { success: false, content: '', error: '没有打开的项目' }
+      return { success: false, content: '', error: t('agent.tools.noProject') }
     }
 
     try {
@@ -38,7 +41,7 @@ export const listChaptersTool = buildAgentTool({
       // 合并所有出现过的章节号
       const allNums = new Set([...bpNums, ...draftNums, ...msNums])
       if (allNums.size === 0) {
-        return { success: true, content: '📊 项目中暂无任何章节数据。建议先生成故事架构和章节蓝图。' }
+        return { success: true, content: t('agent.tools.listChapters.noData') }
       }
 
       const sortedNums = Array.from(allNums).sort((a, b) => a - b)
@@ -50,14 +53,14 @@ export const listChaptersTool = buildAgentTool({
         return `| ${num} | ${hasBp} | ${hasDraft} | ${hasMs} |`
       })
 
-      const table = `| 章节 | 蓝图 | 草稿 | 定稿 |\n| --- | --- | --- | --- |\n${rows.join('\n')}`
+      const table = `${t('agent.tools.listChapters.tableHeader')}\n| --- | --- | --- | --- |\n${rows.join('\n')}`
 
       return {
         success: true,
-        content: `📊 章节进度概览\n\n${table}\n\n总计：${sortedNums.length} 个章节，${bpNums.size} 个蓝图，${draftNums.size} 个草稿，${msNums.size} 个定稿`,
+        content: `${t('agent.tools.listChapters.summary')}\n\n${table}\n\n${t('agent.tools.listChapters.summaryDetail', { total: sortedNums.length, blueprints: bpNums.size, drafts: draftNums.size, finalized: msNums.size })}`,
       }
     } catch (e: unknown) {
-      return { success: false, content: '', error: `获取失败: ${e instanceof Error ? e.message : String(e)}` }
+      return { success: false, content: '', error: t('agent.tools.listChapters.getFailed', { error: e instanceof Error ? e.message : String(e) }) }
     }
   },
 })

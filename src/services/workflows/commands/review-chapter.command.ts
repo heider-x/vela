@@ -4,6 +4,9 @@ import { getPromptTemplate } from '../../prompt-templates'
 import { ReviewPromptBuilder } from '../../prompts/prompt-builder'
 import { ipc } from '../../ipc-client'
 import { buildCanonContext, renderCanonContext } from '../../narrative-consistency'
+import i18n from '../../../i18n'
+
+const t = (key: string, opts?: Record<string, unknown>) => i18n.t(key, { ns: 'commands', ...opts })
 
 
 export interface ReviewChapterParams {
@@ -21,16 +24,16 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
 
   async execute({ callbacks }: CommandExecuteParams): Promise<string> {
     const project = useProjectStore.getState().currentProject
-    if (!project) throw new Error('未打开项目')
+    if (!project) throw new Error(t('common.noProject'))
 
     const draft = this.params.draftContent
-    if (!draft) throw new Error('无草稿内容')
+    if (!draft) throw new Error(t('common.noDraftContent'))
 
-    callbacks.log('准备启动一致性审查引擎...')
-    callbacks.log('  检索全书设定档案...')
+    callbacks.log(t('reviewChapter.preparingReview'))
+    callbacks.log(t('reviewChapter.searchingArchives'))
 
     // 使用向量检索获取与待审章节相关的历史上下文（替代全局摘要）
-    let contextSummary = '（无上下文参考）'
+    let contextSummary = t('reviewChapter.noContextReference')
     try {
       // 从待审内容中提取前 200 字作为检索 query
       const queryText = draft.slice(0, 200)
@@ -38,18 +41,18 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
       if (results.length > 0) {
         contextSummary = results
           .map((r: { fileName: string; score: number; text: string }, i: number) =>
-            `[${i + 1}] (${r.fileName}, 相关度 ${(r.score * 100).toFixed(0)}%)\n${r.text}`)
+            t('generateDraft.kbResultLine', { index: i + 1, file: r.fileName, score: (r.score * 100).toFixed(0), text: r.text }))
           .join('\n\n')
       }
     } catch {
-      contextSummary = '（知识库检索不可用）'
+      contextSummary = t('reviewChapter.kbUnavailable')
     }
 
     const characterState = await this.readCharacterStates()
     const worldBuilding = await this.readWorldBuilding()
 
     const template = getPromptTemplate('consistency_check')
-    if (!template) throw new Error('未找到审稿模板')
+    if (!template) throw new Error(t('reviewChapter.templateNotFound'))
 
         // ==========================================
     // [Canon] 注入叙事一致性上下文 — 审稿员交叉验证事实基线
@@ -81,10 +84,10 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
       });
       promptBuilder = new ReviewPromptBuilder(template);
       promptBuilder.withCanonContext(renderCanonContext(canon));
-      callbacks.log(`  🛡️ [Canon] 审稿已注入事实基线（时间线 ${canon.timeline.length} / 角色 ${canon.characterStates.length}）`);
+      callbacks.log(t('canon.reviewContextInjected', { timeline: canon.timeline.length, characters: canon.characterStates.length }));
     } catch (e) {
       promptBuilder = new ReviewPromptBuilder(template);
-      callbacks.log(`  ⚠️ [Canon] 审稿上下文构造失败：${String(e)}`);
+      callbacks.log(t('canon.reviewContextFailed', { error: String(e) }));
     }
 
     promptBuilder
@@ -94,7 +97,7 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
       .withWorldBuilding(worldBuilding)
       .withReviewFocus(this.params.reviewFocus || '');
 
-    callbacks.log('调用 AI 审查员对本章进行多维度扫描...')
+    callbacks.log(t('reviewChapter.callingReviewer'))
 
     // 期望 JSON 格式返回
     const reviewResultRaw = await this.callLLMWithBuilder(
@@ -107,7 +110,7 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
 
     const { parseDraftMeta } = await import('../chapter-workflow')
     const baseDraft = await parseDraftMeta(this.params.draftPath)
-    if (!baseDraft) throw new Error('找不到基准草稿版本')
+    if (!baseDraft) throw new Error(t('common.baseDraftNotFound'))
     const baseVersion = baseDraft.version
 
     const revIndex = await ipc.invoke('db:review-next-index', baseDraft.id)
@@ -116,8 +119,8 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
     try {
       parsedResult = this.parseJSON(reviewResultClean)
     } catch {
-      callbacks.log('⚠️ 审稿结果解析失败，返回原始文本')
-      parsedResult = { summary: '解析失败', items: [] }
+      callbacks.log(t('reviewChapter.parseFailed'))
+      parsedResult = { summary: t('reviewChapter.parseFallback'), items: [] }
     }
 
     await ipc.invoke('db:review-create', {
@@ -134,7 +137,7 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
     const pseudoReviewPath = `vela://draft/ch${this.params.chapterNumber}/v${baseVersion}/review${revIndex}`
     useEditorStore.getState().openFile({
       id: `review-${this.params.draftPath}-${revIndex}`,
-      name: `审稿报告：第${this.params.chapterNumber}章`,
+      name: t('reviewChapter.tabName', { chapter: this.params.chapterNumber }),
       type: 'review-report',
       content: reportContent,
       filePath: this.params.draftPath,
@@ -143,7 +146,7 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
       chapterNumber: this.params.chapterNumber,
     })
 
-    callbacks.log(`✅ 审查完成，已生成审稿报告 r${revIndex}`)
+    callbacks.log(t('reviewChapter.completed', { version: revIndex }))
     return reviewResultClean
   }
 
@@ -157,12 +160,12 @@ export class ReviewChapterCommand extends BaseWorkflowCommand<string> {
           states.push(`${card.name}（${card.role || '未知'}）: ${cs.powerLevel || ''}, ${cs.location || ''}, ${cs.physicalState || ''}, ${cs.mentalState || ''}, 最近：${cs.recentEvents || ''}`)
         }
       }
-      return states.length > 0 ? states.join('\n') : '（暂无）'
-    } catch { return '（读取失败）' }
+      return states.length > 0 ? states.join('\n') : t('reviewChapter.noData')
+    } catch { return t('reviewChapter.readFailed') }
   }
 
   private async readWorldBuilding(): Promise<string> {
     const core = await ipc.invoke('db:project-core-get')
-    return core?.worldbuilding || '（暂无）'
+    return core?.worldbuilding || t('reviewChapter.noData')
   }
 }
