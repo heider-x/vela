@@ -119,52 +119,68 @@ export class OpenAIProvider implements ILLMProvider {
       let fullText = ''
       let isThinking = false
 
-      const hasMore = true
-      while (hasMore) {
+      const handleData = (json: string) => {
+        if (json === '[DONE]') return
+        try {
+          const parsed = JSON.parse(json) as {
+            choices: Array<{ delta: { content?: string, reasoning_content?: string } }>
+          }
+          const delta = parsed.choices?.[0]?.delta
+
+          let emitChunk = ''
+
+          // 如果存在思维链内容
+          if (delta?.reasoning_content) {
+            if (!isThinking) {
+              isThinking = true
+              emitChunk += '<think>\n'
+            }
+            emitChunk += delta.reasoning_content
+          } 
+          
+          // 如果开始输出正文
+          if (delta?.content !== undefined && delta?.content !== null) {
+            if (isThinking) {
+              isThinking = false
+              emitChunk += '\n</think>\n\n'
+            }
+            if (delta?.content) {
+              emitChunk += delta.content
+            }
+          }
+
+          if (emitChunk) {
+            fullText += emitChunk
+            opts.onChunk(emitChunk)
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // SSE 事件可能跨越网络分片边界，跨块保留未完整行，避免事件被丢弃
+      let buffer = ''
+      while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const text = decoder.decode(value, { stream: true })
-        const lines = text.split('\n').filter((l) => l.startsWith('data: '))
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
 
         for (const line of lines) {
-          const json = line.slice(6).trim()
-          if (json === '[DONE]') continue
-          try {
-            const parsed = JSON.parse(json) as {
-              choices: Array<{ delta: { content?: string, reasoning_content?: string } }>
-            }
-            const delta = parsed.choices?.[0]?.delta
-
-            let emitChunk = ''
-
-            // 如果存在思维链内容
-            if (delta?.reasoning_content) {
-              if (!isThinking) {
-                isThinking = true
-                emitChunk += '<think>\n'
-              }
-              emitChunk += delta.reasoning_content
-            } 
-            
-            // 如果开始输出正文
-            if (delta?.content !== undefined && delta?.content !== null) {
-              if (isThinking) {
-                isThinking = false
-                emitChunk += '\n</think>\n\n'
-              }
-              if (delta?.content) {
-                emitChunk += delta.content
-              }
-            }
-
-            if (emitChunk) {
-              fullText += emitChunk
-              opts.onChunk(emitChunk)
-            }
-          } catch {
-            // ignore
+          const trimmed = line.trim() // 兼容 \r\n 行尾
+          if (trimmed.startsWith('data: ')) {
+            handleData(trimmed.slice(6).trim())
           }
+        }
+      }
+
+      // 流末尾最后一条事件可能没有换行结尾
+      if (buffer.trim()) {
+        const trimmed = buffer.trim()
+        if (trimmed.startsWith('data: ')) {
+          handleData(trimmed.slice(6).trim())
         }
       }
 
