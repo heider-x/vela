@@ -250,6 +250,7 @@
     "charExtractDone": "✅ 角色卡提取完毕（共 {{count}} 个角色）",
     "charExtractError": "AI 返回的角色数据格式不正确，未提取到有效角色。原始内容预览: {{preview}}",
     "charExtractFailed": "无法提取角色卡",
+    "charExtractSaveFailed": "角色卡保存失败",
     "charRepairTitle": "🔧 修复：角色卡提取",
     "charRepairStepName": "重试角色卡提取",
     "charRepairStepDesc": "重试失败的角色卡提取步骤",
