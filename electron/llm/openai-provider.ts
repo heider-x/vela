@@ -87,6 +87,9 @@ export class OpenAIProvider implements ILLMProvider {
       // 思考模式下 temperature/top_p 等参数不生效（DeepSeek 会静默忽略），仅在非思考模式下传递
       if (opts.thinking) {
         body.thinking = { type: 'enabled' }
+      } else if (opts.responseFormat) {
+        // 结构化输出（json_object）本身是确定性的；部分网关强制 temperature=1，
+        // 发送配置里的非 1 值会导致 400 或连接被掐断，故省略该参数
       } else {
         body.temperature = opts.temperature ?? model.temperature
       }
@@ -195,7 +198,9 @@ export class OpenAIProvider implements ILLMProvider {
       if ((error as Error).name === 'AbortError') {
         opts.onError('已取消生成')
       } else {
-        opts.onError(String(error))
+        const cause = (error as { cause?: { message?: string; code?: string } }).cause
+        const causeText = cause && (cause.message || cause.code) ? `（底层原因: ${cause.message || cause.code}）` : ''
+        opts.onError(String(error) + causeText)
       }
     }
   }

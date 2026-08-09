@@ -163,7 +163,9 @@ export class GeminiProvider implements ILLMProvider {
       if ((error as Error).name === 'AbortError') {
         opts.onError('已取消生成')
       } else {
-        opts.onError(String(error))
+        const cause = (error as { cause?: { message?: string; code?: string } }).cause
+        const causeText = cause && (cause.message || cause.code) ? `（底层原因: ${cause.message || cause.code}）` : ''
+        opts.onError(String(error) + causeText)
       }
     }
   }
