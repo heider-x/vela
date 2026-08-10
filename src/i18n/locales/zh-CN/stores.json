@@ -20,6 +20,7 @@
   },
   "llm": {
     "noDefaultModel": "未配置默认模型",
+    "modelNotFound": "模型不存在或未配置，请检查模型设置",
     "connectionFailed": "连接失败"
   },
   "agentEngine": {
