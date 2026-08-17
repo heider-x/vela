@@ -149,12 +149,6 @@ Vela 支持接入多种主流 LLM 服务商，以下是快速配置步骤：
 
 Vela 开源版由独立开发者利用业余时间热情驱动。如果这个工具有效提升了您的小说创作效率，欢迎扫码赞助！您的每一份支持都是我持续迭代的最大动力 ❤️
 
-### 📢 微信群交流 / WeChat Group
-
-<p align="left">
-  <img src="public/buyme/group.png" width="300" alt="Vela 微信群 WeChat Group"/>
-</p>
-
 ### 👤 技术交流与合作 / Contact
 
 如果您对本项目的商业化落地（SaaS 授权）、AI 写作技术实现或产品方向感兴趣，欢迎扫码加我个人微信：
