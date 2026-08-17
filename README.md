@@ -162,22 +162,6 @@ Vela 开源版由独立开发者利用业余时间热情驱动。如果这个工
 <p align="left">
   <img src="public/buyme/wechat.jpg" width="200" alt="个人微信 Author WeChat"/>
 </p>
-
-### 💰 赞助二维码 / Donate QR Codes
-
-<p align="left">
-  <img src="public/buyme/wepay.jpg" width="200" alt="微信赞助 WeChat Donate"/>
-  &nbsp;&nbsp;&nbsp;
-  <img src="public/buyme/alipay.jpg" width="200" alt="支付宝赞助 Alipay Donate"/>
-</p>
-
-### 🎁 推荐 API 服务商 / Recommended API Providers
-
-以下是经过测试、与 Vela 完美兼容的 API 服务商，使用推荐链接注册可享受专属优惠，同时也是对本项目的支持：
-
-* **智谱 AI (GLM Coding)**：国内顶流编程大模型，20+ 主流工具全适配 👉 [立即参与「拼好模」](https://www.bigmodel.cn/glm-coding?ic=7IJ2G7AE6W)
-* **MiniMax (海螺 AI)**：Token Plan 含语音/视频/生图权益，新用户 **9折** 优惠 👉 [立即订阅](https://platform.minimaxi.com/subscribe/token-plan?code=EjhLD7uCvT&source=link)
-
 ---
 
 ## 🏗️ 技术架构 / Tech Stack
