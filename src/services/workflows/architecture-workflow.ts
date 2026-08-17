@@ -202,7 +202,43 @@ export function createCharacterExtractSteps(_projectPath: string, characterDynam
 
         const cleanedCards = stripThinkingTags(fullContent)
         const jsonStr = cleanedCards.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
-        const parsedData = JSON.parse(jsonStr)
+        // 容错解析：AI 输出常含全角标点（：，、“”）、尾逗号、单引号或未加引号的键
+        const normalized = jsonStr
+          .replace(/[“”]/g, '"')
+          .replace(/[‘’]/g, "'")
+          .replace(/：/g, ':')
+          .replace(/，/g, ',')
+          .replace(/,(\s*[}\]])/g, '$1')
+
+        const sliceJson = (s: string, open: string, close: string): string | null => {
+          const start = s.indexOf(open)
+          const end = s.lastIndexOf(close)
+          return start >= 0 && end > start ? s.substring(start, end + 1) : null
+        }
+
+        // 依次尝试多种候选：数组区间、对象区间、原文、单引号修正、未加引号键修正
+        const candidates = [
+          sliceJson(normalized, '[', ']'),
+          sliceJson(normalized, '{', '}'),
+          normalized,
+          normalized.replace(/'/g, '"'),
+          normalized.replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":')
+        ]
+
+        let parsedData: unknown = null
+        for (const candidate of candidates) {
+          if (!candidate) continue
+          try {
+            parsedData = JSON.parse(candidate)
+            break
+          } catch {
+            // 尝试下一个候选
+          }
+        }
+
+        if (parsedData === null) {
+          throw new Error(t('workflowDefs.charExtractError', { preview: normalized.slice(0, 500) }))
+        }
 
         // 兼容多种格式：直接数组、{ characters: [...] }、或其他包含数组的对象
         let parsedCards: Array<Record<string, unknown>> = []
@@ -227,7 +263,7 @@ export function createCharacterExtractSteps(_projectPath: string, characterDynam
 
         if (parsedCards.length === 0) {
           // 输出原始内容前 500 字符用于调试
-          const preview = cleanedCards.slice(0, 500)
+          const preview = normalized.slice(0, 500)
           throw new Error(t('workflowDefs.charExtractError', { preview }))
         }
 
@@ -241,7 +277,10 @@ export function createCharacterExtractSteps(_projectPath: string, characterDynam
         }
 
         // 批量写入数据库
-        await ipc.invoke('db:character-save-all', characterDataList as unknown as CharacterData[])
+        const saveResult = (await ipc.invoke('db:character-save-all', characterDataList as unknown as CharacterData[])) as { success?: boolean; error?: string } | undefined
+        if (saveResult && !saveResult.success) {
+          throw new Error(`${t('workflowDefs.charExtractSaveFailed')}: ${saveResult.error}`)
+        }
         cb.log(t('workflowDefs.charExtractDone', { count: characterDataList.length }))
       },
     },

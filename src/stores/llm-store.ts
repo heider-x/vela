@@ -174,13 +174,20 @@ export const useLLMStore = create<LLMState>()((set, get) => ({
     set({ activeRequests: reqs })
 
     // 发起流式请求
-    await ipc.invoke('llm:generate-stream', requestId, {
+    const startRes = (await ipc.invoke('llm:generate-stream', requestId, {
       modelId: mid,
       messages,
       stream: true,
       responseFormat: options?.responseFormat as { type: 'json_object' | 'text' } | undefined,
       thinking: options?.thinking
-    })
+    })) as { requestId: string; started: boolean } | undefined
+
+    // 模型未找到/未配置时主进程直接返回 started:false，不会发任何流事件；
+    // 必须主动报错，否则调用方会永远等待 onDone/onError
+    if (startRes && startRes.started === false) {
+      callbacks.onError?.(i18n.t('llm.modelNotFound', { ns: 'stores' }))
+      cleanup()
+    }
 
     return requestId
   },

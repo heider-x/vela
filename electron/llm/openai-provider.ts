@@ -87,6 +87,9 @@ export class OpenAIProvider implements ILLMProvider {
       // 思考模式下 temperature/top_p 等参数不生效（DeepSeek 会静默忽略），仅在非思考模式下传递
       if (opts.thinking) {
         body.thinking = { type: 'enabled' }
+      } else if (opts.responseFormat) {
+        // 结构化输出（json_object）本身是确定性的；部分网关强制 temperature=1，
+        // 发送配置里的非 1 值会导致 400 或连接被掐断，故省略该参数
       } else {
         body.temperature = opts.temperature ?? model.temperature
       }
@@ -119,52 +122,68 @@ export class OpenAIProvider implements ILLMProvider {
       let fullText = ''
       let isThinking = false
 
-      const hasMore = true
-      while (hasMore) {
+      const handleData = (json: string) => {
+        if (json === '[DONE]') return
+        try {
+          const parsed = JSON.parse(json) as {
+            choices: Array<{ delta: { content?: string, reasoning_content?: string } }>
+          }
+          const delta = parsed.choices?.[0]?.delta
+
+          let emitChunk = ''
+
+          // 如果存在思维链内容
+          if (delta?.reasoning_content) {
+            if (!isThinking) {
+              isThinking = true
+              emitChunk += '<think>\n'
+            }
+            emitChunk += delta.reasoning_content
+          } 
+          
+          // 如果开始输出正文
+          if (delta?.content !== undefined && delta?.content !== null) {
+            if (isThinking) {
+              isThinking = false
+              emitChunk += '\n</think>\n\n'
+            }
+            if (delta?.content) {
+              emitChunk += delta.content
+            }
+          }
+
+          if (emitChunk) {
+            fullText += emitChunk
+            opts.onChunk(emitChunk)
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // SSE 事件可能跨越网络分片边界，跨块保留未完整行，避免事件被丢弃
+      let buffer = ''
+      while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const text = decoder.decode(value, { stream: true })
-        const lines = text.split('\n').filter((l) => l.startsWith('data: '))
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
 
         for (const line of lines) {
-          const json = line.slice(6).trim()
-          if (json === '[DONE]') continue
-          try {
-            const parsed = JSON.parse(json) as {
-              choices: Array<{ delta: { content?: string, reasoning_content?: string } }>
-            }
-            const delta = parsed.choices?.[0]?.delta
-
-            let emitChunk = ''
-
-            // 如果存在思维链内容
-            if (delta?.reasoning_content) {
-              if (!isThinking) {
-                isThinking = true
-                emitChunk += '<think>\n'
-              }
-              emitChunk += delta.reasoning_content
-            } 
-            
-            // 如果开始输出正文
-            if (delta?.content !== undefined && delta?.content !== null) {
-              if (isThinking) {
-                isThinking = false
-                emitChunk += '\n</think>\n\n'
-              }
-              if (delta?.content) {
-                emitChunk += delta.content
-              }
-            }
-
-            if (emitChunk) {
-              fullText += emitChunk
-              opts.onChunk(emitChunk)
-            }
-          } catch {
-            // ignore
+          const trimmed = line.trim() // 兼容 \r\n 行尾
+          if (trimmed.startsWith('data: ')) {
+            handleData(trimmed.slice(6).trim())
           }
+        }
+      }
+
+      // 流末尾最后一条事件可能没有换行结尾
+      if (buffer.trim()) {
+        const trimmed = buffer.trim()
+        if (trimmed.startsWith('data: ')) {
+          handleData(trimmed.slice(6).trim())
         }
       }
 
@@ -179,7 +198,9 @@ export class OpenAIProvider implements ILLMProvider {
       if ((error as Error).name === 'AbortError') {
         opts.onError('已取消生成')
       } else {
-        opts.onError(String(error))
+        const cause = (error as { cause?: { message?: string; code?: string } }).cause
+        const causeText = cause && (cause.message || cause.code) ? `（底层原因: ${cause.message || cause.code}）` : ''
+        opts.onError(String(error) + causeText)
       }
     }
   }

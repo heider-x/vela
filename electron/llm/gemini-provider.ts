@@ -108,37 +108,53 @@ export class GeminiProvider implements ILLMProvider {
       let fullText = ''
       let usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined
 
-      const hasMore = true
-      while (hasMore) {
+      const handleData = (json: string) => {
+        if (!json) return
+        try {
+          const parsed = JSON.parse(json) as {
+            candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+            usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number }
+          }
+          const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text
+          if (chunk) {
+            fullText += chunk
+            opts.onChunk(chunk)
+          }
+          if (parsed.usageMetadata) {
+            usage = {
+              promptTokens: parsed.usageMetadata.promptTokenCount ?? 0,
+              completionTokens: parsed.usageMetadata.candidatesTokenCount ?? 0,
+              totalTokens: parsed.usageMetadata.totalTokenCount ?? 0,
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // SSE 事件可能跨越网络分片边界，跨块保留未完整行，避免事件被丢弃
+      let buffer = ''
+      while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const text = decoder.decode(value, { stream: true })
-        const lines = text.split('\n').filter((l) => l.startsWith('data: '))
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
 
         for (const line of lines) {
-          const json = line.slice(6).trim()
-          if (!json) continue
-          try {
-            const parsed = JSON.parse(json) as {
-              candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
-              usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number }
-            }
-            const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text
-            if (chunk) {
-              fullText += chunk
-              opts.onChunk(chunk)
-            }
-            if (parsed.usageMetadata) {
-              usage = {
-                promptTokens: parsed.usageMetadata.promptTokenCount ?? 0,
-                completionTokens: parsed.usageMetadata.candidatesTokenCount ?? 0,
-                totalTokens: parsed.usageMetadata.totalTokenCount ?? 0,
-              }
-            }
-          } catch {
-            // ignore
+          const trimmed = line.trim() // 兼容 \r\n 行尾
+          if (trimmed.startsWith('data: ')) {
+            handleData(trimmed.slice(6).trim())
           }
+        }
+      }
+
+      // 流末尾最后一条事件可能没有换行结尾
+      if (buffer.trim()) {
+        const trimmed = buffer.trim()
+        if (trimmed.startsWith('data: ')) {
+          handleData(trimmed.slice(6).trim())
         }
       }
 
@@ -147,7 +163,9 @@ export class GeminiProvider implements ILLMProvider {
       if ((error as Error).name === 'AbortError') {
         opts.onError('已取消生成')
       } else {
-        opts.onError(String(error))
+        const cause = (error as { cause?: { message?: string; code?: string } }).cause
+        const causeText = cause && (cause.message || cause.code) ? `（底层原因: ${cause.message || cause.code}）` : ''
+        opts.onError(String(error) + causeText)
       }
     }
   }

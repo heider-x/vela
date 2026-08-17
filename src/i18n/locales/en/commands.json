@@ -250,6 +250,7 @@
     "charExtractDone": "✅ Character card extraction complete ({{count}} characters total)",
     "charExtractError": "AI returned incorrect character data format, no valid characters extracted. Raw content preview: {{preview}}",
     "charExtractFailed": "Unable to extract character cards",
+    "charExtractSaveFailed": "Failed to save character cards",
     "charRepairTitle": "🔧 Repair: Character Card Extraction",
     "charRepairStepName": "Retry character card extraction",
     "charRepairStepDesc": "Retry failed character card extraction step",

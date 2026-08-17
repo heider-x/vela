@@ -20,6 +20,7 @@
   },
   "llm": {
     "noDefaultModel": "No default model configured",
+    "modelNotFound": "Model not found or not configured, please check model settings",
     "connectionFailed": "Connection failed"
   },
   "agentEngine": {
