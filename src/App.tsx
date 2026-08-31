@@ -55,6 +55,8 @@ export default function App() {
     initTheme()
     initLLM()
     loadRecentProjects()
+    // 加载全局自定义提示词覆盖（此前 loadCustomPrompts 从未被调用，导致全局覆盖重启即失效）
+    import('./services/prompt-templates').then(({ loadCustomPrompts }) => loadCustomPrompts()).catch(e => console.warn('[Prompts] 加载全局覆盖失败:', e))
     // 初始化 MCP Store
     useMCPStore.getState().init().catch(e => console.warn('[MCP] 初始化失败:', e))
     if (ipc.isElectron) {
