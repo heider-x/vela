@@ -29,6 +29,17 @@
     "hint": "Hint"
   },
   "models": {
+    "displayName": "Display name",
+    "ollamaInstalled": "Installed Ollama models",
+    "ollamaRefresh": "Refresh model list",
+    "ollamaSelect": "Select an installed model",
+    "ollamaLoading": "Reading Ollama models…",
+    "ollamaCount": "Found {{count}} models. Select one to fill the model ID.",
+    "ollamaEmpty": "Connected, but no models are installed. Install one in Ollama, then refresh.",
+    "ollamaHint": "Reads models from the configured server address. You can also enter an ID manually.",
+    "ollamaFailed": "Could not read models ({{error}}). Check Ollama and the address, or enter an ID manually and test the connection.",
+    "ollamaIdentifier": "Model ID (manual entry supported)",
+    "saveFailure": "Could not save the model. The form is retained; please retry.",
     "title": "Model Configuration",
     "configuredCount": "{{count}} {{label}} configured",
     "addModel": "Add {{label}}",

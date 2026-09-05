@@ -9,6 +9,7 @@ import { Input } from '../ui/Input'
 import { Label } from '../ui/Label'
 import { NativeSelect } from '../ui/NativeSelect'
 import { cn } from '../../lib/utils'
+import OllamaModelPicker from './OllamaModelPicker'
 
 /** 模型设置面板 — 在侧边栏 settings 视图中展示 */
 export default function ModelSettings() {
@@ -21,6 +22,7 @@ export default function ModelSettings() {
   const deleteModel = useLLMStore(s => s.deleteModel)
   const setDefaultModel = useLLMStore(s => s.setDefaultModel)
   const [editingModel, setEditingModel] = useState<ModelProfile | null>(null)
+  const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -47,9 +49,15 @@ export default function ModelSettings() {
   const handleSave = async () => {
     if (!editingModel) return
     setSaving(true)
-    await saveModel(editingModel)
-    setEditingModel(null)
-    setSaving(false)
+    setSaveError('')
+    try {
+      if (!await saveModel(editingModel)) throw new Error('SAVE_FAILED')
+      setEditingModel(null)
+    } catch {
+      setSaveError(t('models.saveFailure'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -63,6 +71,7 @@ export default function ModelSettings() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {saveError && <p role="alert" className="text-sm text-[var(--color-error)]">{saveError}</p>}
         {/* 编辑表单 */}
         {editingModel && (
           <ModelForm
@@ -165,14 +174,17 @@ function ModelForm({
   return (
     <div className="p-3 rounded-lg space-y-3 bg-[var(--color-panel)] border border-[var(--color-accent)]">
       <div>
-        <Label>{t('models.modelName')}</Label>
+        <Label>{t('models.displayName')}</Label>
         <Input value={model.name} onChange={(e) => update('name', e.target.value)} placeholder={t('models.modelNamePlaceholder')} />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label>{t('models.provider')}</Label>
-          <NativeSelect value={model.provider} onChange={(e) => update('provider', e.target.value as ModelProfile['provider'])}>
+          <NativeSelect aria-label={t('models.provider')} value={model.provider} onChange={(e) => {
+            const provider = e.target.value as ModelProfile['provider']
+            onChange(provider === 'ollama' ? { ...model, provider, protocol: 'openai', baseUrl: 'http://localhost:11434', modelName: '', apiKey: '' } : { ...model, provider })
+          }}>
             <option value="openai">OpenAI</option>
             <option value="deepseek">DeepSeek</option>
             <option value="gemini">Gemini</option>
@@ -189,13 +201,13 @@ function ModelForm({
         </div>
       </div>
 
-      <div>
+      {model.provider === 'ollama' ? <OllamaModelPicker model={model} onChange={onChange} /> : <div>
         <Label>{t('models.modelName')}</Label>
         <Input value={model.modelName} onChange={(e) => update('modelName', e.target.value)} placeholder="gpt-4o / deepseek-chat" />
-      </div>
+      </div>}
       <div>
         <Label>{t('models.baseUrl')}</Label>
-        <Input value={model.baseUrl} onChange={(e) => update('baseUrl', e.target.value)} placeholder="https://api.openai.com" />
+        <Input aria-label={t('models.baseUrl')} value={model.baseUrl} onChange={(e) => update('baseUrl', e.target.value)} placeholder="https://api.openai.com" />
       </div>
       <div>
         <Label>{t('models.apiKey')}</Label>
@@ -240,12 +252,12 @@ function ModelForm({
         <Button
           className="flex-1"
           onClick={onSave}
-          disabled={saving || !model.name || (!model.apiKey && model.provider !== 'ollama')}
+          disabled={saving || !model.name.trim() || !model.modelName.trim() || !model.baseUrl.trim() || (!model.apiKey && model.provider !== 'ollama')}
         >
           <Save size={13} />
-          {saving ? t('models.saving') : t('models.save')}
+          {saving ? t('models.saving') : t('models.saveConfig')}
         </Button>
-        <Button variant="ghost" onClick={onCancel}>{t('draftEditor.cancel')}</Button>
+        <Button variant="ghost" onClick={onCancel}>{t('cancel', { ns: 'common' })}</Button>
       </div>
       {testResult && (
         <div className={`text-xs p-2 rounded ${testResult.success ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'} break-all`}>
@@ -265,16 +277,15 @@ function ProxySettings() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    loadProxy()
-  }, [])
-
-  const loadProxy = async () => {
+    const loadProxy = async () => {
     try {
       const { ipc } = await import('../../services/ipc-client')
       const config = await ipc.invoke('config:get')
       if (config.proxy) setProxy(config.proxy)
     } catch { /* 忽略 */ }
-  }
+    }
+    void loadProxy()
+  }, [])
 
   const handleSave = async () => {
     setSaving(true)
