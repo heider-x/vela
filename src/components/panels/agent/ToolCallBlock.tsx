@@ -65,7 +65,7 @@ export default function ToolCallBlock({ toolCall }: Props) {
           <Wrench size={12} style={{ color: 'var(--color-text-muted)' }} />
         </div>
 
-        <span className="tool-call-name">{toolName}</span>
+        <span className="tool-call-name">{toolCall.displayName ?? toolName}</span>
 
         {/* 来源徽章 */}
         {source && (

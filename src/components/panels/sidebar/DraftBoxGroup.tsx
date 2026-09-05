@@ -50,7 +50,7 @@ export default function DraftBoxGroup({
         <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{t('draftBox.title')}</span>
         {activeChapterCount > 0 && (
           <span className="ml-auto text-[0.7rem]" style={{ color: 'var(--color-text-muted)' }}>
-            {activeChapterCount} {t('common.chapters', { ns: 'common' })}
+            {activeChapterCount} {t('chapters', { ns: 'common' })}
           </span>
         )}
       </div>

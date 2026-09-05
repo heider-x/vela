@@ -6,6 +6,7 @@ import { useLayoutStore } from '../../../stores/layout-store'
 import AgentMessage from './AgentMessage'
 import AgentInputBox from './AgentInputBox'
 import { formatRelativeTime } from '../../../utils/time'
+import { useProjectStore } from '../../../stores/project-store'
 
 /**
  * 对话区域主组件
@@ -13,6 +14,7 @@ import { formatRelativeTime } from '../../../utils/time'
  * - 有会话：消息列表 + 底部固定输入框
  */
 export default function AgentConversation() {
+  useProjectStore(s => s.currentProject?.path)
   const { getActiveConversation, showHistory } = useAgentStore()
   const activeConv = getActiveConversation()
 
@@ -35,9 +37,10 @@ export default function AgentConversation() {
 function EmptyState() {
   const { t } = useTranslation('panels')
   const { conversations, selectConversation } = useAgentStore()
+  const projectPath = useProjectStore(s => s.currentProject?.path)
   // 取最近 3 条历史会话（不包含当前空会话）
   const recentConvs = conversations
-    .filter(c => c && c.messages.length > 0)
+    .filter(c => c && c.projectPath === projectPath && c.messages.length > 0)
     .slice(0, 3)
 
 
@@ -59,6 +62,7 @@ function EmptyState() {
 
         {/* 输入框 */}
         <AgentInputBox />
+        <p className="mt-3 text-xs leading-relaxed text-[var(--color-text-muted)]">{t('storyRevision.hint')}</p>
 
 
 
@@ -241,9 +245,10 @@ function AgentToolbar() {
 function AgentHistoryPanel() {
   const { t } = useTranslation('panels')
   const { conversations, activeConversationId, selectConversation, deleteConversation, setShowHistory } = useAgentStore()
+  const projectPath = useProjectStore(s => s.currentProject?.path)
 
   // 按更新时间倒序排列
-  const sorted = [...conversations].sort((a, b) => b.updatedAt - a.updatedAt)
+  const sorted = conversations.filter(c => c.projectPath === projectPath).sort((a, b) => b.updatedAt - a.updatedAt)
 
   return (
     <div className="flex flex-col h-full">

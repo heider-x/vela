@@ -76,6 +76,7 @@ export default function LeftToolWindowBar() {
           return (
             <button
               key={id}
+              data-tour={id === 'project' ? 'project-entry' : undefined}
               onClick={() => setSidebarView(id)}
               title={label}
               className="tool-btn"

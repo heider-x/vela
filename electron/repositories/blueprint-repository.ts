@@ -53,6 +53,28 @@ function rowToData(row: BlueprintRow): BlueprintData {
 }
 
 export class BlueprintRepository {
+    /** Apply only edited/deleted rows; reject stale editors atomically. Drafts are untouched. */
+    static commit(items: BlueprintData[], deleted: number[], expected: BlueprintData[]): void {
+        const db = getProjectDb()
+        if (!db) throw new Error('PROJECT_CLOSED')
+        const numbers = [...items.map(item => item.chapterNumber), ...deleted]
+        if (numbers.some(n => !Number.isSafeInteger(n) || n < 1) || new Set(numbers).size !== numbers.length) {
+            throw new Error('INVALID_CHAPTER')
+        }
+        db.transaction(() => {
+            for (const number of numbers) {
+                const current = BlueprintRepository.getByChapter(number)
+                const baseline = expected.find(item => item.chapterNumber === number) || null
+                // Compare canonical field order, independent of IPC object key ordering.
+                const equal = current === null || baseline === null ? current === baseline :
+                    (Object.keys(current) as Array<keyof BlueprintData>).every(key => JSON.stringify(current[key]) === JSON.stringify(baseline[key]))
+                if (!equal) throw new Error('BLUEPRINT_CONFLICT')
+            }
+            for (const item of items) BlueprintRepository.upsert(item)
+            for (const number of deleted) BlueprintRepository.delete(number)
+        })()
+    }
+
     /** 获取所有蓝图（按章节号排序） */
     static getAll(): BlueprintData[] {
         const db = getProjectDb()
