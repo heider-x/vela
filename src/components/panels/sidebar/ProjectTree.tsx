@@ -184,6 +184,7 @@ export default function ProjectTree() {
       <WorldBuildingGroup archStatus={archStatus} archDone={archDone} />
 
       {/* 3. 章节蓝图 — 点击打开编辑器页 */}
+      <div data-tour="blueprints">
       <LeafItem
         iconName="layout-list"
         label={t('projectTree.chapterBlueprint')}
@@ -207,6 +208,7 @@ export default function ProjectTree() {
           },
         ], e)}
       />
+      </div>
 
       {/* 4. 草稿箱 — 独立分区，按章节分组展示草稿 */}
       <DraftBoxGroup draftsByChapter={draftsByChapter} />

@@ -481,7 +481,7 @@ function ChapterCardEditorSession() {
                 </h3>
                 <div className="flex flex-wrap items-center gap-2">
                   {/* 仅下一章允许写作 */}
-                  <Button variant="outline" size="sm" disabled={saving} onClick={() => setShowRehearsal(true)}>
+                  <Button data-tour="rehearsal" variant="outline" size="sm" disabled={saving} onClick={() => setShowRehearsal(true)}>
                     <GitBranch size={13} />{t('rehearsal.title')}
                   </Button>
                   {nextWriteChapter !== null && selected.chapterNumber === nextWriteChapter && (

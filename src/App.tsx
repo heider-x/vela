@@ -25,6 +25,7 @@ import SettingsModal from './components/settings/SettingsModal'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { actionToast } from './components/ui/ActionToast'
 import { globalEventBus } from './shared/event-bus'
+import FeatureTour from './components/onboarding/FeatureTour'
 
 /**
  * Vela 主应用组件
@@ -206,6 +207,7 @@ export default function App() {
         open={settingsOpen}
         onClose={closeSettings}
       />
+      <FeatureTour />
 
     </div>
   )

@@ -189,6 +189,7 @@ export default function AgentInputBox() {
 
   return (
     <div
+      data-tour="agent-input"
       className="relative flex flex-col gap-0 p-1.5"
       style={{
         backgroundColor: 'var(--color-hover)',

@@ -68,7 +68,7 @@ export default function AgentHeader() {
 
       {/* 右侧工具按钮组 */}
       <div className="flex items-center gap-1.5 px-0.5 flex-shrink-0">
-        <IconBtn title={t('storyRevision.history')} disabled={!projectPath} onClick={() => setShowStoryHistory(true)} size={18}><BookOpenCheck size={14} /></IconBtn>
+        <span data-tour="revision-history" className="inline-flex"><IconBtn title={t('storyRevision.history')} disabled={!projectPath} onClick={() => setShowStoryHistory(true)} size={18}><BookOpenCheck size={14} /></IconBtn></span>
         {showStoryHistory && <StoryRevisionHistory key={projectPath} />}
 
         {/* 新建对话按钮 */}
