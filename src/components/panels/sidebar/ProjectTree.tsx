@@ -188,7 +188,7 @@ export default function ProjectTree() {
         iconName="layout-list"
         label={t('projectTree.chapterBlueprint')}
         desc={t('projectTree.blueprintDesc')}
-        badge={blueprintCount > 0 ? `${blueprintCount}/${nc.totalChapters} ${t('common.chapters', { ns: 'common' })}` : t('projectTree.pendingGeneration')}
+        badge={blueprintCount > 0 ? `${blueprintCount}/${nc.totalChapters} ${t('chapters', { ns: 'common' })}` : t('projectTree.pendingGeneration')}
         badgeColor={
           blueprintCount >= nc.totalChapters
             ? 'var(--color-success)'

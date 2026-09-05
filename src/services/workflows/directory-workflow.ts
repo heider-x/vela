@@ -39,49 +39,52 @@ export interface DirectoryWorkflowParams {
 // ==========================================
 
 export function parseTextBlueprints(content: string, startNum: number, endNum: number): ChapterBlueprint[] {
-  let result: ChapterBlueprint[] = []
-
-  try {
-    const cleanContent = stripThinkingTags(content)
-    const jsonStr = cleanContent.replace(/```json?\n?/g, '').replace(/```\n?/g, '').trim()
-    const startIndex = jsonStr.indexOf('{')
-    const endIndex = jsonStr.lastIndexOf('}')
-
-    if (startIndex !== -1 && endIndex !== -1) {
-      const arrayStr = jsonStr.substring(startIndex, endIndex + 1)
-      let parsed = JSON.parse(arrayStr)
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.blueprints) {
-        parsed = parsed.blueprints
+  const clean = stripThinkingTags(content).replace(/```(?:json)?\s*/gi, '').trim()
+  let parsed: unknown
+  // Some gateways put untagged reasoning or example JSON before the final answer.
+  // Read balanced candidates from the end, respecting braces inside JSON strings.
+  for (let start = clean.length - 1; start >= 0; start--) {
+    if (clean[start] !== '[' && clean[start] !== '{') continue
+    let depth = 0, quoted = false, escaped = false
+    for (let end = start; end < clean.length; end++) {
+      const char = clean[end]
+      if (quoted) {
+        if (escaped) escaped = false
+        else if (char === '\\') escaped = true
+        else if (char === '"') quoted = false
+        continue
       }
-      if (Array.isArray(parsed)) {
-        result = parsed
-          .filter((p: Record<string, unknown>) => {
-            const n = Number(p.chapterNumber || p.chapter_number)
-            return n >= startNum && n <= endNum
-          })
-          .map((p: Record<string, unknown>) => ({
-            ...EMPTY_BLUEPRINT,
-            chapterNumber: Number(p.chapterNumber || p.chapter_number || 0),
-            title: String(p.title || t('workflowDefs.chapterTitleFallback', { chapter: p.chapterNumber })),
-            role: String(p.role || t('workflowDefs.dirDefaultRole')),
-            purpose: String(p.purpose || ''),
-            keyEvents: String(p.keyEvents || p.key_events || ''),
-            characters: Array.isArray(p.characters) ? p.characters : [],
-            suspenseHook: String(p.suspenseHook || p.suspense_hook || ''),
-            userGuidance: '',
-          }))
-      }
+      if (char === '"') quoted = true
+      else if (char === '[' || char === '{') depth++
+      else if (char === ']' || char === '}') depth--
+      if (depth !== 0) continue
+      try {
+        const candidate = JSON.parse(clean.slice(start, end + 1))
+        const list = Array.isArray(candidate) ? candidate : candidate?.blueprints
+        if (Array.isArray(list) && (list.length > 0 || !Array.isArray(candidate) || !clean.slice(end + 1).trim()) &&
+            list.every(p => p && typeof p === 'object' && ('chapterNumber' in p || 'chapter_number' in p))) parsed = list
+      } catch { /* Continue looking for the final complete blueprint payload. */ }
+      break
     }
-  } catch {
-    console.error('Failed to parse blueprint JSON', content)
+    if (parsed) break
   }
-
-  const distinctMap = new Map<number, ChapterBlueprint>()
-  for (const item of result) {
-    if (!distinctMap.has(item.chapterNumber)) distinctMap.set(item.chapterNumber, item)
+  if (!Array.isArray(parsed)) return []
+  const distinct = new Map<number, ChapterBlueprint>()
+  for (const value of parsed) {
+    if (!value || typeof value !== 'object') continue
+    const p = value as Record<string, unknown>
+    const chapterNumber = Number(p.chapterNumber ?? p.chapter_number)
+    const keyEvents = p.keyEvents ?? p.key_events
+    if (!Number.isSafeInteger(chapterNumber) || chapterNumber < startNum || chapterNumber > endNum ||
+        typeof p.title !== 'string' || !p.title.trim() || typeof keyEvents !== 'string' || !keyEvents.trim()) continue
+    if (!distinct.has(chapterNumber)) distinct.set(chapterNumber, {
+      ...EMPTY_BLUEPRINT, chapterNumber, title: p.title.trim(), role: String(p.role || t('workflowDefs.dirDefaultRole')),
+      purpose: String(p.purpose || ''), keyEvents,
+      characters: Array.isArray(p.characters) ? p.characters.filter((c): c is string => typeof c === 'string') : [],
+      suspenseHook: String(p.suspenseHook || p.suspense_hook || ''),
+    })
   }
-
-  return Array.from(distinctMap.values()).sort((a, b) => a.chapterNumber - b.chapterNumber)
+  return [...distinct.values()].sort((a, b) => a.chapterNumber - b.chapterNumber)
 }
 
 export async function loadDirectoryBlueprints(): Promise<ChapterBlueprint[]> {
@@ -93,12 +96,14 @@ export async function loadDirectoryBlueprints(): Promise<ChapterBlueprint[]> {
   }
 }
 
-export async function saveChapterBlueprint(blueprint: ChapterBlueprint): Promise<void> {
-  await ipc.invoke('db:blueprint-upsert', blueprint)
+export async function saveChapterBlueprint(blueprint: ChapterBlueprint, projectPath?: string): Promise<void> {
+  const result = await ipc.invoke('db:blueprint-upsert', blueprint, projectPath)
+  if (!result.success) throw new Error(result.error || 'BLUEPRINT_SAVE_FAILED')
 }
 
-export async function saveAllBlueprints(blueprints: ChapterBlueprint[]): Promise<void> {
-  await ipc.invoke('db:blueprint-upsert-many', blueprints)
+export async function saveAllBlueprints(blueprints: ChapterBlueprint[], projectPath?: string): Promise<void> {
+  const result = await ipc.invoke('db:blueprint-upsert-many', blueprints, projectPath)
+  if (!result.success) throw new Error(result.error || 'BLUEPRINT_SAVE_FAILED')
 }
 
 export async function getBlueprintCount(): Promise<number> {
@@ -117,7 +122,9 @@ export async function getBlueprintCount(): Promise<number> {
 export function createDirectoryWorkflow(params: DirectoryWorkflowParams = { mode: 'full' }): WorkflowDefinition {
   return {
     type: 'directory',
-    title: params.mode === 'append' ? t('workflowDefs.dirAppendTitle', { chapter: params.startChapter || '' }) : t('workflowDefs.dirFullTitle'),
+    title: params.mode === 'append' ? t('workflowDefs.dirAppendTitle', { chapter: params.startChapter || '' })
+      : params.count ? t('workflowDefs.dirRangeTitle', { from: 1, to: Math.min(params.count, useProjectStore.getState().currentProject?.novelConfig.totalChapters ?? params.count) })
+      : t('workflowDefs.dirFullTitle'),
     steps: [
       {
         name: t('workflowDefs.dirStepReadArch'),
@@ -125,6 +132,7 @@ export function createDirectoryWorkflow(params: DirectoryWorkflowParams = { mode
         executor: async (_step, context, callbacks) => {
           const project = useProjectStore.getState().currentProject
           if (!project) throw new Error(t('common.noProject'))
+          context.data.directoryProjectPath = project.path
 
           callbacks.log(t('workflowDefs.dirReadingArch'))
           const core = await ipc.invoke('db:project-core-get')
@@ -168,24 +176,16 @@ export function createDirectoryWorkflow(params: DirectoryWorkflowParams = { mode
           if (!project) throw new Error(t('common.noProject'))
 
           const newBlueprints = context.data.newBlueprints as ChapterBlueprint[]
-          const existingBlueprints = context.data.existingBlueprints as ChapterBlueprint[]
-
+          if (!newBlueprints?.length) throw new Error(i18n.t('directory.noSavedBlueprints', { ns: 'commands' }))
+          if (context.data.directoryProjectPath !== project.path) throw new Error('PROJECT_CHANGED')
           callbacks.log(t('workflowDefs.dirSavingBlueprints'))
-
-          let merged: ChapterBlueprint[]
-          if (params.mode === 'full') {
-            merged = newBlueprints
-            // TODO: 若需要清理冗余蓝图，可考虑添加 db:blueprint-delete-all 以严格符合全量替换的意图。
-            // 在当前 upsert-many 中，仅覆盖更新
-          } else {
-            const existingMap = new Map(existingBlueprints.map(b => [b.chapterNumber, b]))
-            for (const nb of newBlueprints) existingMap.set(nb.chapterNumber, nb)
-            merged = Array.from(existingMap.values()).sort((a, b) => a.chapterNumber - b.chapterNumber)
+          // Each batch is already durable. Verify instead of overwriting edits a second time.
+          const saved = await ipc.invoke('db:blueprint-get-all', project.path)
+          if (newBlueprints.some(bp => !saved.some(row => row.chapterNumber === bp.chapterNumber))) {
+            throw new Error(i18n.t('directory.noSavedBlueprints', { ns: 'commands' }))
           }
-
-          await saveAllBlueprints(merged)
-          useProjectStore.getState().refreshFileTree()
-          return t('workflowDefs.dirBlueprintsSaved')
+          void useProjectStore.getState().refreshFileTree()
+          return i18n.t('directory.verifiedSaved', { ns: 'commands', count: newBlueprints.length })
         },
       },
     ],

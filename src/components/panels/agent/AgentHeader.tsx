@@ -1,4 +1,6 @@
-import { Plus, MoreHorizontal, X, Server, Sparkles, ChevronRight } from 'lucide-react'
+import { Plus, MoreHorizontal, X, Server, Sparkles, ChevronRight, BookOpenCheck } from 'lucide-react'
+import StoryRevisionHistory from './StoryRevisionHistory'
+import { useProjectStore } from '../../../stores/project-store'
 import { useTranslation } from 'react-i18next'
 import { useAgentStore } from '../../../stores/agent-store'
 import { useLayoutStore } from '../../../stores/layout-store'
@@ -15,6 +17,9 @@ import { useOutsideClick } from '../../../hooks/useOutsideClick'
  */
 export default function AgentHeader() {
   const { t } = useTranslation('panels')
+  const projectPath = useProjectStore(s => s.currentProject?.path)
+  const showStoryHistory = useAgentStore(s => s.showStoryHistory)
+  const setShowStoryHistory = useAgentStore(s => s.setShowStoryHistory)
   const { createConversation, toggleHistory, showHistory, getActiveConversation } = useAgentStore()
   const toggleAIPanel = useLayoutStore(s => s.toggleAIPanel)
   const [showMore, setShowMore] = useState(false)
@@ -63,6 +68,8 @@ export default function AgentHeader() {
 
       {/* 右侧工具按钮组 */}
       <div className="flex items-center gap-1.5 px-0.5 flex-shrink-0">
+        <IconBtn title={t('storyRevision.history')} disabled={!projectPath} onClick={() => setShowStoryHistory(true)} size={18}><BookOpenCheck size={14} /></IconBtn>
+        {showStoryHistory && <StoryRevisionHistory key={projectPath} />}
 
         {/* 新建对话按钮 */}
         <IconBtn

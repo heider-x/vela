@@ -128,7 +128,7 @@ export default function ManuscriptGroup({ files }: { files: FileNode[]; projectP
         <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{t('manuscript.chapters')}</span>
         {chapterFiles.length > 0 && (
           <span className="ml-auto text-[0.7rem]" style={{ color: 'var(--color-text-muted)' }}>
-            {chapterFiles.length} {t('common.chapters', { ns: 'common' })}
+            {chapterFiles.length} {t('chapters', { ns: 'common' })}
           </span>
         )}
       </div>

@@ -1,4 +1,11 @@
 {
+  "storyRevision": {
+    "processing": "Waiting for the model or tool · {{seconds}} seconds elapsed",
+    "impact": "Impact and preserved content",
+    "participants": "Characters present",
+    "fields": { "narrativePov": "Narrative perspective", "content": "Prose", "synopsis": "Synopsis", "charactersArch": "Character map", "globalGuidance": "Global writing guidance", "premise": "Premise", "worldbuilding": "Worldbuilding", "writingStyle": "Style", "goldenFinger": "Special ability", "genre": "Genre", "subGenre": "Subgenre", "title": "Title", "role": "Role", "purpose": "Chapter goal", "keyEvents": "Key events", "suspenseHook": "Hook", "userGuidance": "Chapter guidance", "appearance": "Appearance", "personality": "Personality", "background": "Background", "abilities": "Abilities", "motivation": "Motivation", "relationships": "Relationships", "arc": "Character arc", "notes": "Notes" },
+    "history": "Story changes", "description": "Review the impact and content of each change, or undo it.", "empty": "No story changes yet.", "undo": "Undo this change", "undone": "Undone", "applied": "Saved and verified", "before": "Before", "after": "After", "view": "View change", "hint": "Describe your intent: retire the antagonist earlier, or change a character’s future. The assistant will ask about important uncertainties."
+  },
   "sidebar": {
     "premise": "Premise",
     "premiseDesc": "Logline, core conflict, golden finger positioning",

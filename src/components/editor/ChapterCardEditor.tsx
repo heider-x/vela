@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Save, BookOpen, RefreshCw, Plus, Trash2,
-  Sparkles, PenLine
+  Sparkles, PenLine, GitBranch
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useProjectStore } from '../../stores/project-store'
@@ -10,15 +10,15 @@ import { useLayoutStore } from '../../stores/layout-store'
 import { ipc } from '../../services/ipc-client'
 import i18n from '../../i18n'
 import {
-  loadDirectoryBlueprints,
-  saveChapterBlueprint,
-  saveAllBlueprints,
   createDirectoryWorkflow,
   type ChapterBlueprint,
   type DirectoryWorkflowParams,
 } from '../../services/workflows/directory-workflow'
 import { guardDirectoryGeneration } from '../../services/workflow-guards'
 import DirectoryConfigDialog from '../dialogs/DirectoryConfigDialog'
+import StoryRehearsalDialog from '../dialogs/StoryRehearsalDialog'
+import { appendRehearsalGuidance } from '../../services/story-rehearsal'
+import type { RehearsalSession } from '../../shared/rehearsal-session'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Textarea } from '../ui/Textarea'
@@ -62,8 +62,15 @@ function getRoleLabel(role: string): string {
 
 /** 章节蓝图编辑器 — 读写 directory.json */
 export default function ChapterCardEditor() {
+  const project = useProjectStore(s => s.currentProject)
+  return <ChapterCardEditorSession key={project ? `${project.id}:${project.path}` : 'closed'} />
+}
+
+function ChapterCardEditorSession() {
   const { t } = useTranslation('editors')
   const currentProject = useProjectStore(s => s.currentProject)
+  const projectId = currentProject?.id
+  const projectPath = currentProject?.path
   // ✅ action 用 getState() 获取，不订阅 workflow store 高频更新
   const startWorkflow = useWorkflowStore.getState().startWorkflow
   const addLog = useWorkflowStore.getState().addLog
@@ -71,29 +78,42 @@ export default function ChapterCardEditor() {
   const [selectedIdx, setSelectedIdx] = useState<number>(0)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [dirty, setDirty] = useState(false)
+  const [savedBlueprints, setSavedBlueprints] = useState<ChapterBlueprint[]>([])
+  const [saveError, setSaveError] = useState('')
+  const [generatedNotice, setGeneratedNotice] = useState('')
+  const [rehearsalSessions, setRehearsalSessions] = useState(new Map<number, RehearsalSession>())
+  const guidanceRef = useRef<HTMLTextAreaElement>(null)
+  const [focusGuidance, setFocusGuidance] = useState(false)
+  const [deletedBlueprints, setDeletedBlueprints] = useState<ChapterBlueprint[]>([])
+  const dirty = JSON.stringify(blueprints) !== JSON.stringify(savedBlueprints)
   // 下一个可写的章节号
   const [nextWriteChapter, setNextWriteChapter] = useState<number | null>(null)
 
   // 蓝图生成弹窗（替代原 inline 批量面板）
   const [showBlueprintDialog, setShowBlueprintDialog] = useState(false)
+  const [showRehearsal, setShowRehearsal] = useState(false)
 
   const loadBlueprints = useCallback(async () => {
-    if (!currentProject) return
+    if (!projectId || !projectPath) return
     setLoading(true)
     try {
-      const data = await loadDirectoryBlueprints()
-      setBlueprints(data)
-      if (data.length > 0) setSelectedIdx(0)
+      const data = await ipc.invoke('db:blueprint-get-all', projectPath)
       // 获取下一个待写章节号
       const maxFinalized = await ipc.invoke('db:draft-get-max-finalized-chapter')
+      const active = useProjectStore.getState().currentProject
+      if (active?.id !== projectId || active.path !== projectPath) return
+      setBlueprints(data)
+      setSavedBlueprints(data)
+      setDeletedBlueprints([])
+      setSaveError('')
+      if (data.length > 0) setSelectedIdx(0)
       setNextWriteChapter(maxFinalized !== null ? maxFinalized + 1 : 1)
     } catch {
-      addLog('error', t('chapterCard.readBlueprintFailed'))
+      addLog('error', i18n.t('chapterCard.readBlueprintFailed', { ns: 'editors' }))
+      setSaveError(i18n.t('chapterCard.readBlueprintFailed', { ns: 'editors' }))
     }
     setLoading(false)
-    setDirty(false)
-  }, [currentProject, addLog])
+  }, [projectId, projectPath, addLog])
 
   useEffect(() => {
     let mounted = true
@@ -105,44 +125,101 @@ export default function ChapterCardEditor() {
   useEffect(() => {
     return globalEventBus.on('WORKFLOW_COMPLETE', (payload) => {
       if (payload.type === 'directory') {
+        if (dirty) {
+          toast.warning(t('rehearsal.externalBlueprintChange'))
+          return
+        }
         loadBlueprints()
       }
     })
-  }, [loadBlueprints])
+  }, [loadBlueprints, dirty, t])
+
+  useEffect(() => globalEventBus.on('BLUEPRINTS_UPDATED', payload => {
+    if (payload.projectPath !== projectPath) return
+    setGeneratedNotice(t(dirty ? 'chapterCard.generatedPending' : 'chapterCard.generatedVisible', { count: payload.count }))
+    if (!dirty) void loadBlueprints()
+  }), [projectPath, dirty, loadBlueprints, t])
+
+  useEffect(() => globalEventBus.on('STORY_REVISED', payload => {
+    if (payload.projectPath !== projectPath || !payload.revision.changes.some(c => c.kind === 'blueprint')) return
+    if (dirty) { toast.warning(t('rehearsal.externalBlueprintChange')); return }
+    void loadBlueprints()
+  }), [projectPath, dirty, loadBlueprints, t])
 
   const selected = blueprints[selectedIdx] ?? null
+  const selectedChapter = selected?.chapterNumber
+  const rememberSession = useCallback((session: RehearsalSession) => {
+    if (selectedChapter !== undefined) setRehearsalSessions(prev => new Map(prev).set(selectedChapter, session))
+  }, [selectedChapter])
+  const selectedDirty = !!selected && JSON.stringify(selected) !== JSON.stringify(savedBlueprints.find(bp => bp.chapterNumber === selected.chapterNumber))
+
+  useEffect(() => {
+    if (!showRehearsal && focusGuidance) {
+      // Wait until the modal's focus restoration finishes.
+      const timer = setTimeout(() => { guidanceRef.current?.focus(); guidanceRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); setFocusGuidance(false) }, 350)
+      return () => clearTimeout(timer)
+    }
+  }, [showRehearsal, focusGuidance])
+
+  const reload = async () => {
+    if (dirty && !await confirm(t('chapterCard.reloadUnsaved'), { confirmText: t('chapterCard.discardReload') })) return
+    await loadBlueprints()
+  }
+
+  const commit = async (items: ChapterBlueprint[], deleted: number[]) => {
+    const result = await ipc.invoke('db:blueprint-commit', items, deleted, savedBlueprints, currentProject!.path)
+    if (!result.success) throw new Error(result.error?.includes('BLUEPRINT_CONFLICT') ? t('chapterCard.saveConflict') : result.error || 'SAVE_FAILED')
+  }
 
   /** 更新选中章节蓝图的字段 */
   const updateField = <K extends keyof ChapterBlueprint>(key: K, value: ChapterBlueprint[K]) => {
     setBlueprints(prev =>
       prev.map((b, i) => (i === selectedIdx ? { ...b, [key]: value } : b))
     )
-    setDirty(true)
   }
 
   /** 保存当前章节蓝图 */
   const handleSaveOne = async () => {
     if (!currentProject || !selected) return
     setSaving(true)
-    await saveChapterBlueprint(selected)
-    setSaving(false)
-    setDirty(false)
-    addLog('info', t('chapterCard.blueprintSaved', { chapter: selected.chapterNumber }))
+    setSaveError('')
+    try {
+      await commit([selected], [])
+      setSavedBlueprints(previous => {
+        const saved = previous.filter(bp => bp.chapterNumber !== selected.chapterNumber)
+        return [...saved, selected].sort((a, b) => a.chapterNumber - b.chapterNumber)
+      })
+      addLog('info', t('chapterCard.blueprintSaved', { chapter: selected.chapterNumber }))
+      toast.success(t('chapterCard.blueprintSaved', { chapter: selected.chapterNumber }))
+    } catch (error) {
+      setSaveError(t('rehearsal.saveFailed', { message: String(error) }))
+    } finally {
+      setSaving(false)
+    }
   }
 
   /** 全量保存（每章写入独立 JSON 文件） */
   const handleSaveAll = async () => {
     if (!currentProject) return
     setSaving(true)
-    await saveAllBlueprints(blueprints)
-    setSaving(false)
-    setDirty(false)
-    addLog('info', t('chapterCard.allBlueprintsSaved', { count: blueprints.length }))
+    setSaveError('')
+    try {
+      const changed = blueprints.filter(bp => JSON.stringify(bp) !== JSON.stringify(savedBlueprints.find(saved => saved.chapterNumber === bp.chapterNumber)))
+      const deleted = savedBlueprints.filter(bp => !blueprints.some(current => current.chapterNumber === bp.chapterNumber)).map(bp => bp.chapterNumber)
+      await commit(changed, deleted)
+      setSavedBlueprints(blueprints)
+      setDeletedBlueprints([])
+      addLog('info', t('chapterCard.allBlueprintsSaved', { count: blueprints.length }))
+    } catch (error) {
+      setSaveError(t('rehearsal.saveFailed', { message: String(error) }))
+    } finally {
+      setSaving(false)
+    }
   }
 
   /** 新建空章节 */
   const handleAddChapter = () => {
-    const maxNum = blueprints.reduce((m, b) => Math.max(m, b.chapterNumber), 0)
+    const maxNum = [...blueprints, ...savedBlueprints, ...deletedBlueprints].reduce((m, b) => Math.max(m, b.chapterNumber), 0)
     const newBlueprint: ChapterBlueprint = {
       chapterNumber: maxNum + 1,
       title: '',
@@ -157,7 +234,6 @@ export default function ChapterCardEditor() {
     }
     setBlueprints(prev => [...prev, newBlueprint])
     setSelectedIdx(blueprints.length)
-    setDirty(true)
   }
 
   /** 删除选中章节 */
@@ -169,10 +245,10 @@ export default function ChapterCardEditor() {
       danger: true,
     })
     if (!ok) return
+    setDeletedBlueprints(prev => [...prev, selected])
     const newList = blueprints.filter((_, i) => i !== selectedIdx)
     setBlueprints(newList)
     setSelectedIdx(Math.max(0, selectedIdx - 1))
-    setDirty(true)
   }
 
   /** 触发蓝图批量生成（来自 DirectoryConfigDialog 的确认回调） */
@@ -235,10 +311,10 @@ export default function ChapterCardEditor() {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="@container h-full flex flex-col overflow-hidden">
       {/* 顶部工具栏 */}
       <div
-        className="flex items-center justify-between gap-2 px-3 h-10 flex-shrink-0 border-b"
+        className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 flex-shrink-0 border-b"
         style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-sidebar)' }}
       >
         <div className="flex items-center gap-1.5">
@@ -253,9 +329,9 @@ export default function ChapterCardEditor() {
           </span>
           {dirty && <span className="text-[0.7rem]" style={{ color: 'var(--color-accent)' }}>{t('chapterCard.unsaved')}</span>}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2">
           {/* 写作入口 — 仅下一章可写时显示 */}
-          {nextWriteChapter !== null && (
+          {nextWriteChapter !== null && blueprints.some(bp => bp.chapterNumber === nextWriteChapter) && (
             <Button
               variant="ai"
               size="sm"
@@ -278,11 +354,12 @@ export default function ChapterCardEditor() {
             <Sparkles size={12} />
             {t('chapterCard.aiGenerateBlueprint')}
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => loadBlueprints()} title={t('chapterCard.reload')} disabled={loading}>
+          <Button variant="ghost" size="icon" onClick={() => void reload()} title={t('chapterCard.reload')} aria-label={t('chapterCard.reload')} disabled={loading || saving}>
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleAddChapter} title={t('chapterCard.newChapter')}>
+          <Button variant="outline" size="sm" onClick={handleAddChapter} disabled={saving} title={t('chapterCard.newChapter')}>
             <Plus size={14} />
+            {t('chapterCard.newChapter')}
           </Button>
           {dirty && (
             <Button variant="outline" size="sm" onClick={handleSaveAll} disabled={saving}>
@@ -291,6 +368,18 @@ export default function ChapterCardEditor() {
           )}
         </div>
       </div>
+      {saveError && <p role="alert" className="px-4 py-3 text-sm text-[var(--color-error)] border-b border-[var(--color-border)]">{saveError}</p>}
+      {generatedNotice && <div role="status" className="px-4 py-2 text-sm border-b border-[var(--color-border)] flex flex-wrap items-center gap-2">
+        <span>{generatedNotice}</span>
+        {dirty && <Button variant="outline" onClick={() => void reload()}>{t('chapterCard.viewGenerated')}</Button>}
+      </div>}
+      {deletedBlueprints.length > 0 && <div role="status" className="px-4 py-2 flex flex-wrap items-center gap-3 text-sm border-b border-[var(--color-border)]">
+        <span>{t('chapterCard.pendingDelete', { count: deletedBlueprints.length })}</span>
+        <Button variant="outline" disabled={saving} onClick={() => {
+          setBlueprints(prev => [...prev, ...deletedBlueprints].sort((a, b) => a.chapterNumber - b.chapterNumber))
+          setDeletedBlueprints([])
+        }}>{t('chapterCard.undoDelete')}</Button>
+      </div>}
 
       {/* 蓝图生成配置弹窗 */}
       <DirectoryConfigDialog
@@ -299,12 +388,30 @@ export default function ChapterCardEditor() {
         existingCount={blueprints.length}
         onConfirm={handleBatchGenerate}
       />
+      {selected && <StoryRehearsalDialog
+        key={selected.chapterNumber}
+        project={currentProject}
+        blueprint={selected}
+        isOpen={showRehearsal}
+        session={rehearsalSessions.get(selected.chapterNumber)}
+        onSessionChange={rememberSession}
+        onClose={() => setShowRehearsal(false)}
+        onAdopt={(guidance, original) => {
+          const activeProject = useProjectStore.getState().currentProject
+          if (activeProject?.id !== currentProject.id || activeProject.path !== currentProject.path ||
+              JSON.stringify(selected) !== JSON.stringify(original)) return false
+          setBlueprints(prev => prev.map((bp, index) => index === selectedIdx ? appendRehearsalGuidance(bp, guidance) : bp))
+          setFocusGuidance(true)
+          toast.success(t('rehearsal.adopted'))
+          return true
+        }}
+      />}
 
       {/* 主区域：左侧列表 + 右侧编辑 */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col @xl:flex-row min-h-0 overflow-hidden">
         {/* 左侧章节列表 */}
         <div
-          className="flex flex-col flex-shrink-0 w-[240px] border-r overflow-hidden"
+          className="flex flex-col shrink-0 w-full @xl:w-44 @4xl:w-56 max-h-36 @xl:max-h-none border-r border-b overflow-hidden"
           style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-sidebar)' }}
         >
           {blueprints.length === 0 ? (
@@ -315,10 +422,10 @@ export default function ChapterCardEditor() {
           ) : (
           <div className="flex-1 overflow-y-auto p-1">
             {blueprints.map((bp, idx) => (
-              <div
+              <button type="button" aria-pressed={selectedIdx === idx}
                 key={bp.chapterNumber}
                 className={cn(
-                  'group relative px-2.5 py-2 rounded-md text-xs cursor-pointer mb-0.5 transition-colors',
+                  'group relative w-full text-left px-3 py-3 rounded-md text-sm cursor-pointer mb-0.5 transition-colors',
                   selectedIdx === idx
                     ? 'bg-[var(--color-active)] text-[var(--color-text)]'
                     : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-hover)]'
@@ -357,23 +464,26 @@ export default function ChapterCardEditor() {
                     </span>
                   )}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
           )}
         </div>
 
         {/* 右侧编辑区 */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-w-0 min-h-0 overflow-y-auto">
           {selected ? (
-            <div className="max-w-2xl mx-auto px-5 py-4">
+            <div className="max-w-3xl mx-auto px-5 py-5 [&_textarea]:text-sm [&_textarea]:leading-7">
               {/* 编辑区头部 */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <h3 className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
                   {t('chapterCard.chapterTitle', { chapter: selected.chapterNumber, title: selected.title || t('chapterCard.unnamed') })}
                 </h3>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
                   {/* 仅下一章允许写作 */}
+                  <Button variant="outline" size="sm" disabled={saving} onClick={() => setShowRehearsal(true)}>
+                    <GitBranch size={13} />{t('rehearsal.title')}
+                  </Button>
                   {nextWriteChapter !== null && selected.chapterNumber === nextWriteChapter && (
                     <Button
                       variant="ai"
@@ -384,10 +494,10 @@ export default function ChapterCardEditor() {
                       <PenLine size={12} /> {t('chapterCard.writeThisChapter')}
                     </Button>
                   )}
-                  <Button variant="ghost" size="icon" onClick={handleDeleteChapter} title={t('chapterCard.deleteThisChapter')}>
+                  <Button variant="ghost" size="icon" disabled={saving} onClick={handleDeleteChapter} title={t('chapterCard.deleteThisChapter')} aria-label={t('chapterCard.deleteThisChapter')}>
                     <Trash2 size={13} style={{ color: 'var(--color-text-muted)' }} />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleSaveOne} disabled={saving}>
+                  <Button variant="outline" size="sm" onClick={handleSaveOne} disabled={saving || !selectedDirty}>
                     <Save size={12} /> {saving ? t('chapterCard.saving') : t('chapterCard.save')}
                   </Button>
                 </div>
@@ -397,20 +507,18 @@ export default function ChapterCardEditor() {
                 {/* 基本信息 */}
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <Label>{t('chapterCard.chapterNumber')}</Label>
+                    <Label htmlFor="blueprint-number">{t('chapterCard.chapterNumber')}</Label>
                     <Input
+                      id="blueprint-number"
                       type="number"
                       value={selected.chapterNumber}
-                      onChange={e => updateField('chapterNumber', (e.target.value === '' ? '' : parseInt(e.target.value)) as number)}
-                      onBlur={() => {
-                        const v = Number(selected.chapterNumber);
-                        if (!v || v < 1) updateField('chapterNumber', 1)
-                      }}
+                      readOnly title={t('chapterCard.numberFixed')}
                     />
                   </div>
                   <div className="col-span-2">
-                    <Label>{t('chapterCard.chapterTitleLabel')}</Label>
+                    <Label htmlFor="blueprint-title">{t('chapterCard.chapterTitleLabel')}</Label>
                     <Input
+                      id="blueprint-title"
                       value={selected.title}
                       onChange={e => updateField('title', e.target.value)}
                       placeholder={t('chapterCard.chapterTitlePlaceholder')}
@@ -473,7 +581,7 @@ export default function ChapterCardEditor() {
                     backgroundColor: 'rgba(var(--accent-rgb, 99 102 241), 0.06)',
                   }}
                 >
-                  <Label className="flex items-center gap-1.5">
+                  <Label htmlFor="blueprint-guidance" className="flex flex-wrap items-center gap-1.5">
                     <span>{t('chapterCard.authorGuidance')}</span>
                     <span
                       className="text-[0.7rem] font-normal"
@@ -483,6 +591,7 @@ export default function ChapterCardEditor() {
                     </span>
                   </Label>
                   <Textarea
+                    id="blueprint-guidance" ref={guidanceRef}
                     value={selected.userGuidance}
                     onChange={e => updateField('userGuidance', e.target.value)}
                     placeholder={t('chapterCard.authorGuidancePlaceholder')}
@@ -520,13 +629,18 @@ export default function ChapterCardEditor() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
+            <div className="flex flex-col items-center justify-center h-full gap-4 px-6 text-center text-[var(--color-text-secondary)]">
               <BookOpen size={36} />
-              <span className="text-sm">{t('chapterCard.selectChapter')}</span>
+              <span className="text-sm">{t(blueprints.length ? 'chapterCard.selectChapter' : 'chapterCard.emptyStart')}</span>
+              {!blueprints.length && <Button onClick={handleAddChapter}><Plus size={16} />{t('chapterCard.createFirst')}</Button>}
             </div>
           )}
         </div>
       </div>
+      {selected && <div className="shrink-0 px-4 py-3 border-t border-[var(--color-border)] flex flex-wrap items-center justify-between gap-2 bg-[var(--color-sidebar)]">
+        <span className="text-sm text-[var(--color-text-secondary)]">{t(selectedDirty ? 'chapterCard.chapterPending' : 'chapterCard.chapterSaved', { chapter: selected.chapterNumber })}</span>
+        <Button onClick={handleSaveOne} disabled={saving || !selectedDirty}><Save size={14} />{t('chapterCard.saveCurrent')}</Button>
+      </div>}
     </div>
   )
 }

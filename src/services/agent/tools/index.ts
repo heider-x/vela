@@ -16,11 +16,12 @@ import { readDraftsTool } from './read-drafts.tool'
 import { listChaptersTool } from './list-chapters.tool'
 import { writeFileTool } from './write-file.tool'
 import { openEditorTool } from './open-editor.tool'
-import { startWorkflowTool } from './start-workflow.tool'
 import { updateConfigTool } from './update-config.tool'
+import { storyIndexTool, storyReadTool, storyReviseTool, storyHistoryTool, storyUndoTool, storyRewriteDraftTool } from './story-content.tool'
 
 /** 所有内置 Tool（供外部引用） */
 export const builtinTools = [
+  storyIndexTool, storyReadTool, storyRewriteDraftTool, storyReviseTool, storyHistoryTool, storyUndoTool,
   // 只读 Tool（自动执行）
   readFileTool,
   searchKnowledgeTool,
@@ -33,7 +34,6 @@ export const builtinTools = [
   // 行动 Tool（需确认）
   writeFileTool,
   openEditorTool,
-  startWorkflowTool,
   updateConfigTool,
 ]
 
