@@ -50,3 +50,6 @@ realistic-benchmark.mjs
 stress-test.mjs
 ci-validate.sh
 
+
+# Local UI regression artifacts
+.test-output/
