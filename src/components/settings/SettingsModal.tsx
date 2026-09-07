@@ -20,6 +20,7 @@ import { NativeSelect } from '../ui/NativeSelect'
 import { cn } from '../../lib/utils'
 import { ipc } from '../../services/ipc-client'
 import { Switch } from '../ui/Switch'
+import OllamaModelPicker from './OllamaModelPicker'
 
 // 打赏/赞助 图片资源（通过 import 让 Vite 处理路径，确保打包后可正常加载）
 import wepayImg from '/buyme/wepay.jpg?url'
@@ -116,7 +117,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
           >
             <div>
               <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
-                {t(`general.${section}`)}
+                {t(`general.${section === 'llm' ? 'models' : section}`)}
               </h2>
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
                 {t(SECTIONS.find((s) => s.id === section)?.descriptionKey ?? '')}
@@ -226,6 +227,7 @@ function LLMSection({
   const setDefaultModel = useLLMStore(s => s.setDefaultModel)
   const setDefaultEmbeddingModel = useLLMStore(s => s.setDefaultEmbeddingModel)
   const [editingModel, setEditingModel] = useState<ModelProfile | null>(null)
+  const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
   useEffect(() => {
     if (!loaded) loadModels()
@@ -265,23 +267,30 @@ function LLMSection({
   const handleSave = async () => {
     if (!editingModel) return
     setSaving(true)
-    await saveModel(editingModel)
-    // 新增模型后，如果该分类还没有默认则自动设为默认
-    const countBefore = filtered.length
-    if (countBefore === 0) {
-      if (isEmbeddingSection) {
-        setDefaultEmbeddingModel(editingModel.id)
-      } else {
-        setDefaultModel(editingModel.id)
+    setSaveError('')
+    try {
+      if (!await saveModel(editingModel)) throw new Error('SAVE_FAILED')
+      // 新增模型后，如果该分类还没有默认则自动设为默认
+      const countBefore = filtered.length
+      if (countBefore === 0) {
+        if (isEmbeddingSection) {
+          setDefaultEmbeddingModel(editingModel.id)
+        } else {
+          setDefaultModel(editingModel.id)
+        }
       }
+      setEditingModel(null)
+    } catch {
+      setSaveError(t('models.saveFailure'))
+    } finally {
+      setSaving(false)
     }
-    setEditingModel(null)
-    setSaving(false)
   }
 
 
   return (
     <div className="space-y-4">
+      {saveError && <p role="alert" className="text-sm text-[var(--color-error)]">{saveError}</p>}
       {/* 模型编辑表单 */}
       {editingModel && (
         <ModelForm
@@ -476,7 +485,8 @@ function ModelForm({
       provider,
       protocol: (p?.protocol ?? 'openai') as 'openai' | 'gemini',
       baseUrl: p?.baseUrl ?? '',
-      modelName: defaultModelName,
+      modelName: provider === 'ollama' ? '' : defaultModelName,
+      apiKey: provider === 'ollama' ? '' : model.apiKey,
       maxTokens: firstModel?.maxTokens ?? 4096,
     })
   }
@@ -525,7 +535,7 @@ function ModelForm({
 
       {/* 显示名称 */}
       <div>
-        <Label>{t('models.modelName')}</Label>
+        <Label>{t('models.displayName')}</Label>
         <Input
           value={model.name}
           onChange={(e) => up('name', e.target.value)}
@@ -538,6 +548,7 @@ function ModelForm({
         <div>
           <Label>{t('models.provider')}</Label>
           <NativeSelect
+            aria-label={t('models.provider')}
             value={model.provider}
             onChange={(e) => handleProviderChange(e.target.value as ModelProfile['provider'])}
           >
@@ -561,8 +572,8 @@ function ModelForm({
         </div>
       </div>
 
-      {/* 模型标识：有预设时显示下拉，否则纯输入 */}
-      <div>
+      {/* Ollama reads the installed models from the configured server. */}
+      {model.provider === 'ollama' ? <OllamaModelPicker model={model} onChange={onChange} /> : <div>
         <div className="flex items-center justify-between mb-1">
           <Label className="mb-0">{t('models.modelName')}</Label>
           {presetModels.length > 0 && (
@@ -609,12 +620,13 @@ function ModelForm({
             />
           </div>
         )}
-      </div>
+      </div>}
 
       {/* API 地址 */}
       <div>
         <Label>{t('models.baseUrl')}</Label>
         <Input
+          aria-label={t('models.baseUrl')}
           value={model.baseUrl}
           onChange={(e) => up('baseUrl', e.target.value)}
           placeholder={t('models.baseUrlPlaceholder')}
@@ -689,12 +701,12 @@ function ModelForm({
         <Button
           className="flex-1"
           onClick={onSave}
-          disabled={saving || !model.name || (!model.apiKey && model.provider !== 'ollama')}
+          disabled={saving || !model.name.trim() || !model.modelName.trim() || !model.baseUrl.trim() || (!model.apiKey && model.provider !== 'ollama')}
         >
           <Save size={13} />
           {saving ? t('models.saving') : t('models.saveConfig')}
         </Button>
-        <Button variant="ghost" onClick={onCancel}>{t('draftEditor.cancel')}</Button>
+        <Button variant="ghost" onClick={onCancel}>{t('cancel', { ns: 'common' })}</Button>
       </div>
       {testResult && (
         <div className={`text-xs p-2 rounded ${testResult.success ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'} break-all`}>

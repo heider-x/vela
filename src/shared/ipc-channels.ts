@@ -112,6 +112,7 @@ export interface LLMChannels {
     args: []
     return: ModelProfile[]
   }
+  'llm:ollama-models': { args: [baseUrl: string, apiKey?: string]; return: { success: boolean; models: string[]; error?: string } }
   'llm:save-model': {
     args: [model: ModelProfile]
     return: { success: boolean }

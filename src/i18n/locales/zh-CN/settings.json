@@ -29,6 +29,17 @@
     "hint": "提示"
   },
   "models": {
+    "displayName": "显示名称",
+    "ollamaInstalled": "Ollama 已安装模型",
+    "ollamaRefresh": "刷新模型列表",
+    "ollamaSelect": "选择服务中已安装的模型",
+    "ollamaLoading": "正在读取 Ollama 模型列表…",
+    "ollamaCount": "已读取 {{count}} 个模型。选择后会填入模型标识。",
+    "ollamaEmpty": "服务已连接，但没有已安装的模型。请先在 Ollama 安装模型，再刷新。",
+    "ollamaHint": "从配置的服务地址读取模型；也可手动填写标识。",
+    "ollamaFailed": "读取失败（{{error}}）。请检查 Ollama 是否运行及服务地址，也可手动填写后测试连接。",
+    "ollamaIdentifier": "模型标识（可手动填写）",
+    "saveFailure": "模型配置保存失败，表单已保留，请重试。",
     "title": "模型配置",
     "configuredCount": "已配置 {{count}} 个{{label}}",
     "addModel": "添加{{label}}",

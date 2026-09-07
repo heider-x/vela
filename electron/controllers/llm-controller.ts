@@ -2,6 +2,7 @@ import { ipcMain, BrowserWindow } from 'electron'
 import { readJsonFile, writeJsonFile, MODELS_CONFIG_PATH, GLOBAL_CONFIG_PATH, DEFAULT_GLOBAL_CONFIG } from '../utils/config-utils'
 import { ModelProfile, GlobalConfig } from '../../src/shared/ipc-channels'
 import { LLMFactory } from '../llm/llm-factory'
+import { listOllamaModels } from '../llm/ollama-models'
 
 const activeStreams = new Map<string, AbortController>()
 
@@ -39,6 +40,16 @@ function applyProxyConfig() {
 }
 
 export function registerLLMController() {
+  ipcMain.handle('llm:ollama-models', async (_event, baseUrl: string, apiKey?: string) => {
+    try {
+      return { success: true, models: await listOllamaModels(baseUrl, apiKey) }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      const code = /^(INVALID_URL|INVALID_RESPONSE|HTTP_\d+)$/.test(message) ? message :
+        error instanceof Error && error.name === 'TimeoutError' ? 'TIMEOUT' : 'CONNECTION_FAILED'
+      return { success: false, models: [], error: code }
+    }
+  })
   ipcMain.handle('llm:generate', async (_event, request: { modelId: string; messages: Array<{ role: string; content: string }>; temperature?: number; maxTokens?: number; responseFormat?: { type: string }; thinking?: boolean }) => {
     try {
       applyProxyConfig()
