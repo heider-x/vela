@@ -46,6 +46,7 @@ export default function RightToolWindowBar() {
     >
       {/* AI Agent 面板按钮 */}
       <button
+        data-tour="agent-entry"
         onClick={() => handleClick('agent')}
         title={t('activityBar.agent')}
         className="tool-btn"

@@ -44,5 +44,46 @@
     "discardAndClose": "Discard & Close",
     "unsavedConfirm": "The following files have unsaved changes:\n{{names}}\n\nAre you sure you want to close the project? Unsaved changes will be lost.",
     "closeProjectConfirm": "The following files have unsaved changes:\n{{names}}\n\nAre you sure you want to close the project? Unsaved changes will be lost."
+  },
+  "featureTour": {
+    "entry": "Feature tour",
+    "label": "Meet your writing partner",
+    "skip": "Skip tour",
+    "later": "Maybe later",
+    "previous": "Back",
+    "next": "Next feature",
+    "configure": "Set up a model",
+    "finish": "Ready to write",
+    "reopen": "You can replay this tour from “Feature tour” in the top bar.",
+    "exampleLabel": "Try saying this",
+    "copy": "Copy example",
+    "copied": "Copied. Paste into the assistant and send when ready.",
+    "copyFailed": "Could not copy. Select the example and copy it manually.",
+    "agent": {
+      "title": "Give your story a new direction",
+      "description": "Describe your creative intent. The assistant reads the current project and adjusts related settings, characters and future chapter plans. It asks you about important uncertainties.",
+      "example": "Bring the antagonist’s exit forward, then adjust the following plot and relationships. Keep the existing prose for now, and ask me about anything uncertain.",
+      "hint": "Open the AI assistant on the right. A project and generation model are needed. To revise existing prose, specify the chapter and the change."
+    },
+    "history": {
+      "title": "See what changed, and undo it",
+      "description": "The assistant records its content revisions. Review the impact and before-and-after text, then undo a revision if the affected content has not changed again.",
+      "hint": "Use “Story revision history” in the assistant header. For prose, try “Rewrite the latest unfinalized draft of chapter 2 in third person.” Finalized, archived and older drafts are protected."
+    },
+    "blueprints": {
+      "title": "Know what each chapter needs to do",
+      "description": "Blueprints collect the chapter purpose, key events, cast and suspense. Edit them yourself or generate them with AI, then ask the assistant to connect the next part of the story.",
+      "hint": "Open a project → Chapter blueprints in the left sidebar. Save your edits. Blueprints are plans; chapter prose is in Drafts."
+    },
+    "rehearsal": {
+      "title": "Rehearse three possible directions",
+      "description": "Select a chapter and describe your intent and constraints. Compare three plot directions, then try a short scene from your favourite before committing to it.",
+      "hint": "Chapter blueprints → select a chapter → Story rehearsal. Append your choice to author guidance and save. Copy scene excerpts separately before leaving the page."
+    },
+    "models": {
+      "title": "Two steps to start writing together",
+      "description": "Add your own generation model, then create or open a novel project. If you use local Ollama, start its service first.",
+      "hint": "Open Settings in the top bar. Generation models write prose. Full-text knowledge search works without an embedding model; vector search requires one."
+    }
   }
 }

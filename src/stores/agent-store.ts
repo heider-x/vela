@@ -1,4 +1,9 @@
 import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import { useProjectStore } from './project-store'
+import { assertStoryProject } from '../services/agent/story-revision-service'
+import { ipc } from '../services/ipc-client'
+import { globalEventBus } from '../shared/event-bus'
 import { useLLMStore } from './llm-store'
 import { buildAgentSystemPrompt } from '../services/agent/context-builder'
 import { runAgentLoop, type ToolCallInfo, type LLMMessage } from '../services/agent/agent-engine'
@@ -30,6 +35,7 @@ export interface AgentMessage {
 
 /** 单个会话 */
 export interface AgentConversation {
+  projectPath?: string
   id: string
   /** 会话标题（取自第一条用户消息前 20 个字符） */
   title: string
@@ -45,6 +51,8 @@ export interface AgentConversation {
 // ===== Store 状态接口 =====
 
 interface AgentState {
+  showStoryHistory: boolean
+  setShowStoryHistory: (show: boolean) => void
   /** 所有会话列表（最新的排在前面） */
   conversations: AgentConversation[]
   /** 当前活跃会话 ID */
@@ -106,7 +114,7 @@ const generateTitle = (content: string): string => {
 const generateHelpText = (): string => {
   const toolCount = toolRegistry.listAll().length
   const skillCount = skillRegistry.listAll().length
-  const t = (key: string) => i18n.t(key, { ns: 'stores' })
+  const t = (key: string) => i18n.t(key, { ns: 'panels' })
   const lines: string[] = [
     t('agent.helpTitle'),
     '',
@@ -142,7 +150,9 @@ let activeAbortController: AbortController | null = null
 
 // ===== Zustand Store =====
 
-export const useAgentStore = create<AgentState>()((set, get) => ({
+export const useAgentStore = create<AgentState>()(persist((set, get) => ({
+  showStoryHistory: false,
+  setShowStoryHistory: show => set({ showStoryHistory: show }),
   conversations: [],
   activeConversationId: null,
   showHistory: false,
@@ -153,7 +163,8 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
 
   getActiveConversation: () => {
     const { conversations, activeConversationId } = get()
-    return conversations.find(c => c.id === activeConversationId) ?? null
+    const path = useProjectStore.getState().currentProject?.path
+    return conversations.find(c => c.id === activeConversationId && c.projectPath === path) ?? null
   },
 
   initializeTools: () => {
@@ -170,8 +181,9 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
 
     const llmStore = useLLMStore.getState()
     const newConv: AgentConversation = {
+      projectPath: useProjectStore.getState().currentProject?.path,
       id: genId(),
-      title: i18n.t('agent.newConversation', { ns: 'stores' }),
+      title: i18n.t('agent.newConversation', { ns: 'panels' }),
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -302,6 +314,11 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
       conv = get().createConversation()
     }
     const convId = conv.id
+    const projectPath = conv.projectPath
+    const assertContext = () => {
+      if (projectPath) assertStoryProject(projectPath)
+      else if (useProjectStore.getState().currentProject) throw new Error('项目已切换，请在当前项目开启新对话。')
+    }
 
     // 构建用户消息
     const userMsg: AgentMessage = {
@@ -364,7 +381,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
 
       if (!modelId) {
         updateAssistantMsg(m => ({
-          ...m, content: i18n.t('agent.needModel', { ns: 'stores' }), streaming: false,
+          ...m, content: i18n.t('agent.needModel', { ns: 'panels' }), streaming: false,
         }))
         set({ generating: false })
         return
@@ -393,23 +410,25 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
           }
         }
         if (prefetchResults.length > 0) {
-          enrichedUserMessage = `${enrichedUserMessage}\n\n---\n${i18n.t('agent.contextReference', { ns: 'stores' })}\n\n${prefetchResults.join('\n\n---\n\n')}`
+          enrichedUserMessage = `${enrichedUserMessage}\n\n---\n${i18n.t('agent.contextReference', { ns: 'panels' })}\n\n${prefetchResults.join('\n\n---\n\n')}`
         }
       }
 
       // 构造历史消息（取最近 16 条非流式消息）
       const historyMessages: LLMMessage[] = currentConv.messages
-        .filter(m => !m.streaming && m.role !== 'system')
+        .filter(m => !m.streaming && m.role !== 'system' && m.id !== userMsg.id)
         .slice(-16)
-        .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+        .map(m => ({ role: m.role as 'user' | 'assistant', content: m.role === 'assistant' ? JSON.stringify({ message: m.content.replace(/^[\s\S]*<\/think>/i, '').replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '').trim(), toolCall: null }) : m.content }))
 
       // LLM 生成函数（封装为非流式调用，Agent 专用参数）
       const generateFn = async (messages: LLMMessage[], mid: string): Promise<string> => {
         const request = {
           modelId: mid,
           messages: messages.map(m => ({ role: m.role, content: m.content })),
-          maxTokens: 4096,     // Agent 需要足够 Token 空间来输出推理 + tool_call
+          maxTokens: Math.min(32768, llmStore.models.find(m => m.id === mid)?.maxTokens || 4096),
           temperature: 0.7,    // 创作场景适度随机
+          thinking: false,
+          responseFormat: { type: 'json_object' as const },
         }
         const response = await (window as unknown as { velaAPI: { invoke: (ch: string, ...args: unknown[]) => Promise<unknown> } }).velaAPI.invoke('llm:generate', request)
         const res = response as { success: boolean; content: string; error?: string }
@@ -448,15 +467,13 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
           onToolCallStart: (toolCall) => {
             updateAssistantMsg(m => ({
               ...m,
-              toolCalls: [...(m.toolCalls ?? []), toolCall],
+              toolCalls: [...(m.toolCalls ?? []).filter(tc => tc.id !== toolCall.id), toolCall],
             }))
           },
           onToolCallComplete: (toolCall) => {
             updateAssistantMsg(m => ({
               ...m,
-              toolCalls: (m.toolCalls ?? []).map(tc =>
-                tc.id === toolCall.id ? toolCall : tc
-              ),
+              toolCalls: [...(m.toolCalls ?? []).filter(tc => tc.id !== toolCall.id), toolCall],
             }))
           },
           onToolCallConfirmRequired: (toolCall) => {
@@ -474,6 +491,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
             })
           },
           onDone: (fullText, toolCalls, artifacts) => {
+            if (abortController.signal.aborted) return
             // 最终文本全量清洗，去除所有形式的 tool_call / tool_result 标签
             const cleanedText = fullText
               .replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '')
@@ -498,20 +516,23 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
             }))
           },
           onError: (error) => {
+            if (abortController.signal.aborted) return
             updateAssistantMsg(m => ({
               ...m,
-              content: i18n.t('agent.generationFailed', { ns: 'stores', error }),
+              content: [m.content, i18n.t('agent.generationFailed', { ns: 'panels', error })].filter(Boolean).join('\n\n'),
               streaming: false,
             }))
             set({ generating: false, activeRequestId: null })
           },
         },
         abortController.signal,
+        assertContext,
+        true,
       )
     } catch (error) {
       updateAssistantMsg(m => ({
         ...m,
-        content: i18n.t('agent.generationError', { ns: 'stores', error: String(error) }),
+        content: i18n.t('agent.generationError', { ns: 'panels', error: String(error) }),
         streaming: false,
       }))
       set({ generating: false, activeRequestId: null })
@@ -544,7 +565,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
       conversations: state.conversations.map(c => ({
         ...c,
         messages: c.messages.map(m =>
-          m.streaming ? { ...m, streaming: false, content: m.content + '\n\n_' + i18n.t('agent.generationStopped', { ns: 'stores' }) + '_' } : m
+          m.streaming ? { ...m, streaming: false, content: m.content + '\n\n_' + i18n.t('agent.generationStopped', { ns: 'panels' }) + '_' } : m
         ),
       })),
     }))
@@ -557,4 +578,19 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
       pendingConfirmations.delete(toolCallId)
     }
   },
+}), {
+  name: 'vela-author-conversations-v1',
+  storage: createJSONStorage(() => ({
+    getItem: () => ipc.invoke('agent:state-read'),
+    setItem: async (_name, value) => {
+      try { await ipc.invoke('agent:state-write', value) }
+      catch { globalEventBus.emit('SYSTEM_NOTICE', { level: 'warn', message: '对话记录未能保存到本机；作品内容与剧情调整记录独立保存。' }) }
+    },
+    removeItem: async () => { await ipc.invoke('agent:state-write', JSON.stringify({ state: { conversations: [], activeConversationId: null }, version: 0 })) },
+  })),
+  partialize: state => ({
+    conversations: state.conversations.map(c => ({ ...c, messages: c.messages.map(m => ({ ...m, streaming: false, toolCalls: m.toolCalls?.map(tc => ['pending', 'running', 'waiting_confirm'].includes(tc.status) ? { ...tc, status: 'failed' as const, error: '应用重开，未完成的操作已停止。' } : tc) })) })),
+    activeConversationId: state.activeConversationId,
+    defaultMode: state.defaultMode,
+  }),
 }))

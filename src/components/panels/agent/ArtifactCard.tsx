@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import type { ToolArtifact } from '../../../services/agent/tool-registry'
 import { useEditorStore } from '../../../stores/editor-store'
 import { ipc } from '../../../services/ipc-client'
+import { useAgentStore } from '../../../stores/agent-store'
 
 interface Props {
   artifact: ToolArtifact
@@ -44,6 +45,8 @@ function typeLabel(type: ToolArtifact['type'], t: (key: string) => string): stri
 export default function ArtifactCard({ artifact }: Props) {
   const { t } = useTranslation('panels')
   const { type, name, path } = artifact
+
+  if (type === 'story_revision') return <button className="artifact-card w-full text-left" onClick={() => useAgentStore.getState().setShowStoryHistory(true)}><FileText size={14} /><span className="artifact-name">{name}</span><span className="artifact-type">{t('storyRevision.view')}</span></button>
 
   const handleClick = async () => {
     if (path && (type === 'file_created' || type === 'file_modified' || type === 'tab_opened')) {

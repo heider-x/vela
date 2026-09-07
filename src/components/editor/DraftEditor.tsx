@@ -21,6 +21,7 @@ import {
 import { getPendingRevisions, getReviewsForVersion, type RevisionEntry } from '../../services/draft-index'
 import { readDraftBody } from '../../stores/draft-store'
 import { ipc } from '../../services/ipc-client'
+import { globalEventBus } from '../../shared/event-bus'
 
 import { DRAFT_STATUS_LABEL, DRAFT_STATUS_COLOR } from '../../shared/draft-status'
 import { PostProcessStatusPanel } from '../ui/PostProcessStatusPanel'
@@ -43,6 +44,10 @@ export default function DraftEditor({ filePath, content }: Props) {
   const [meta, setMeta] = useState<(DraftMeta & { chapterTitle?: string; filePath?: string }) | null>(null)
   const [pendingRevisions, setPendingRevisions] = useState<RevisionEntry[]>([])
   const [reviewCount, setReviewCount] = useState(0)
+  const [storyRefresh, setStoryRefresh] = useState(0)
+  useEffect(() => globalEventBus.on('STORY_REVISED', ({ projectPath, revision }) => {
+    if (projectPath === useProjectStore.getState().currentProject?.path && revision.changes.some(c => c.kind === 'draft' && filePath === `vela://draft/${c.id}`)) setStoryRefresh(n => n + 1)
+  }), [filePath])
 
   // 【BUG1&2 修复】合并视图弹窗数据（不再占用 Tab）
   const [mergeData, setMergeData] = useState<{
@@ -79,7 +84,7 @@ export default function DraftEditor({ filePath, content }: Props) {
     return () => {
       cancelled = true
     }
-  }, [filePath])
+  }, [filePath, storyRefresh])
 
   const status: DraftStatus = meta?.status ?? 'draft'
   const isReadonly = status === 'finalized' || status === 'archived'
@@ -108,6 +113,7 @@ export default function DraftEditor({ filePath, content }: Props) {
   const [charCount, setCharCount] = useState(0)
   const isDirty = useEditorStore(s => s.tabs.find(t => t.filePath === filePath)?.dirty ?? false)
   const currentBodyRef = useRef(content)
+  useEffect(() => { currentBodyRef.current = content }, [content])
 
   const currentProject = useProjectStore(s => s.currentProject)
 
@@ -476,7 +482,9 @@ export default function DraftEditor({ filePath, content }: Props) {
           onCharCountChange={setCharCount}
           onChange={(text) => {
             currentBodyRef.current = text
-            useEditorStore.getState().updateTabContent(filePath, text)
+            const editor = useEditorStore.getState()
+            const tab = editor.tabs.find(tab => tab.filePath === filePath && tab.type === 'chapter')
+            if (tab) editor.updateTabContent(tab.id, text)
           }}
           onSave={(text) => doSave(text)}
         />

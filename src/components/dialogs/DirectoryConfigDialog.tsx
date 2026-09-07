@@ -37,7 +37,7 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
   // 节奏指导
   const [pacingGuidance, setPacingGuidance] = useState('')
 
-  const isBatchRunning = useWorkflowStore(s => s.isTypeRunning('batch_generate'))
+  const isBatchRunning = useWorkflowStore(s => s.isTypeRunning('directory') || s.isTypeRunning('batch_generate'))
 
   if (!currentProject) return null
   const total = currentProject.novelConfig.totalChapters

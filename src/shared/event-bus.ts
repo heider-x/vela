@@ -12,6 +12,8 @@ export type GlobalEventType =
   | 'REFRESH_RESOURCE'
   // --- 工作流相关 ---
   | 'WORKFLOW_COMPLETE'
+  | 'BLUEPRINTS_UPDATED'
+  | 'STORY_REVISED'
   | 'WORKFLOW_ERROR'
   // --- 架构后处理 ---
   | 'ARCH_POSTPROCESS_UPDATED'
@@ -26,6 +28,8 @@ export type GlobalEventType =
   | 'SYSTEM_NOTICE'
 
 export interface EventPayloadMap {
+  'STORY_REVISED': { projectPath: string; revision: import('./story-revision').StoryRevision }
+  'BLUEPRINTS_UPDATED': { projectPath: string; count: number }
   'REFRESH_RESOURCE': {
     resources: Array<'fileTree' | 'characterCards' | 'drafts' | 'blueprints' | 'all'>
   }

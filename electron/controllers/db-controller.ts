@@ -1,5 +1,11 @@
 import { ipcMain } from 'electron'
-import { closeProjectDatabase } from '../database'
+import { closeProjectDatabase, getProjectDb } from '../database'
+import { readRehearsalContext, requireProjectDatabase } from '../repositories/rehearsal-repository'
+import { indexStory, readStoryDocument, applyStoryRevision, listStoryRevisions, undoStoryRevision } from '../repositories/story-revision-repository'
+import type { StoryReadRequest, StoryRevisionRequest } from '../../src/shared/story-revision'
+import fs from 'node:fs'
+import path from 'node:path'
+import { VELA_HOME } from '../utils/config-utils'
 
 // 导入所有 Repository
 import { ProjectCoreRepository, ProjectCoreData } from '../repositories/project-core-repository'
@@ -32,6 +38,26 @@ import type {
 } from '../../src/services/narrative-consistency/types'
 
 export function registerDatabaseController() {
+  const agentStatePath = path.join(VELA_HOME, 'author-agent-state.json')
+  ipcMain.handle('agent:state-read', () => {
+    if (!fs.existsSync(agentStatePath)) return null
+    return fs.readFileSync(agentStatePath, 'utf8')
+  })
+  ipcMain.handle('agent:state-write', (_event, serialized: string) => {
+    if (typeof serialized !== 'string' || serialized.length > 50_000_000 || !Array.isArray(JSON.parse(serialized)?.state?.conversations)) throw new Error('对话记录格式错误或过大。')
+    fs.mkdirSync(VELA_HOME, { recursive: true })
+    const temporary = `${agentStatePath}.tmp`
+    fs.writeFileSync(temporary, serialized, 'utf8')
+    fs.renameSync(temporary, agentStatePath)
+  })
+  ipcMain.handle('story:index', (_event, projectPath: string, query?: string, offset?: number) => indexStory(projectPath, query, offset))
+  ipcMain.handle('story:read', (_event, projectPath: string, request: StoryReadRequest) => readStoryDocument(projectPath, request))
+  ipcMain.handle('story:apply', (_event, projectPath: string, request: StoryRevisionRequest) => applyStoryRevision(projectPath, request))
+  ipcMain.handle('story:history', (_event, projectPath: string) => listStoryRevisions(projectPath))
+  ipcMain.handle('story:undo', (_event, projectPath: string, id: string) => undoStoryRevision(projectPath, id))
+  ipcMain.handle('db:rehearsal-context', (_event, projectPath: string, chapterNumber: number) => {
+    return readRehearsalContext(projectPath, chapterNumber)
+  })
   ipcMain.handle('db:close', async () => {
     closeProjectDatabase()
     return { success: true }
@@ -57,16 +83,29 @@ export function registerDatabaseController() {
   // ============================================================
   // 2. blueprints — 章节蓝图
   // ============================================================
-  ipcMain.handle('db:blueprint-get-all', async () => {
+  ipcMain.handle('db:blueprint-get-all', async (_event, projectPath?: string) => {
+    if (projectPath !== undefined) requireProjectDatabase(projectPath)
     return BlueprintRepository.getAll()
+  })
+
+  ipcMain.handle('db:blueprint-commit', (_event, items: BlueprintData[], deleted: number[], expected: BlueprintData[], projectPath: string) => {
+    try {
+      requireProjectDatabase(projectPath)
+      BlueprintRepository.commit(items, deleted, expected)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
   })
 
   ipcMain.handle('db:blueprint-get', async (_event, chapterNumber: number) => {
     return BlueprintRepository.getByChapter(chapterNumber)
   })
 
-  ipcMain.handle('db:blueprint-upsert', async (_event, data: BlueprintData) => {
+  ipcMain.handle('db:blueprint-upsert', async (_event, data: BlueprintData, projectPath?: string) => {
     try {
+      if (!getProjectDb()) throw new Error('PROJECT_CLOSED')
+      if (projectPath !== undefined) requireProjectDatabase(projectPath)
       BlueprintRepository.upsert(data)
       return { success: true }
     } catch (err) {
@@ -74,8 +113,10 @@ export function registerDatabaseController() {
     }
   })
 
-  ipcMain.handle('db:blueprint-upsert-many', async (_event, items: BlueprintData[]) => {
+  ipcMain.handle('db:blueprint-upsert-many', async (_event, items: BlueprintData[], projectPath?: string) => {
     try {
+      if (!getProjectDb()) throw new Error('PROJECT_CLOSED')
+      if (projectPath !== undefined) requireProjectDatabase(projectPath)
       BlueprintRepository.upsertMany(items)
       return { success: true }
     } catch (err) {

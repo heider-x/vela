@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import CodeMirror, { ReactCodeMirrorRef, EditorView, ViewUpdate } from '@uiw/react-codemirror'
+import CodeMirror, { ReactCodeMirrorRef, EditorView, ViewUpdate, ExternalChange } from '@uiw/react-codemirror'
 import { keymap } from '@codemirror/view'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
@@ -84,7 +84,7 @@ export default function CodeMirrorEditor({
     if (v.docChanged) {
       const newText = v.state.doc.toString()
       lastEmittedContentRef.current = newText
-      onChange?.(newText)
+      if (!v.transactions.some(transaction => transaction.annotation(ExternalChange))) onChange?.(newText)
 
       const cnt = countWords(newText)
       onCharCountChange?.(cnt)

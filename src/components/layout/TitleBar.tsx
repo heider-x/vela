@@ -5,6 +5,7 @@ import { useProjectStore } from '../../stores/project-store'
 import { useThemeStore, type Theme } from '../../stores/theme-store'
 import { useEditorStore } from '../../stores/editor-store'
 import { useLayoutStore } from '../../stores/layout-store'
+import { useOnboardingStore } from '../../stores/onboarding-store'
 
 /** 检测是否为 macOS */
 const isMac = navigator.userAgent.includes('Mac')
@@ -140,6 +141,9 @@ export default function TitleBar() {
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
         {/* ───── 缩放控制组 ───── */}
+        <button data-tour="guide-entry" onClick={() => useOnboardingStore.getState().start()} title={t('featureTour.label')} className="flex items-center gap-1 px-2 py-1 mr-2 rounded text-xs text-[var(--color-accent)] hover:bg-[var(--color-hover)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">
+          <Sparkles size={12} /><span>{t('featureTour.entry')}</span>
+        </button>
         {/* 缩小 */}
         <button
           onClick={zoomOut}
@@ -205,6 +209,7 @@ export default function TitleBar() {
 
         {/* 设置 */}
         <button
+          data-tour="model-settings"
           onClick={openSettings}
           title={t('titleBar.settings')}
           className="icon-btn"

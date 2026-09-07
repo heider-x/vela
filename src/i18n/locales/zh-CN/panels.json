@@ -1,4 +1,11 @@
 {
+  "storyRevision": {
+    "processing": "正在等待模型或工具返回 · 本次请求已用 {{seconds}} 秒",
+    "impact": "影响说明与保留范围",
+    "participants": "出场人物",
+    "history": "剧情调整记录", "description": "查看每次调整的影响与具体内容，也可以撤回。", "empty": "还没有剧情调整记录。", "undo": "撤回这次调整", "undone": "已撤回", "applied": "已保存并核对", "before": "调整前", "after": "调整后", "view": "查看调整", "hint": "可以直接说：让反派提前退场，或改变某个人后面的境遇。有关键疑问时，助手会先向你询问。",
+    "fields": { "narrativePov": "叙述视角", "content": "正文", "synopsis": "情节总纲", "charactersArch": "人物架构", "globalGuidance": "全局写作指导", "premise": "故事前提", "worldbuilding": "世界观", "writingStyle": "文风", "goldenFinger": "能力设定", "genre": "题材", "subGenre": "细分题材", "title": "标题", "role": "定位", "purpose": "章节目标", "keyEvents": "关键事件", "suspenseHook": "悬念钩子", "userGuidance": "章节指导", "appearance": "外貌", "personality": "性格", "background": "经历", "abilities": "能力", "motivation": "动机", "relationships": "关系", "arc": "人物发展", "notes": "备注" }
+  },
   "sidebar": {
     "premise": "故事前提",
     "premiseDesc": "Logline、核心冲突、金手指定位",

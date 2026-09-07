@@ -28,7 +28,8 @@ export interface ToolInputSchema {
 
 /** Tool 执行产物（Agent 创建/修改的文件等） */
 export interface ToolArtifact {
-  type: 'file_created' | 'file_modified' | 'workflow_started' | 'tab_opened'
+  type: 'file_created' | 'file_modified' | 'workflow_started' | 'tab_opened' | 'story_revision'
+  revisionId?: string
   /** 文件路径或资源标识 */
   path?: string
   /** 显示名称 */
@@ -54,6 +55,8 @@ export type ToolSource = 'builtin' | 'mcp' | 'skill'
 
 /** Agent Tool 接口 — 所有种类的 Tool 都实现此接口 */
 export interface AgentTool {
+  maxResultChars?: number
+  timeoutMs?: number
   /** 唯一标识符（MCP Tool 使用 mcp__serverId__toolName 命名空间） */
   name: string
   /** Tool 用途描述（Agent 凭此决定何时调用） */
@@ -67,7 +70,7 @@ export interface AgentTool {
   /** 是否为只读操作 */
   isReadOnly: boolean
   /** 执行函数 */
-  execute: (args: Record<string, unknown>) => Promise<ToolResult>
+  execute: (args: Record<string, unknown>, context?: { signal?: AbortSignal; modelId?: string }) => Promise<ToolResult>
   /** 可选的用户友好名称（UI 显示用，比 name 更可读） */
   userFacingName?: string
 }
@@ -165,28 +168,24 @@ class ToolRegistryImpl {
 
 ### 调用格式
 
-使用以下 XML 格式调用工具：
-
-<tool_call>
-{"name": "工具名称", "arguments": {"参数名": "参数值"}}
-</tool_call>
+每次回复严格返回一个 JSON 对象，不要输出思考过程、Markdown 围栏或 XML 标签。
+调用工具：{"message":"给作者的简短进展", "toolCall":{"name":"工具名称", "arguments":{"参数名":"参数值"}}}
+询问或最终答复：{"message":"你的问题或结果说明", "toolCall":null}
+message 使用中文，可以包含换行。toolCall 只能是一个操作对象或 null。
 
 ### 重要规则
 
-1. **每次回复最多放一个** <tool_call> 标签。
+1. 每次回复最多调用一个工具，name 必须使用工具的英文标识。
 2. 调用工具后，系统会自动执行并返回 <tool_result> 结果。
 3. **收到 <tool_result> 后你必须继续推理**，根据工具返回的数据回答用户问题。不要就此停止。
 4. 如果一个工具的结果不够，你可以在下一轮继续调用另一个工具。
-5. 不要在正文中引用或复述 <tool_call> 标签的内容。
+5. 作者看见的是 message，不要在 message 中复述操作 JSON。
 6. 只读工具自动执行。写入型工具（标记 ⚠️）需要用户确认。
 
 ### 示例交互
 
 用户：帮我分析第一章
-助手：好的，我先获取第一章的内容。
-<tool_call>
-{"name": "read_drafts", "arguments": {"chapter_number": 1}}
-</tool_call>
+助手：{"message":"我先读取第一章。", "toolCall":{"name":"read_drafts", "arguments":{"chapter_number":1}}}
 
 （系统返回 tool_result 后，助手根据结果继续分析）
 
@@ -198,7 +197,7 @@ class ToolRegistryImpl {
       const sourceTag = tool.source === 'mcp' ? ' [MCP]' : tool.source === 'skill' ? ' [Skill]' : ''
       const confirmTag = tool.requiresConfirmation ? ' ⚠️需确认' : ''
 
-      prompt += `#### ${displayName}${sourceTag}${confirmTag}\n`
+      prompt += `#### ${tool.name} (${displayName})${sourceTag}${confirmTag}\n`
       prompt += `${tool.description}\n`
 
       // 生成参数说明
@@ -221,7 +220,7 @@ class ToolRegistryImpl {
       prompt += '\n'
     }
 
-    return prompt
+    return prompt + '\n再次提醒：每次只输出一个 JSON 对象：{"message":"中文进展、问题或结果","toolCall":{"name":"工具英文名","arguments":{}}}。询问或结束时 toolCall=null；要读取或修改就必须给出真实 toolCall，不能只说准备调用。\n'
   }
 
   /** 清空所有 Tool（用于重置状态） */
