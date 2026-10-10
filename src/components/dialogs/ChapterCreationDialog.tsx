@@ -326,7 +326,7 @@ export default function ChapterCreationDialog({ isOpen, onClose, prefill }: Prop
                 {t('chapterCreation.workflowInfo')}
               </span>
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                <Button variant="outline" onClick={onClose}>{t('cancel', { ns: 'common' })}</Button>
                 <Button variant="ai" size="lg" onClick={handleStart} disabled={isChapterRunning}>
                   {isChapterRunning ? (
                     <span className="flex items-center gap-2">

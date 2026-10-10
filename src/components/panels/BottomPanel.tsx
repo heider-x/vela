@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { useLayoutStore } from '../../stores/layout-store'
 import { useWorkflowStore, type WorkflowStep, type WorkflowRun } from '../../stores/workflow-store'
 import { Button } from '../ui/Button'
+import { getIntlLocale } from '../../i18n'
 
 /** 下方工具窗口 */
 export default function BottomPanel() {
@@ -87,7 +88,7 @@ export default function BottomPanel() {
         </div>
 
         {/* 右侧：关闭按钮 */}
-        <button onClick={toggleBottomPanel} title={t('common.closePanel')} className="icon-btn" style={{ width: 18, height: 18 }}>
+        <button onClick={toggleBottomPanel} title={t('closePanel', { ns: 'common' })} className="icon-btn" style={{ width: 18, height: 18 }}>
           <X size={12} strokeWidth={1.5} />
         </button>
       </div>
@@ -112,8 +113,6 @@ function TaskRunView() {
   const waitingRuns = useWorkflowStore(s => s.waitingRuns)
   const cancelWorkflow = useWorkflowStore(s => s.cancelWorkflow)
   const confirmContinue = useWorkflowStore(s => s.confirmContinue)
-
-  console.log('[BottomPanel] TaskRunView render: activeRuns=', activeRuns.map(r => r.id.slice(0,8) + ':' + r.status + ':' + r.steps.map(s=>s.status).join('/')))
 
   if (activeRuns.length === 0 && history.length === 0) {
     return (
@@ -173,7 +172,7 @@ function TaskRunView() {
                 </span>
                 {/* 时间 */}
                 <span className="text-[0.68rem] flex-shrink-0 w-14 text-right" style={{ color: 'var(--color-text-muted)' }}>
-                  {new Date(run.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(run.createdAt).toLocaleTimeString(getIntlLocale(), { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
             ))}
@@ -219,8 +218,6 @@ function ActiveRunPanel({
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
   const nextStepName = run.steps[waitingAfterStepIndex + 1]?.name
   const isActive = run.status === 'running' || run.status === 'waiting'
-
-  console.log('[BottomPanel] ActiveRunPanel render: run.status=', run.status, 'steps=', run.steps.map(s => s.status).join(','))
 
   return (
     <div>
@@ -487,7 +484,7 @@ function StepStatusIcon({ status }: { status: WorkflowStep['status'] }) {
 // ===== 日志视图 =====
 
 function LogsView() {
-  const { t } = useTranslation('panels')
+  const { t: tCommon } = useTranslation('common')
   const globalLogs = useWorkflowStore(s => s.globalLogs)
   const clearLogs = useWorkflowStore(s => s.clearLogs)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -513,19 +510,19 @@ function LogsView() {
         <Button
           variant="ghost" size="icon"
           onClick={() => setAutoScroll(!autoScroll)}
-          title={autoScroll ? t('common.autoScrollOn') : t('common.autoScrollOff')}
+          title={autoScroll ? tCommon('autoScrollOn') : tCommon('autoScrollOff')}
           className={autoScroll ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}
         >
           <ChevronsDown size={13} />
         </Button>
-        <Button variant="ghost" size="icon" onClick={clearLogs} title={t('common.clearLogs')}>
+        <Button variant="ghost" size="icon" onClick={clearLogs} title={tCommon('clearLogs')}>
           <Trash2 size={13} />
         </Button>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 pb-2 font-mono text-xs leading-5">
         {globalLogs.length === 0 && (
-          <div className="text-center py-8 opacity-30">{t('common.noLogs')}</div>
+          <div className="text-center py-8 opacity-30">{tCommon('noLogs')}</div>
         )}
         {globalLogs.map((log, i) => (
           <div key={i} className="flex gap-2">
@@ -541,7 +538,7 @@ function LogsView() {
 // ===== 模型调用视图 =====
 
 function ModelsView() {
-  const { t } = useTranslation('panels')
+  const { t: tCommon } = useTranslation('common')
   const [stats, setStats] = useState<{
     totalCalls: number; totalTokens: number
     totalPromptTokens: number; totalCompletionTokens: number
@@ -571,22 +568,22 @@ function ModelsView() {
           style={{ borderBottom: '1px solid var(--color-border)' }}
         >
           <div className="text-[0.7rem] text-[var(--color-text-muted)]">
-            <span className="font-bold text-sm text-[var(--color-text)]">{stats.totalCalls}</span> {t('common.calls')}
+            <span className="font-bold text-sm text-[var(--color-text)]">{stats.totalCalls}</span> {tCommon('calls')}
           </div>
           <div className="text-[0.7rem] text-[var(--color-text-muted)]">
-            <span className="font-bold text-sm text-[var(--color-text)]">{(stats.totalTokens / 1000).toFixed(1)}k</span> {t('common.tokens')}
+            <span className="font-bold text-sm text-[var(--color-text)]">{(stats.totalTokens / 1000).toFixed(1)}k</span> {tCommon('tokens')}
           </div>
           <div className="text-[0.7rem] text-[var(--color-text-muted)]">
-            {t('common.input')} <span className="font-mono text-[var(--color-text-secondary)]">{(stats.totalPromptTokens / 1000).toFixed(1)}k</span>
+            {tCommon('input')} <span className="font-mono text-[var(--color-text-secondary)]">{(stats.totalPromptTokens / 1000).toFixed(1)}k</span>
           </div>
           <div className="text-[0.7rem] text-[var(--color-text-muted)]">
-            {t('common.output')} <span className="font-mono text-[var(--color-text-secondary)]">{(stats.totalCompletionTokens / 1000).toFixed(1)}k</span>
+            {tCommon('output')} <span className="font-mono text-[var(--color-text-secondary)]">{(stats.totalCompletionTokens / 1000).toFixed(1)}k</span>
           </div>
         </div>
       )}
       <div className="flex-1 overflow-y-auto font-mono text-xs">
         {history.length === 0 ? (
-          <div className="flex items-center justify-center h-full opacity-30 text-sm">{t('common.noRecords')}</div>
+          <div className="flex items-center justify-center h-full opacity-30 text-sm">{tCommon('noRecords')}</div>
         ) : (
           <table className="w-full">
             <thead>
@@ -594,12 +591,12 @@ function ModelsView() {
                 className="text-[0.7rem] text-[var(--color-text-muted)]"
                 style={{ borderBottom: '1px solid var(--color-border)' }}
               >
-                <th className="text-left px-4 py-1 font-medium">{t('common.time')}</th>
-                <th className="text-left px-2 py-1 font-medium">{t('common.model')}</th>
-                <th className="text-left px-2 py-1 font-medium">{t('common.purpose')}</th>
-                <th className="text-right px-2 py-1 font-medium">{t('common.tokens')}</th>
-                <th className="text-right px-2 py-1 font-medium">{t('common.duration')}</th>
-                <th className="text-center px-2 py-1 font-medium">{t('common.status')}</th>
+                <th className="text-left px-4 py-1 font-medium">{tCommon('time')}</th>
+                <th className="text-left px-2 py-1 font-medium">{tCommon('model')}</th>
+                <th className="text-left px-2 py-1 font-medium">{tCommon('purpose')}</th>
+                <th className="text-right px-2 py-1 font-medium">{tCommon('tokens')}</th>
+                <th className="text-right px-2 py-1 font-medium">{tCommon('duration')}</th>
+                <th className="text-center px-2 py-1 font-medium">{tCommon('status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -610,7 +607,7 @@ function ModelsView() {
                   style={{ borderBottom: '1px solid var(--color-border)' }}
                 >
                   <td className="px-4 py-1 text-[var(--color-text-muted)]">
-                    {new Date(row.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(row.createdAt).toLocaleString(getIntlLocale(), { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="px-2 py-1 text-[var(--color-text-secondary)]">{row.modelName || '-'}</td>
                   <td className="px-2 py-1 text-[var(--color-text-secondary)]">{row.purpose || '-'}</td>

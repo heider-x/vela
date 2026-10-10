@@ -5,6 +5,7 @@ import { useEditorStore } from '../../stores/editor-store'
 import { useProjectStore } from '../../stores/project-store'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
+import { getIntlLocale } from '../../i18n'
 import {
   getChapters, getChapterVersions, getVersionContent, getChapterLatestContent, revertToVersion,
   type VersionRecord,
@@ -192,7 +193,7 @@ export default function VersionHistory() {
                         {ver.word_count} {t('versionHistory.chars')}
                       </span>
                       <span className="text-[0.7rem] text-[var(--color-text-muted)]">
-                        {new Date(ver.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(ver.created_at).toLocaleString(getIntlLocale(), { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">

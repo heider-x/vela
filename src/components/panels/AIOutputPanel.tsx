@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useWorkflowStore, type WorkflowRun, type WorkflowStep } from '../../stores/workflow-store'
 import { useLayoutStore } from '../../stores/layout-store'
 import MarkdownContent from '../ui/MarkdownContent'
+import { getIntlLocale } from '../../i18n'
 
 /**
  * 右侧面板「AI 输出」视图
@@ -17,15 +18,10 @@ export default function AIOutputPanel() {
   const activeRun = getActiveStreamingRun()
   const [viewRunId, setViewRunId] = useState<string | null>(null)
 
-  console.log('[AIOutputPanel] render: viewRunId=', viewRunId, 'activeRun=', activeRun?.id, activeRun?.status, 'activeRuns.len=', activeRuns.length)
-
   // 自动跟随最新活跃任务
   useEffect(() => {
     if (activeRun) {
-      console.log('[AIOutputPanel] mount/useEffect activeRun:', activeRun.id, activeRun.status, 'steps:', activeRun.steps.map(s => s.status))
       setViewRunId(prev => prev === activeRun.id ? prev : activeRun.id)
-    } else {
-      console.log('[AIOutputPanel] mount/useEffect: no activeRun, activeRuns=', activeRuns.map(r => r.id + ':' + r.status), 'history=', history.slice(0, 2).map(r => r.id + ':' + r.status))
     }
     // ✅ 只依赖 id 字符串，不依赖 activeRun 对象引用
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -36,11 +32,6 @@ export default function AIOutputPanel() {
     history.find(r => r.id === viewRunId) ||
     activeRun ||
     undefined
-
-  // DEBUG: 面板切换时追踪状态
-  if (viewRun?.status === 'failed' && viewRun.steps.some(s => s.status === 'pending' || s.status === 'running')) {
-    console.log('[AIOutputPanel] viewRun out of sync! run.status=', viewRun.status, 'steps=', viewRun.steps.map(s => s.status))
-  }
 
   const recentHistory = history.slice(0, 10)
 
@@ -521,7 +512,7 @@ function HistoryList({ items, onSelect }: { items: WorkflowRun[]; onSelect: (id:
               {run.title.replace(/^[^\s]+\s/, '')}
             </span>
             <span className="text-[0.6rem] flex-shrink-0 font-mono opacity-30">
-              {new Date(run.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+              {new Date(run.createdAt).toLocaleTimeString(getIntlLocale(), { hour: '2-digit', minute: '2-digit' })}
             </span>
           </button>
         ))}

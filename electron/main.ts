@@ -1,6 +1,9 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
 import { registerIPCHandlers } from './ipc-handlers'
 import { registerMCPHandlers } from './mcp/mcp-ipc-bridge'
+import { DEFAULT_GLOBAL_CONFIG, GLOBAL_CONFIG_PATH, readJsonFile, writeJsonFile } from './utils/config-utils'
+import { captureWindowState, normalizeWindowState } from './window-state'
+import type { GlobalConfig } from '../src/shared/ipc-channels'
 
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -20,11 +23,38 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   : RENDERER_DIST
 
 let win: BrowserWindow | null
+let windowStateSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+function persistWindowState(target: BrowserWindow | null) {
+  if (!target || target.isDestroyed()) return
+  const existing = readJsonFile<GlobalConfig>(GLOBAL_CONFIG_PATH, DEFAULT_GLOBAL_CONFIG)
+  writeJsonFile(GLOBAL_CONFIG_PATH, {
+    ...existing,
+    windowState: captureWindowState(target),
+  })
+}
+
+function scheduleWindowStateSave() {
+  if (!win) return
+  if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer)
+  windowStateSaveTimer = setTimeout(() => {
+    windowStateSaveTimer = null
+    persistWindowState(win)
+  }, 400)
+}
 
 function createWindow() {
+  const config = readJsonFile<GlobalConfig>(GLOBAL_CONFIG_PATH, DEFAULT_GLOBAL_CONFIG)
+  const windowState = normalizeWindowState(
+    config.windowState,
+    screen.getAllDisplays().map(display => display.workArea),
+  )
+
   win = new BrowserWindow({
-    width: 1440,
-    height: 900,
+    width: windowState.width,
+    height: windowState.height,
+    x: windowState.x,
+    y: windowState.y,
     minWidth: 1024,
     minHeight: 640,
     title: 'Vela — AI 小说创作 IDE',
@@ -39,6 +69,22 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
+  })
+
+  if (windowState.maximized) {
+    win.maximize()
+  }
+
+  win.on('resize', scheduleWindowStateSave)
+  win.on('move', scheduleWindowStateSave)
+  win.on('maximize', scheduleWindowStateSave)
+  win.on('unmaximize', scheduleWindowStateSave)
+  win.on('close', () => {
+    if (windowStateSaveTimer) {
+      clearTimeout(windowStateSaveTimer)
+      windowStateSaveTimer = null
+    }
+    persistWindowState(win)
   })
 
   if (process.platform === 'darwin') {

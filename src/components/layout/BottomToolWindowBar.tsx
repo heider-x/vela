@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
  */
 export default function BottomToolWindowBar() {
   const { t } = useTranslation('layout')
+  const { t: tPanels } = useTranslation('panels')
   const bottomTab = useLayoutStore(s => s.bottomTab)
   const setBottomTab = useLayoutStore(s => s.setBottomTab)
   const activeRuns = useWorkflowStore(s => s.activeRuns)
@@ -17,8 +18,8 @@ export default function BottomToolWindowBar() {
   // Bottom tabs
   const bottomTabs: Array<{ id: BottomTab; icon: typeof Zap; label: string }> = [
     { id: 'tasks',  icon: Zap,        label: t('statusBar.tasksLabel')    },
-    { id: 'log',    icon: ScrollText, label: t('bottomPanel.tabs.log')    },
-    { id: 'models', icon: Cpu,        label: t('bottomPanel.tabs.models')    },
+    { id: 'log',    icon: ScrollText, label: tPanels('bottomPanel.tabs.log')    },
+    { id: 'models', icon: Cpu,        label: tPanels('bottomPanel.tabs.models')    },
   ]
 
   return (

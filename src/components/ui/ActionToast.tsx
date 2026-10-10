@@ -276,8 +276,8 @@ export const actionToast = {
     ensureContainer()
     const actions: ActionToastAction[] = []
     if (openAction) {
-      actions.push({ label: i18n.t('common.openAndView', '打开查看'), onClick: openAction })
-      actions.push({ label: i18n.t('common.ignore', '忽略'), variant: 'ghost' })
+      actions.push({ label: i18n.t('openAndView', { ns: 'common', defaultValue: '打开查看' }), onClick: openAction })
+      actions.push({ label: i18n.t('ignore', { ns: 'common', defaultValue: '忽略' }), variant: 'ghost' })
     }
     const item: ActionToastItem = {
       id: ++_counter,

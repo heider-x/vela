@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ChevronDown, ChevronRight, Globe, FolderOpen, RotateCcw, AlertTriangle } from 'lucide-react'
+import { ChevronDown, ChevronRight, Globe, FolderOpen, RotateCcw, AlertTriangle, Save } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from '../../i18n'
 import {
@@ -20,6 +20,7 @@ import {
 import { useProjectStore } from '../../stores/project-store'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
+import { ipc } from '../../services/ipc-client'
 
 /** Получить переведённое описание переменной */
 function getVariableDesc(varName: string, fallback: string): string {
@@ -64,6 +65,8 @@ export default function PromptSettings() {
 
   return (
     <div className="space-y-2" key={refreshKey}>
+      <AgentBasePromptCard />
+
       {/* 说明 */}
       <div
         className="flex items-start gap-2 px-3 py-2.5 rounded-lg text-xs mb-4"
@@ -91,6 +94,93 @@ export default function PromptSettings() {
           />
         )
       })}
+    </div>
+  )
+}
+
+function AgentBasePromptCard() {
+  const { t } = useTranslation('settings')
+  const [content, setContent] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+    ipc.invoke('config:get')
+      .then((cfg) => {
+        if (mounted) setContent(cfg.agentBasePrompt ?? '')
+      })
+      .catch(() => { })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => { mounted = false }
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaved(false)
+    try {
+      await ipc.invoke('config:set', { agentBasePrompt: content })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleReset = async () => {
+    setContent('')
+    setSaving(true)
+    setSaved(false)
+    try {
+      await ipc.invoke('config:set', { agentBasePrompt: '' })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      className="rounded-xl p-4 space-y-3 mb-4"
+      style={{ border: '1px solid var(--color-border)', backgroundColor: 'var(--color-panel)' }}
+    >
+      <div>
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+          {t('prompts.agentBaseTitle')}
+        </h3>
+        <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+          {t('prompts.agentBaseDescription')}
+        </p>
+      </div>
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        disabled={loading}
+        placeholder={t('prompts.agentBasePlaceholder')}
+        className="w-full rounded-lg px-3 py-2.5 text-xs font-mono resize-y outline-none focus:outline-none"
+        style={{
+          backgroundColor: 'var(--color-editor-bg)',
+          color: 'var(--color-text)',
+          border: '1px solid var(--color-border)',
+          minHeight: '110px',
+          lineHeight: 1.6,
+        }}
+        spellCheck={false}
+      />
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={handleSave} disabled={saving || loading}>
+          <Save size={12} />
+          {saving ? t('prompts.saving') : saved ? t('prompts.saved') : t('prompts.save')}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={handleReset} disabled={saving || loading || !content.trim()}>
+          <RotateCcw size={12} />
+          {t('prompts.resetDefault')}
+        </Button>
+      </div>
     </div>
   )
 }

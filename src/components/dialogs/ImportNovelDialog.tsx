@@ -259,7 +259,7 @@ export default function ImportNovelDialog({ open, onClose }: ImportNovelDialogPr
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>{t('common.cancel', { ns: 'common' })}</Button>
+          <Button variant="ghost" onClick={onClose}>{t('cancel', { ns: 'common' })}</Button>
           <Button
             onClick={handleImport}
             disabled={importing || !name.trim() || !savePath.trim() || chapters.length === 0}

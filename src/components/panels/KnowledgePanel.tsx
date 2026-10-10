@@ -9,6 +9,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { useProjectStore } from '../../stores/project-store'
 import { globalEventBus } from '../../shared/event-bus'
 import { loadKBData, type KBDocument } from '../../services/knowledge-service'
+import { getIntlLocale } from '../../i18n'
 
 
 
@@ -107,7 +108,7 @@ export default function KnowledgePanel() {
         <Button
           variant="ghost" size="icon"
           onClick={() => loadData()}
-          title={t('common.refresh')}
+          title={t('refresh', { ns: 'common' })}
           className="h-6 w-6"
         >
           <RefreshCw size={11} />
@@ -142,7 +143,7 @@ export default function KnowledgePanel() {
                     </div>
                     <div className="flex items-center gap-2 text-[0.7rem] text-[var(--color-text-muted)] mt-0.5">
                       <span>{t('knowledge.chunks', { count: doc.chunkCount })}</span>
-                      <span>{new Date(doc.importedAt).toLocaleDateString('zh-CN')}</span>
+                      <span>{new Date(doc.importedAt).toLocaleDateString(getIntlLocale())}</span>
                     </div>
                   </div>
                 </div>

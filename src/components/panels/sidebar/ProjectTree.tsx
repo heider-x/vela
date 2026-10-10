@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next'
 
 
 import {
-  ARCH_FILES, LeafItem, renderIcon, showSidebarMenu,
+  getArchFiles, LeafItem, renderIcon, showSidebarMenu,
   openArchFile, openBuiltinEditor,
 } from './SidebarShared'
 import DraftBoxGroup from './DraftBoxGroup'
@@ -135,7 +135,8 @@ export default function ProjectTree() {
   const configDone = !!(nc.coreOutline?.trim() || nc.protagonistProfile?.trim())
 
   // 故事架构进度
-  const archDone = ARCH_FILES.filter(f => archStatus[f.key]).length
+  const archFiles = getArchFiles()
+  const archDone = archFiles.filter(f => archStatus[f.key]).length
 
   return (
     <div className="text-sm">
@@ -144,7 +145,7 @@ export default function ProjectTree() {
         <span className="font-semibold text-xs truncate" style={{ color: 'var(--color-text)' }}>
           {currentProject.name}
         </span>
-        <Button variant="ghost" size="icon" onClick={() => refreshAll()} title={t('common.refresh')}>
+        <Button variant="ghost" size="icon" onClick={() => refreshAll()} title={t('refresh', { ns: 'common' })}>
           <RefreshCw size={12} />
         </Button>
       </div>
@@ -181,7 +182,7 @@ export default function ProjectTree() {
       />
 
       {/* 2. 故事架构 — 点击标题行打开编辑器，子文件仍可单独点开 */}
-      <WorldBuildingGroup archStatus={archStatus} archDone={archDone} />
+      <WorldBuildingGroup archStatus={archStatus} archDone={archDone} archFiles={archFiles} />
 
       {/* 3. 章节蓝图 — 点击打开编辑器页 */}
       <div data-tour="blueprints">
@@ -225,14 +226,16 @@ export default function ProjectTree() {
 function WorldBuildingGroup({
   archStatus,
   archDone,
+  archFiles,
 }: {
   archStatus: Record<string, boolean>
   archDone: number
+  archFiles: ReturnType<typeof getArchFiles>
 }) {
   const { t } = useTranslation('panels')
   const [open, setOpen] = useState(true)
 
-  const allDone = archDone === ARCH_FILES.length
+  const allDone = archDone === archFiles.length
 
   return (
     <div>
@@ -265,14 +268,14 @@ function WorldBuildingGroup({
                 : 'var(--color-text-muted)'
           }}
         >
-          {archDone}/{ARCH_FILES.length}
+          {archDone}/{archFiles.length}
         </span>
       </div>
 
       {/* 子文件列表（点击直接在 Markdown 编辑器打开） */}
       {open && (
         <div>
-          {ARCH_FILES.map(f => {
+          {archFiles.map(f => {
             const isGenerated = archStatus[f.key]
             const filePath = `vela://core/${f.key}`
             return (

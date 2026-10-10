@@ -124,6 +124,46 @@ export const BUILTIN_PROMPTS: PromptTemplate[] = [
     "globalGuidance": "全局写作指导与核心禁忌（严格基于{{number_of_chapters}}章规模：前/中/后期各占多少章、小/中/大高潮的具体章节频率、严禁触碰的毒点）",
     "writingStyle": "文风配置（不少于100字，涵盖：叙述节奏快慢与场景切换频率、描写密度偏好、对话风格与口语化程度、用词偏好古风/现代/专业术语、情感基调热血/冷峻/诙谐/沉重、标志性修辞手法与过渡技巧。请根据类型和受众推荐最匹配的写作风格）"
 }`,
+    systemSuffixLocalized: {
+      en: `【Output format restrictions】
+- Return only valid JSON matching the structure below.
+- Keep JSON property names and enum codes exactly as written.
+- Every string value meant for the user must be in English. Do not output Chinese text in values, even if the schema examples or input contain another language.
+
+【JSON field structure】
+{
+    "genre": "Primary genre in English (fantasy / xianxia / urban / sci-fi / historical / mystery / gaming / military / wuxia / realism / other)",
+    "targetAudience": "Target audience in English (male-oriented / female-oriented / general / short-form)",
+    "subGenre": "Sub-genre and core tags in English",
+    "plotStructure": "Story structure enum only: three_act / heros_journey / save_the_cat / kishotenketsu / multi_thread / freeform",
+    "narrativePOV": "Narrative POV enum only: third_limited / first_person / third_omniscient / multi_pov",
+    "coreOutline": "Core outline in English, at least 150 words, including fatal crisis/opening dilemma, required core objective, ultimate crisis, and major satisfaction beats",
+    "worldSetting": "Distinctive world setting in English, including physical dimensions, power fractures, and core resource competition mechanisms",
+    "goldenFinger": "Core selling point and golden-finger system in English, including acquisition method, specific functions, growth route, side effects/limits",
+    "protagonistProfile": "Protagonist profile in English, including contrasting weakness, surface persona, and core drive: material goal plus deeper soul desire",
+    "globalGuidance": "Global writing guidance and taboos in English, strictly based on {{number_of_chapters}} chapters: early/mid/late chapter ranges, minor/medium/major climax frequency, toxic points to avoid",
+    "writingStyle": "Writing style configuration in English, at least 100 words, covering narrative speed, scene-switching rhythm, description density, dialogue style, vocabulary preference, emotional tone, signature rhetoric and transitions"
+}`,
+      ru: `【Ограничения формата вывода】
+- Верните только валидный JSON, строго соответствующий структуре ниже.
+- Имена JSON-полей и enum-коды оставляйте ровно такими, как указано.
+- Все строковые значения, предназначенные для пользователя, должны быть на русском языке. Не выводите китайский текст в значениях, даже если примеры схемы или входные данные содержат другой язык.
+
+【Структура JSON-полей】
+{
+    "genre": "Основной жанр на русском (фэнтези / сянься / городское / научная фантастика / исторический / детектив / игровое / военный / уся / реализм / другое)",
+    "targetAudience": "Целевая аудитория на русском (мужская / женская / универсальная / короткая форма)",
+    "subGenre": "Поджанр и ключевые теги на русском",
+    "plotStructure": "Только enum-код структуры истории: three_act / heros_journey / save_the_cat / kishotenketsu / multi_thread / freeform",
+    "narrativePOV": "Только enum-код точки зрения: third_limited / first_person / third_omniscient / multi_pov",
+    "coreOutline": "Основной план на русском, не менее 150 слов, включая смертельный кризис/начальную дилемму, обязательную главную цель, финальный кризис и ключевые точки читательского удовлетворения",
+    "worldSetting": "Уникальное мироустройство на русском, включая физические измерения, разломы власти и механизмы борьбы за ключевые ресурсы",
+    "goldenFinger": "Ключевая фишка и система золотого пальца на русском, включая способ получения, конкретные функции, путь роста, побочные эффекты и ограничения",
+    "protagonistProfile": "Профиль протагониста на русском, включая контрастную слабость, внешнюю маску и главную мотивацию: материальную цель плюс глубинное душевное стремление",
+    "globalGuidance": "Глобальные требования и запреты на русском, строго исходя из {{number_of_chapters}} глав: диапазоны начала/середины/финала, частота малых/средних/крупных кульминаций, токсичные элементы, которых нужно избегать",
+    "writingStyle": "Настройка стиля письма на русском, не менее 100 слов: темп повествования, частота смены сцен, плотность описаний, стиль диалогов, словарь, эмоциональный тон, фирменные риторические приёмы и переходы"
+}`
+    },
     contentLocalized: {
       en: `Based on the author's one-line idea or initial concept, please expand and complete a novel's global bestseller configuration following the most mature and commercially dominant web novel core structure.
 
@@ -146,17 +186,18 @@ Novel scale (IMPORTANT! Design pacing strictly according to these parameters):
 Начальная идея автора:
 {{user_idea}}
 
-Масштаб романа (ВАЖНО! Пacing проектируйте строго по этим параметрам):
+Масштаб романа (ВАЖНО! Проектируйте темп строго по этим параметрам):
 - Плановое количество глав: {{number_of_chapters}}
 - Слов в главе: {{word_number}}
 - Примерная общая длина: {{number_of_chapters}} × {{word_number}} слов
 
 【Основные требования】
-1. Глубокая挖掘 коммерческой ценности: извлекайте мощные «точки удовлетворения» и «эмоциональные болевые точки» для построения захватывающей арки завязки-развития-кульминации-развязки.
+1. Глубокая проработка коммерческой ценности: извлекайте мощные «точки удовлетворения» и «эмоциональные болевые точки» для построения захватывающей арки завязки-развития-кульминации-развязки.
 2. Профессиональные настройки: применяйте принципы «карты персонажей» и «3D-мировоззрения». Все настройки должны служить продвижению сюжета и созданию прямых конфликтов — никакой пустой воды.
 3. Соответствие рынку: если автор не указал базовый жанр, угадайте самый коммерчески взрывной тип.
 4. Кастомизация темпа: диапазоны глав начальной/средней/финальной частей и частота малых/средних/крупных кульминаций в globalGuidance должны быть строго рассчитаны по фактическому масштабу [{{number_of_chapters}} глав]. Не используйте цифры, противорящие реальному количеству глав.
-5. Умные рекомендации: рекомендуйте наиболее подходящую структуру故事 и повествовательную точку зрения на основе жанра и темы.`
+5. Умные рекомендации: рекомендуйте наиболее подходящую структуру истории и повествовательную точку зрения на основе жанра и темы.
+6. Язык результата: все человекочитаемые значения JSON должны быть на русском языке; технические имена полей и enum-коды не переводите.`
     },
     systemRoleLocalized: {
       en: 'You are a top-tier web novel editor and platinum-selling author with ten years of industry experience, skilled at distilling a one-line idea into a complete commercial novel configuration.',
@@ -547,7 +588,7 @@ Based on the core worldbuilding and the characteristics of the "{{genre}}" genre
 - Какой ресурс является самым дефицитным? Как он распределяется? Где находится герой и с кем ему приходится конкурировать?
 
 3. 【Метафора и скрытый кризис】
-- Какова终极ная катастрофа или величайшая тайна, стоящая за этим миром?
+- Какова финальная катастрофа или величайшая тайна, стоящая за этим миром?
 - Существуют ли запретные знания, историческая ложь или скрытая правда, которая пересекается с судьбой героя?
 
 【Требования】
@@ -770,6 +811,7 @@ Output each chapter strictly and exclusively in the following JSON array format:
 
 Requirements:
 - Keep each chapter's keyEvents within 100–150 words with maximum information density.
+- All JSON field names must remain exactly as shown, but every string value inside the JSON must be written in English.
 - Output only the final JSON text — no pleasantries or explanations.
 
 ★【Author Pacing/Style Guidance (if any, HIGHEST PRIORITY)】★:
@@ -807,6 +849,7 @@ Requirements:
 
 Требования:
 - Удерживайте keyEvents каждой главы в пределах 100–150 слов с максимальной плотностью информации.
+- Имена JSON-полей оставьте ровно как в схеме, но все строковые значения внутри JSON пишите на русском языке.
 - Выводите только финальный JSON — никаких вступлений или объяснений.
 
 【Руководство автора по темпу/стилю (если есть, ВЫСШИЙ ПРИОРИТЕТ)】★:
@@ -914,11 +957,12 @@ Output each chapter strictly and exclusively in the following JSON array format:
 
 Requirements:
 - Strictly maintain contextual continuity — no contradictions.
+- All JSON field names must remain exactly as shown, but every string value inside the JSON must be written in English.
 - Output only the final JSON text — no explanations.
 
 ★【Author Pacing/Style Guidance (if any, HIGHEST PRIORITY)】★:
 {{pacing_guidance}}`,
-      ru: `На основе [Полного архитектурного движка романа] и [Текущего прогресса плана] создайте максимально подробный «комплексный план выполнения» для следующих глав: Глава {{n}}–{{m}}.
+      ru: `На основе [Полного архитектурного движка романа] и [Текущего прогресса плана] создайте максимально подробный «комплексный план выполнения» для следующих глав: главы {{n}}–{{m}}.
 
 【Правила предотклонения от основы】
 - Жанр романа: {{genre}}
@@ -932,8 +976,8 @@ Requirements:
 Ниже приведён краткий обзор предыдущих глав (сжатый, чтобы не потерять основную сюжетную линию):
 {{chapter_list}}
 
-【Задание по генерации: ретрансляция】
-Плавно перенмите от сюжета последней главы и строго выведите Главы {{n}}–{{m}}.
+【Задание по генерации: продолжение】
+Плавно продолжите сюжет последней главы и строго выведите главы {{n}}–{{m}}.
 1. Правило непрерывных малых кульминаций: поддерживайте ритм одной малой кульминации каждые 3–5 глав.
 2. Обязательное раскрытие зацепок: если в предыдущих главах остался кризис — он должен здесь взорваться или разрешиться.
 3. Никакой воды: каждая глава должна содержать существенное развитие.
@@ -956,6 +1000,7 @@ Requirements:
 
 Требования:
 - Строго соблюдайте контекстуальную непрерывность — никаких противоречий.
+- Имена JSON-полей оставьте ровно как в схеме, но все строковые значения внутри JSON пишите на русском языке.
 - Выводите только финальный JSON — никаких объяснений.
 
 ★【Руководство автора по темпу/стилю (если есть, ВЫСШИЙ ПРИОРИТЕТ)】★:
@@ -1021,6 +1066,38 @@ Requirements:
 - “仿佛”、“犹如”、“宛如”全章合计不超过3次
 - 对话必须区分角色语气：不同角色的说话方式必须有辨识度
 - 禁止在结尾添加与正文无关的哲理感悟或旁白总结`,
+    systemSuffixLocalized: {
+      en: `★【Author guidance for this step, if any, HIGHEST PRIORITY】★:
+{{user_guidance}}
+
+【Generation Requirements】
+- Language: all prose, dialogue, narration, chapter title references, and any visible output must be in English.
+- Length and pacing: approximately {{word_number}} words. Develop only the core plot specified in This Chapter's Info; do not pad with exposition, encyclopedic worldbuilding, or meaningless daily-life dialogue. Once the first-chapter objective is achieved, cut on a suspense hook and do not reveal later plot.
+- Format: output only plain prose text. Do not use Markdown symbols such as *, **, #, lists, or code fences. Do not use script format.
+- Paragraphing: leave one blank line between paragraphs. Do not merge multiple paragraphs into one dense block.
+- Ending: the final line must leave a strong hook.
+
+【Anti-AI patterns — prohibited】
+- Do not end paragraphs with summary clichés such as "he knew this was only the beginning" or "the gears of fate began to turn."
+- Use "as if", "like", and similar comparison crutches sparingly.
+- Dialogue must distinguish character voices; different characters should not sound interchangeable.
+- Do not add philosophical commentary or narrator summaries unrelated to the scene at the end.`,
+      ru: `★【Авторские указания для этого шага, если есть, ВЫСШИЙ ПРИОРИТЕТ】★:
+{{user_guidance}}
+
+【Требования к генерации】
+- Язык: вся проза, диалоги, повествование, упоминания названия главы и любой видимый текст должны быть на русском языке.
+- Объём и темп: примерно {{word_number}} слов. Развивайте только ключевой сюжет, заданный в информации об этой главе; не раздувайте текст энциклопедическим описанием мира, лишним закадровым объяснением или бессмысленными бытовыми диалогами. Когда цель первой главы достигнута, сразу обрывайте на интригующем крючке и не раскрывайте дальнейший сюжет.
+- Формат: выводите только художественный текст обычной прозой. Не используйте Markdown-символы вроде *, **, #, списков или блоков кода. Не используйте формат пьесы/сценария.
+- Абзацы: между абзацами обязательно оставляйте одну пустую строку. Не склеивайте несколько абзацев в плотный блок.
+- Финал: последняя строка должна оставлять сильный крючок.
+
+【Анти-AI-паттерны — запрещено】
+- Не заканчивайте абзацы резюмирующими клише вроде «он понял, что всё только начинается» или «шестерёнки судьбы пришли в движение».
+- Не злоупотребляйте конструкциями «как будто», «словно», «будто» и похожими сравнительными костылями.
+- Диалоги должны различать голоса персонажей: разные герои не должны звучать одинаково.
+- Не добавляйте в конце философские отступления или авторские резюме, не связанные со сценой.`
+    },
     contentLocalized: {
       en: `Begin writing the first chapter (the hook chapter) of this novel.
 
@@ -1136,6 +1213,38 @@ Requirements:
 - "仿佛"、"犹如"、"宛如"全章合计不超过3次
 - 对话必须区分角色语气：不同角色的说话方式必须有辨识度
 - 禁止在结尾添加与正文无关的哲理感悟或旁白总结`,
+    systemSuffixLocalized: {
+      en: `★【Author guidance for this step, if any, HIGHEST PRIORITY】★:
+{{user_guidance}}
+
+【Output Format】
+- Language: all prose, dialogue, narration, chapter title references, and any visible output must be in English.
+- Length and pacing: approximately {{word_number}} words. Develop only the core conflict specified in This Chapter's Info; do not pad. Once the chapter objective is achieved, cut immediately on a hook and do not expand into later-outline plot.
+- Output only plain prose text. Do not start with "Chapter X text follows" or similar labels.
+- Do not use Markdown symbols, lists, code fences, or script format.
+- Paragraphing: always leave one blank line between paragraphs. Do not compress multiple paragraphs into one block.
+
+【Anti-AI patterns — prohibited】
+- Do not end paragraphs with summary clichés such as "he knew this was only the beginning" or "the gears of fate began to turn."
+- Use "as if", "like", and similar comparison crutches sparingly.
+- Dialogue must distinguish character voices; different characters should not sound interchangeable.
+- Do not add philosophical commentary or narrator summaries unrelated to the scene at the end.`,
+      ru: `★【Авторские указания для этого шага, если есть, ВЫСШИЙ ПРИОРИТЕТ】★:
+{{user_guidance}}
+
+【Формат вывода】
+- Язык: вся проза, диалоги, повествование, упоминания названия главы и любой видимый текст должны быть на русском языке.
+- Объём и темп: примерно {{word_number}} слов. Развивайте только основной конфликт, заданный в информации об этой главе; не раздувайте текст. Когда цель главы достигнута, сразу обрывайте на крючке и не уходите в события будущего плана.
+- Выводите только художественный текст обычной прозой. Не начинайте с фраз вроде «Текст главы ниже» или «Глава X».
+- Не используйте Markdown-символы, списки, блоки кода или формат пьесы/сценария.
+- Абзацы: между абзацами всегда оставляйте одну пустую строку. Не сжимайте несколько абзацев в один блок.
+
+【Анти-AI-паттерны — запрещено】
+- Не заканчивайте абзацы резюмирующими клише вроде «он понял, что всё только начинается» или «шестерёнки судьбы пришли в движение».
+- Не злоупотребляйте конструкциями «как будто», «словно», «будто» и похожими сравнительными костылями.
+- Диалоги должны различать голоса персонажей: разные герои не должны звучать одинаково.
+- Не добавляйте в конце философские отступления или авторские резюме, не связанные со сценой.`
+    },
     contentLocalized: {
       en: `You are continuing serialization with the latest chapter.
 
@@ -1167,7 +1276,7 @@ Requirements:
 
 【Writing Style Requirements (if any, follow strictly)】
 {{writing_style}}`,
-      ru: `Вы продолжаете сериал сlatest главой.
+      ru: `Вы продолжаете сериал новым выпуском главы.
 
 【★★★ Контекст канона нарративной согласованности (СТРОГО соблюдать · ВЫСШИЙ ПРИОРИТЕТ) ★★★】
 {{canon_context}}

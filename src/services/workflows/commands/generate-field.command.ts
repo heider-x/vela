@@ -41,7 +41,7 @@ export class GenerateFieldCommand extends BaseWorkflowCommand<string> {
     const context = this.buildContext(config)
     // 构建针对性 prompt
     const prompt = this.buildPrompt(config, context)
-    const systemPrompt = t('generateField.systemRole')
+    const systemPrompt = `${t('generateField.systemRole')}\n\n${t('generateField.languageInstruction')}`
 
     const result = await this.callLLM(prompt, systemPrompt, callbacks)
     const cleanResult = this.stripThinkingTags(result).trim()
@@ -93,9 +93,19 @@ export class GenerateFieldCommand extends BaseWorkflowCommand<string> {
       goldenFinger: t('generateField.promptGoldenFinger'),
       protagonistProfile: t('generateField.promptProtagonistProfile'),
       globalGuidance: t('generateField.promptGlobalGuidance', { chapters: config.totalChapters || 100 }),
-      writingStyle: t('generateField.promptWritingStyle', { genre: config.genre || '未指定', audience: config.targetAudience || '未指定' }),
+      writingStyle: t('generateField.promptWritingStyle', {
+        genre: config.genre || t('generateField.unspecified'),
+        audience: config.targetAudience || t('generateField.unspecified'),
+      }),
     }
 
-    return t('generateField.promptHeader', { context }) + '\n\n' + fieldPrompts[this.fieldKey] + t('generateField.promptOutputRequirements')
+    return (
+      t('generateField.promptHeader', { context }) +
+      '\n\n' +
+      fieldPrompts[this.fieldKey] +
+      '\n\n' +
+      t('generateField.languageInstruction') +
+      t('generateField.promptOutputRequirements')
+    )
   }
 }

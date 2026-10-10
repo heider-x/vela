@@ -10,7 +10,11 @@
  * - JSON file validity
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import i18n from '../index'
+import fs from 'node:fs'
+import path from 'node:path'
+import i18n, { SUPPORTED_LANGUAGES, getIntlLocale, normalizeLanguage } from '../index'
+import { getPromptTemplate } from '../../services/prompt-templates'
+import { ArchitecturePromptBuilder, ChapterPromptBuilder, DirectoryPromptBuilder } from '../../services/prompts/prompt-builder'
 
 // Import all translation files directly for validation
 import zhCNCommon from '../locales/zh-CN/common.json'
@@ -81,6 +85,18 @@ const RU_FILES: Record<string, Record<string, unknown>> = {
   commands: ruCommands,
 }
 
+const CJK_REGEX = /[\u3400-\u9fff]/
+const COMPONENT_COMMON_PREFIX_REGEX = /(?:\bt|i18n\.t)\(\s*['"]common\./
+
+function collectSourceFiles(dir: string): string[] {
+  const entries = fs.readdirSync(dir, { withFileTypes: true })
+  return entries.flatMap((entry) => {
+    const fullPath = path.join(dir, entry.name)
+    if (entry.isDirectory()) return collectSourceFiles(fullPath)
+    return /\.(ts|tsx)$/.test(entry.name) ? [fullPath] : []
+  })
+}
+
 // Helper: recursively collect all leaf keys from a nested object
 function getLeafKeys(obj: Record<string, unknown>, prefix = ''): string[] {
   const keys: string[] = []
@@ -124,6 +140,27 @@ describe('i18n Initialization', () => {
   it('should have common as default namespace', () => {
     expect(i18n.options.defaultNS).toBe('common')
   })
+
+  it('should normalize all supported language variants', () => {
+    expect(normalizeLanguage('zh-CN')).toBe('zh-CN')
+    expect(normalizeLanguage('zh-Hans')).toBe('zh-CN')
+    expect(normalizeLanguage('en-US')).toBe('en')
+    expect(normalizeLanguage('ru-RU')).toBe('ru')
+    expect(normalizeLanguage('unknown')).toBe('zh-CN')
+  })
+
+  it('should map every supported language to an Intl locale', async () => {
+    const locales = {
+      'zh-CN': 'zh-CN',
+      en: 'en-US',
+      ru: 'ru-RU',
+    } as const
+
+    for (const language of SUPPORTED_LANGUAGES) {
+      await i18n.changeLanguage(language)
+      expect(getIntlLocale()).toBe(locales[language])
+    }
+  })
 })
 
 describe('Translation Key Completeness', () => {
@@ -152,6 +189,135 @@ describe('Translation Key Completeness', () => {
       expect(missingInZh).toEqual([])
     })
   }
+})
+
+describe('Component translation key usage', () => {
+  it('should not prefix common namespace keys inside common namespace lookups', () => {
+    const componentDir = path.resolve(process.cwd(), 'src/components')
+    const offenders = collectSourceFiles(componentDir).flatMap((file) => {
+      const source = fs.readFileSync(file, 'utf8')
+      return source
+        .split(/\r?\n/)
+        .map((line, index) => ({ line, index: index + 1 }))
+        .filter(({ line }) => COMPONENT_COMMON_PREFIX_REGEX.test(line))
+        .map(({ line, index }) => `${path.relative(process.cwd(), file)}:${index}: ${line.trim()}`)
+    })
+
+    expect(offenders).toEqual([])
+  })
+
+  it('should not use stale story architecture translation paths in components', () => {
+    const componentDir = path.resolve(process.cwd(), 'src/components')
+    const stalePatterns = [
+      /worldBuilding\.(premise|premiseDesc|characterMap|characterMapDesc|worldbuilding|worldbuildingDesc|synopsis|synopsisDesc)/,
+      /label:\s*['"](Premise|Character Map|Worldbuilding|Synopsis)['"]/,
+    ]
+    const offenders = collectSourceFiles(componentDir).flatMap((file) => {
+      const source = fs.readFileSync(file, 'utf8')
+      return source
+        .split(/\r?\n/)
+        .map((line, index) => ({ line, index: index + 1 }))
+        .filter(({ line }) => stalePatterns.some(pattern => pattern.test(line)))
+        .map(({ line, index }) => `${path.relative(process.cwd(), file)}:${index}: ${line.trim()}`)
+    })
+
+    expect(offenders).toEqual([])
+  })
+})
+
+describe('Localized prompt templates', () => {
+  it('should render Russian one-click config generation prompt without accidental CJK fragments', async () => {
+    await i18n.changeLanguage('ru')
+    const template = getPromptTemplate('generate_global_config')
+    expect(template).toBeDefined()
+
+    const builder = new ArchitecturePromptBuilder(template!)
+      .withUserIdea('Маг-рунолог попадает во вселенную EVE Online.')
+      .withNumberOfChapters(100)
+      .withWordNumber(3000)
+
+    expect(builder.getSystemRole()).not.toMatch(CJK_REGEX)
+    expect(builder.build()).not.toMatch(CJK_REGEX)
+    expect(builder.build()).toContain('Все строковые значения')
+  })
+
+  it('should resolve Russian story architecture editor labels instead of returning raw keys', async () => {
+    await i18n.changeLanguage('ru')
+
+    for (const key of [
+      'archFile.premise',
+      'archFile.premiseDesc',
+      'archFile.characterMap',
+      'archFile.characterMapDesc',
+      'archFile.worldbuilding',
+      'archFile.worldbuildingDesc',
+      'archFile.synopsis',
+      'archFile.synopsisDesc',
+    ]) {
+      expect(i18n.t(key, { ns: 'editors' })).not.toBe(key)
+    }
+  })
+
+  it('should render Russian architecture, blueprint, and chapter writing prompts without accidental CJK fragments', async () => {
+    await i18n.changeLanguage('ru')
+
+    const worldTemplate = getPromptTemplate('world_building')
+    expect(worldTemplate).toBeDefined()
+    const worldPrompt = new ArchitecturePromptBuilder(worldTemplate!)
+      .withGenre('Научная фантастика')
+      .withCoreSeed('Пилот-рунолог попадает в мир EVE Online.')
+      .withCoreSetting('Космические корпорации и руническая магия.')
+      .withGoldenFinger('Кровавая руна')
+      .withProtagonistProfile('Пилот-рунолог с периферии')
+      .withGlobalGuidance('Писать только на русском языке.')
+      .withStepGuidance('')
+      .build()
+    expect(worldPrompt).not.toMatch(CJK_REGEX)
+
+    for (const key of ['chapter_blueprint', 'chapter_blueprint_chunk'] as const) {
+      const template = getPromptTemplate(key)
+      expect(template).toBeDefined()
+
+      const prompt = new DirectoryPromptBuilder(template!)
+        .withNovelArchitecture('Полная архитектура романа.')
+        .withNumberOfChapters(100)
+        .withGlobalGuidance('Писать только на русском языке.')
+        .withGenre('Научная фантастика')
+        .withChapterList('Глава 1: стартовый конфликт.')
+        .withN(2)
+        .withM(5)
+        .withPacingGuidance('')
+        .build()
+
+      expect(prompt).not.toMatch(CJK_REGEX)
+      expect(prompt).toContain('строковые значения')
+      expect(prompt).toContain('на русском языке')
+    }
+
+    for (const key of ['first_chapter_draft', 'next_chapter_draft'] as const) {
+      const template = getPromptTemplate(key)
+      expect(template).toBeDefined()
+
+      const prompt = new ChapterPromptBuilder(template!)
+        .withArchitecture('Архитектура романа.')
+        .withChapterInfo({ title: 'Ржавчина и воскресение', keyEvents: 'Герой просыпается на планете-свалке.' })
+        .withFutureBlueprints('Будущие главы.')
+        .withGlobalGuidance('Писать только на русском языке.')
+        .withWordNumber(3000)
+        .withWritingStyle('')
+        .withUserGuidance('')
+        .withCanonContext('Канон.')
+        .withGlobalSummary('Сводка.')
+        .withCharacterStates('Состояния.')
+        .withShortSummary('Кратко.')
+        .withPreviousEnding('Конец предыдущей главы.')
+        .withFilteredContext('')
+        .build()
+
+      expect(prompt).not.toMatch(CJK_REGEX)
+      expect(prompt).toContain('должны быть на русском языке')
+    }
+  })
 })
 
 describe('Translation Retrieval', () => {
@@ -183,6 +349,47 @@ describe('Translation Retrieval', () => {
     expect(i18n.t('ok')).toBe('ОК')
     expect(i18n.t('retry')).toBe('Повторить')
     expect(i18n.t('save')).toBe('Сохранить')
+  })
+
+  it('should return localized settings prompt labels for every supported language', async () => {
+    const expected = {
+      'zh-CN': 'AI 聊天基础提示词',
+      en: 'AI chat base prompt',
+      ru: 'Базовый промпт AI-чата',
+    } as const
+
+    for (const language of SUPPORTED_LANGUAGES) {
+      await i18n.changeLanguage(language)
+      expect(i18n.t('prompts.agentBaseTitle', { ns: 'settings' })).toBe(expected[language])
+      expect(i18n.t('prompts.saving', { ns: 'settings' })).not.toBe('prompts.saving')
+    }
+  })
+
+  it('should include explicit output language instructions for generated fields', async () => {
+    const expectedFragments = {
+      'zh-CN': '必须使用简体中文',
+      en: 'must be in English',
+      ru: 'должны быть на русском языке',
+    } as const
+
+    for (const language of SUPPORTED_LANGUAGES) {
+      await i18n.changeLanguage(language)
+      const instruction = i18n.t('generateField.languageInstruction', { ns: 'commands' })
+      expect(instruction).toContain(expectedFragments[language])
+      expect(instruction).not.toBe('generateField.languageInstruction')
+    }
+  })
+
+  it('should keep non-Chinese generation prompts free of accidental CJK fragments', () => {
+    const nonChineseCommandFiles = [enCommands, ruCommands]
+    const keysToCheck = ['promptWorldSetting', 'promptOutputRequirements', 'languageInstruction'] as const
+
+    for (const commands of nonChineseCommandFiles) {
+      for (const key of keysToCheck) {
+        const value = commands.generateField[key]
+        expect(value).not.toMatch(CJK_REGEX)
+      }
+    }
   })
 
   it('should work with namespace prefix', () => {

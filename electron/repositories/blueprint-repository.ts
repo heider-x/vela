@@ -159,6 +159,20 @@ export class BlueprintRepository {
         tx()
     }
 
+    /** 用当前列表替换整张蓝图表（事务） */
+    static replaceAll(items: BlueprintData[]): void {
+        const db = getProjectDb()
+        if (!db) return
+
+        const tx = db.transaction(() => {
+            db.prepare('DELETE FROM blueprints').run()
+            for (const item of items) {
+                BlueprintRepository.upsert(item)
+            }
+        })
+        tx()
+    }
+
     /** 删除蓝图 */
     static delete(chapterNumber: number): void {
         const db = getProjectDb()

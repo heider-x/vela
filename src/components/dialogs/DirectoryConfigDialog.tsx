@@ -195,7 +195,7 @@ export default function DirectoryConfigDialog({ isOpen, onClose, existingCount, 
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{t('common.cancel', { ns: 'common' })}</Button>
+          <Button variant="outline" onClick={onClose}>{t('cancel', { ns: 'common' })}</Button>
           <Button variant="default" onClick={handleConfirm}>
             <FileText size={13} />
             {t('directoryConfig.startGeneration')}

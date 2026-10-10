@@ -135,6 +135,21 @@ export default function EditorArea({ onNewProject }: EditorAreaProps) {
   const setActiveTab = useEditorStore(s => s.setActiveTab)
   const sidebarView = useLayoutStore((s) => s.sidebarView)
 
+  const getTabDisplayName = useCallback((tab: EditorTab) => {
+    if (tab.type === 'arch-file' && tab.filePath?.startsWith('vela://core/')) {
+      const archKey = tab.filePath.replace('vela://core/', '')
+      const labels: Record<string, string> = {
+        premise: t('sidebar.premise'),
+        characters: t('sidebar.characterMap'),
+        worldbuilding: t('sidebar.worldbuilding'),
+        synopsis: t('sidebar.synopsis'),
+      }
+      return labels[archKey] ?? tab.name
+    }
+
+    return tab.name
+  }, [t])
+
 
 
   // ===== 所有 Hooks 必须在条件 return 之前 =====
@@ -515,7 +530,7 @@ export default function EditorArea({ onNewProject }: EditorAreaProps) {
               }}
             >
               <TabIcon type={tab.type} />
-              <span className="max-w-[120px] truncate">{tab.name}</span>
+              <span className="max-w-[120px] truncate">{getTabDisplayName(tab)}</span>
 
               {/* 关闭按钮区域：dirty 时显示实心圆点（英文黑点），鼠标悬停展示关闭按钮 */}
               {tab.dirty ? (
@@ -746,7 +761,12 @@ export default function EditorArea({ onNewProject }: EditorAreaProps) {
           <DialogHeader>
             <DialogTitle>{t('editorArea.closeUnsavedFile')}</DialogTitle>
             <DialogDescription>
-              {t('editorArea.unsavedFileDesc', { name: tabs.find(t => t.id === closeConfirm)?.name ?? t('editorArea.closeUnsavedFile') })}
+              {t('editorArea.unsavedFileDesc', {
+                name: (() => {
+                  const tab = tabs.find(t => t.id === closeConfirm)
+                  return tab ? getTabDisplayName(tab) : t('editorArea.closeUnsavedFile')
+                })(),
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

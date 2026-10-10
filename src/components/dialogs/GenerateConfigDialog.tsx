@@ -91,7 +91,7 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
         const fieldList = filledFields.map(f => `• ${f}`).join('\n')
         const ok = await confirm(
           t('generateConfig.overwriteConfirm', { fields: fieldList }),
-          { title: t('generateConfig.configExists'), confirmText: t('common.override', { ns: 'common' }), cancelText: t('common.cancel', { ns: 'common' }) }
+          { title: t('generateConfig.configExists'), confirmText: t('override', { ns: 'common' }), cancelText: t('cancel', { ns: 'common' }) }
         )
         setConfirming(false)
         if (!ok) return
@@ -266,7 +266,7 @@ export default function GenerateConfigDialog({ isOpen, onClose, onGenerated }: P
             {t('generateConfig.shortcutHint')}
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={onClose}>{t('common.cancel', { ns: 'common' })}</Button>
+            <Button variant="outline" onClick={onClose}>{t('cancel', { ns: 'common' })}</Button>
             <Button
               variant="ai"
               size="lg"

@@ -33,6 +33,37 @@ import ruCommands from './locales/ru/commands.json'
 
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined'
 
+export const SUPPORTED_LANGUAGES = ['zh-CN', 'en', 'ru'] as const
+export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
+
+export function normalizeLanguage(language: string | null | undefined): SupportedLanguage {
+  const value = (language ?? '').trim()
+  if (value === 'zh-CN' || value.toLowerCase() === 'zh-cn' || value.toLowerCase().startsWith('zh')) return 'zh-CN'
+  if (value === 'en' || value.toLowerCase().startsWith('en-')) return 'en'
+  if (value === 'ru' || value.toLowerCase().startsWith('ru-')) return 'ru'
+  return 'zh-CN'
+}
+
+function getStoredLanguage(): SupportedLanguage {
+  if (!isBrowser) return 'zh-CN'
+  try {
+    return normalizeLanguage(window.localStorage.getItem('vela-locale'))
+  } catch {
+    return 'zh-CN'
+  }
+}
+
+export function getCurrentLanguage(): SupportedLanguage {
+  return normalizeLanguage(i18n.language)
+}
+
+export function getIntlLocale(language: string | null | undefined = i18n.language): string {
+  const normalized = normalizeLanguage(language)
+  if (normalized === 'en') return 'en-US'
+  if (normalized === 'ru') return 'ru-RU'
+  return 'zh-CN'
+}
+
 const i18nConfig: Parameters<typeof i18n.init>[0] = {
   resources: {
     'zh-CN': {
@@ -70,6 +101,7 @@ const i18nConfig: Parameters<typeof i18n.init>[0] = {
     },
   },
   fallbackLng: 'zh-CN',
+  lng: getStoredLanguage(),
   ns: ['common', 'dialogs', 'editors', 'panels', 'layout', 'pages', 'stores', 'settings', 'commands'],
   defaultNS: 'common',
   interpolation: {
@@ -79,33 +111,32 @@ const i18nConfig: Parameters<typeof i18n.init>[0] = {
 
 // Only use LanguageDetector and React i18next in browser environment
 if (isBrowser) {
-  // Dynamic import to avoid bundling browser-only code in tests
-  import('i18next-browser-languagedetector').then(({ default: LanguageDetector }) => {
-    i18n.use(LanguageDetector)
-  }).catch(() => {
-    // Ignore if not available
-  })
   i18n.use(initReactI18next)
-
-  i18nConfig.detection = {
-    order: ['localStorage'],
-    lookupLocalStorage: 'vela-locale',
-    caches: ['localStorage'],
-  }
 }
 
 i18n.init(i18nConfig)
 
 // Update HTML lang attribute when language changes (browser only)
 if (isBrowser) {
-  i18n.on('languageChanged', (lng) => {
-    document.documentElement.lang = lng === 'ru' ? 'ru' : lng === 'en' ? 'en' : 'zh-CN'
+  const applyDocumentLanguage = (lng: string) => {
+    const normalized = normalizeLanguage(lng)
+    document.documentElement.lang = normalized
     const titles: Record<string, string> = {
       'ru': 'Vela — ИИ-редактор для написания романов',
       'en': 'Vela — AI Novel Writing IDE',
       'zh-CN': 'Vela — AI 小说创作 IDE',
     }
-    document.title = titles[lng] || titles['zh-CN']
+    document.title = titles[normalized]
+    try {
+      window.localStorage.setItem('vela-locale', normalized)
+    } catch {
+      // Ignore storage failures in restricted environments.
+    }
+  }
+
+  applyDocumentLanguage(i18n.language)
+  i18n.on('languageChanged', (lng) => {
+    applyDocumentLanguage(lng)
   })
 }
 

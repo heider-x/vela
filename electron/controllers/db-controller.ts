@@ -124,6 +124,15 @@ export function registerDatabaseController() {
     }
   })
 
+  ipcMain.handle('db:blueprint-replace-all', async (_event, items: BlueprintData[]) => {
+    try {
+      BlueprintRepository.replaceAll(items)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+
   ipcMain.handle('db:blueprint-update-notes', async (_event, chapterNumber: number, notes: string) => {
     try {
       BlueprintRepository.updateNotes(chapterNumber, notes)

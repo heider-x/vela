@@ -25,7 +25,7 @@ export default function CharactersView() {
     return (
       <EmptyState 
         icon={<Users size={36} />} 
-        message={t('common.noProject', { ns: 'common' })} 
+        message={t('noProject', { ns: 'common' })} 
         className="pb-[15vh]" 
         opacity={0.4} 
       />

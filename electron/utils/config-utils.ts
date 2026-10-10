@@ -44,6 +44,13 @@ export const DEFAULT_GLOBAL_CONFIG: GlobalConfig = {
   editorFontSize: 16,
   editorFontFamily: 'Noto Serif SC',
   autoSaveInterval: 30,
+  locale: 'zh-CN',
+  agentBasePrompt: '',
+  windowState: {
+    width: 1440,
+    height: 900,
+    maximized: false,
+  },
   proxy: {
     enabled: false,
     type: 'http',

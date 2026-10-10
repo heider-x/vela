@@ -106,6 +106,10 @@ export async function saveAllBlueprints(blueprints: ChapterBlueprint[], projectP
   if (!result.success) throw new Error(result.error || 'BLUEPRINT_SAVE_FAILED')
 }
 
+export async function replaceAllBlueprints(blueprints: ChapterBlueprint[]): Promise<void> {
+  await ipc.invoke('db:blueprint-replace-all', blueprints)
+}
+
 export async function getBlueprintCount(): Promise<number> {
   try {
     const blueprints = await ipc.invoke('db:blueprint-get-all')

@@ -24,10 +24,10 @@ const ARCH_FILES_CONFIG: Array<{
   descKey: string
   iconName: string
 }> = [
-    { key: 'premise', fileName: 'premise.md', labelKey: 'worldBuilding.premise', descKey: 'worldBuilding.premiseDesc', iconName: 'target' },
-    { key: 'characters', fileName: 'characters.md', labelKey: 'worldBuilding.characterMap', descKey: 'worldBuilding.characterMapDesc', iconName: 'users' },
-    { key: 'worldbuilding', fileName: 'worldbuilding.md', labelKey: 'worldBuilding.worldbuilding', descKey: 'worldBuilding.worldbuildingDesc', iconName: 'globe' },
-    { key: 'synopsis', fileName: 'synopsis.md', labelKey: 'worldBuilding.synopsis', descKey: 'worldBuilding.synopsisDesc', iconName: 'map' },
+    { key: 'premise', fileName: 'premise.md', labelKey: 'archFile.premise', descKey: 'archFile.premiseDesc', iconName: 'target' },
+    { key: 'characters', fileName: 'characters.md', labelKey: 'archFile.characterMap', descKey: 'archFile.characterMapDesc', iconName: 'users' },
+    { key: 'worldbuilding', fileName: 'worldbuilding.md', labelKey: 'archFile.worldbuilding', descKey: 'archFile.worldbuildingDesc', iconName: 'globe' },
+    { key: 'synopsis', fileName: 'synopsis.md', labelKey: 'archFile.synopsis', descKey: 'archFile.synopsisDesc', iconName: 'map' },
   ]
 
 /** 故事架构编辑器 — 显示四个架构文件状态，并提供 AI 生成入口 */

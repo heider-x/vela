@@ -5,7 +5,7 @@ import {
   Languages,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import i18n from '../../i18n'
+import i18n, { normalizeLanguage, type SupportedLanguage } from '../../i18n'
 import PromptSettings from './PromptSettings'
 import { useLLMStore } from '../../stores/llm-store'
 import { useThemeStore, FONT_OPTIONS, type FontId } from '../../stores/theme-store'
@@ -47,6 +47,10 @@ const SECTIONS: SectionItem[] = [
   { id: 'prompts', label: 'Prompt Templates', icon: <MessageSquare size={16} />, descriptionKey: 'general.promptsDesc' },
   { id: 'about', label: 'About & Support', icon: <span style={{ color: '#ff4d4f', fontSize: 14 }}>❤️</span>, descriptionKey: 'general.aboutDesc' },
 ]
+
+function getSectionTitleKey(section: SettingsSection): string {
+  return section === 'llm' ? 'models' : section
+}
 
 // ==================== 主组件 ====================
 
@@ -103,7 +107,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
               )}
             >
               <span className="flex-shrink-0">{s.icon}</span>
-              <span className="truncate">{t(`general.${s.id === 'llm' ? 'models' : s.id}`)}</span>
+              <span className="truncate">{t(`general.${getSectionTitleKey(s.id)}`)}</span>
             </button>
           ))}
         </aside>
@@ -117,7 +121,7 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
           >
             <div>
               <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
-                {t(`general.${section === 'llm' ? 'models' : section}`)}
+                {t(`general.${getSectionTitleKey(section)}`)}
               </h2>
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
                 {t(SECTIONS.find((s) => s.id === section)?.descriptionKey ?? '')}
@@ -152,17 +156,18 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
 
 function LanguageSection() {
   const { t } = useTranslation('settings')
-  const currentLang = i18n.language
+  const currentLang = normalizeLanguage(i18n.language)
 
-  const languages = [
+  const languages: Array<{ code: SupportedLanguage; label: string; nativeLabel: string }> = [
     { code: 'zh-CN', label: '简体中文', nativeLabel: '简体中文' },
     { code: 'en', label: 'English', nativeLabel: 'English' },
     { code: 'ru', label: 'Русский', nativeLabel: 'Русский' },
   ]
 
-  const handleLanguageChange = async (langCode: string) => {
+  const handleLanguageChange = async (langCode: SupportedLanguage) => {
     await i18n.changeLanguage(langCode)
     localStorage.setItem('vela-locale', langCode)
+    ipc.invoke('config:set', { locale: langCode }).catch(() => { })
   }
 
   return (
@@ -511,9 +516,13 @@ function ModelForm({
 
   // 当前模型名是否在预设列表里（决定下拉框显示）
   const isPresetValue = presetModels.some((m) => m.name === model.modelName)
-  const selectValue = customModelName || (!isPresetValue && presetModels.length > 0)
+  const shouldUseCustomModelInput = customModelName || (!isPresetValue && Boolean(model.modelName))
+  const selectValue = shouldUseCustomModelInput
     ? '__custom__'
     : model.modelName
+  const canSave = Boolean(model.modelName?.trim()) &&
+    Boolean(model.baseUrl?.trim()) &&
+    (model.provider === 'ollama' || Boolean(model.apiKey?.trim()))
 
   const handleTest = async () => {
     setTesting(true)
@@ -580,7 +589,7 @@ function ModelForm({
             <button
               type="button"
               onClick={() => {
-                if (customModelName) {
+                if (shouldUseCustomModelInput) {
                   // 切回预设列表
                   const first = presetModels[0]
                   setCustomModelName(false)
@@ -594,13 +603,13 @@ function ModelForm({
               className="text-xs transition-colors"
               style={{ color: 'var(--color-accent)' }}
             >
-              {customModelName ? t('models.presetModelSelect') : t('models.customModelInput')}
+              {shouldUseCustomModelInput ? t('models.presetModelSelect') : t('models.customModelInput')}
             </button>
           )}
         </div>
 
         {/* 有预设模型 且 未切到手动输入 → 显示下拉 */}
-        {presetModels.length > 0 && !customModelName ? (
+        {presetModels.length > 0 && !shouldUseCustomModelInput ? (
           <NativeSelect
             value={selectValue}
             onChange={(e) => handleModelSelect(e.target.value)}
@@ -701,7 +710,7 @@ function ModelForm({
         <Button
           className="flex-1"
           onClick={onSave}
-          disabled={saving || !model.name.trim() || !model.modelName.trim() || !model.baseUrl.trim() || (!model.apiKey && model.provider !== 'ollama')}
+          disabled={saving || !canSave}
         >
           <Save size={13} />
           {saving ? t('models.saving') : t('models.saveConfig')}
