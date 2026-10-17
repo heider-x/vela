@@ -47,6 +47,16 @@ import ruStores from '../locales/ru/stores.json'
 import ruSettings from '../locales/ru/settings.json'
 import ruCommands from '../locales/ru/commands.json'
 
+import ptBRCommon from '../locales/pt-BR/common.json'
+import ptBRDialogs from '../locales/pt-BR/dialogs.json'
+import ptBREditors from '../locales/pt-BR/editors.json'
+import ptBRPanels from '../locales/pt-BR/panels.json'
+import ptBRLayout from '../locales/pt-BR/layout.json'
+import ptBRPages from '../locales/pt-BR/pages.json'
+import ptBRStores from '../locales/pt-BR/stores.json'
+import ptBRSettings from '../locales/pt-BR/settings.json'
+import ptBRCommands from '../locales/pt-BR/commands.json'
+
 const NAMESPACES = ['common', 'dialogs', 'editors', 'panels', 'layout', 'pages', 'stores', 'settings', 'commands'] as const
 
 const ZH_CN_FILES: Record<string, Record<string, unknown>> = {
@@ -83,6 +93,18 @@ const RU_FILES: Record<string, Record<string, unknown>> = {
   stores: ruStores,
   settings: ruSettings,
   commands: ruCommands,
+}
+
+const PT_BR_FILES: Record<string, Record<string, unknown>> = {
+  common: ptBRCommon,
+  dialogs: ptBRDialogs,
+  editors: ptBREditors,
+  panels: ptBRPanels,
+  layout: ptBRLayout,
+  pages: ptBRPages,
+  stores: ptBRStores,
+  settings: ptBRSettings,
+  commands: ptBRCommands,
 }
 
 const CJK_REGEX = /[\u3400-\u9fff]/
@@ -146,6 +168,8 @@ describe('i18n Initialization', () => {
     expect(normalizeLanguage('zh-Hans')).toBe('zh-CN')
     expect(normalizeLanguage('en-US')).toBe('en')
     expect(normalizeLanguage('ru-RU')).toBe('ru')
+    expect(normalizeLanguage('pt-BR')).toBe('pt-BR')
+    expect(normalizeLanguage('pt-PT')).toBe('pt-BR')
     expect(normalizeLanguage('unknown')).toBe('zh-CN')
   })
 
@@ -154,6 +178,7 @@ describe('i18n Initialization', () => {
       'zh-CN': 'zh-CN',
       en: 'en-US',
       ru: 'ru-RU',
+      'pt-BR': 'pt-BR',
     } as const
 
     for (const language of SUPPORTED_LANGUAGES) {
@@ -165,14 +190,16 @@ describe('i18n Initialization', () => {
 
 describe('Translation Key Completeness', () => {
   for (const ns of NAMESPACES) {
-    it(`${ns}: zh-CN, en, and ru should have the same keys`, () => {
+    it(`${ns}: zh-CN, en, ru, and pt-BR should have the same keys`, () => {
       const zhKeys = getLeafKeys(ZH_CN_FILES[ns]).sort()
       const enKeys = getLeafKeys(EN_FILES[ns]).sort()
       const ruKeys = getLeafKeys(RU_FILES[ns]).sort()
+      const ptBrKeys = getLeafKeys(PT_BR_FILES[ns]).sort()
 
       const missingInEn = zhKeys.filter(k => !enKeys.includes(k))
       const missingInRu = zhKeys.filter(k => !ruKeys.includes(k))
-      const missingInZh = enKeys.filter(k => !zhKeys.includes(k))
+      const missingInPtBr = zhKeys.filter(k => !ptBrKeys.includes(k))
+      const missingInZh = [...enKeys, ...ptBrKeys].filter(k => !zhKeys.includes(k))
 
       if (missingInEn.length > 0) {
         console.error(`${ns}: Missing keys in en: ${missingInEn.join(', ')}`)
@@ -180,12 +207,16 @@ describe('Translation Key Completeness', () => {
       if (missingInRu.length > 0) {
         console.error(`${ns}: Missing keys in ru: ${missingInRu.join(', ')}`)
       }
+      if (missingInPtBr.length > 0) {
+        console.error(`${ns}: Missing keys in pt-BR: ${missingInPtBr.join(', ')}`)
+      }
       if (missingInZh.length > 0) {
         console.error(`${ns}: Missing keys in zh-CN: ${missingInZh.join(', ')}`)
       }
 
       expect(missingInEn).toEqual([])
       expect(missingInRu).toEqual([])
+      expect(missingInPtBr).toEqual([])
       expect(missingInZh).toEqual([])
     })
   }
@@ -351,11 +382,21 @@ describe('Translation Retrieval', () => {
     expect(i18n.t('save')).toBe('Сохранить')
   })
 
+  it('should return Portuguese text for common keys in pt-BR', async () => {
+    await i18n.changeLanguage('pt-BR')
+    expect(i18n.t('confirm')).toBe('Confirmar')
+    expect(i18n.t('cancel')).toBe('Cancelar')
+    expect(i18n.t('ok')).toBe('OK')
+    expect(i18n.t('retry')).toBe('Tentar novamente')
+    expect(i18n.t('save')).toBe('Salvar')
+  })
+
   it('should return localized settings prompt labels for every supported language', async () => {
     const expected = {
       'zh-CN': 'AI 聊天基础提示词',
       en: 'AI chat base prompt',
       ru: 'Базовый промпт AI-чата',
+      'pt-BR': 'Prompt base do chat de IA',
     } as const
 
     for (const language of SUPPORTED_LANGUAGES) {
@@ -370,6 +411,7 @@ describe('Translation Retrieval', () => {
       'zh-CN': '必须使用简体中文',
       en: 'must be in English',
       ru: 'должны быть на русском языке',
+      'pt-BR': 'deve estar em português',
     } as const
 
     for (const language of SUPPORTED_LANGUAGES) {
@@ -381,7 +423,7 @@ describe('Translation Retrieval', () => {
   })
 
   it('should keep non-Chinese generation prompts free of accidental CJK fragments', () => {
-    const nonChineseCommandFiles = [enCommands, ruCommands]
+    const nonChineseCommandFiles = [enCommands, ruCommands, ptBRCommands]
     const keysToCheck = ['promptWorldSetting', 'promptOutputRequirements', 'languageInstruction'] as const
 
     for (const commands of nonChineseCommandFiles) {
@@ -507,6 +549,12 @@ describe('JSON File Validity', () => {
       const content = JSON.stringify(RU_FILES[ns])
       expect(content).toBeDefined()
       expect(typeof RU_FILES[ns]).toBe('object')
+    })
+
+    it(`pt-BR/${ns}.json should be valid JSON with no duplicate keys`, () => {
+      const content = JSON.stringify(PT_BR_FILES[ns])
+      expect(content).toBeDefined()
+      expect(typeof PT_BR_FILES[ns]).toBe('object')
     })
   }
 })

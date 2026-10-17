@@ -1,0 +1,50 @@
+{
+  "welcome": {
+    "title": "Bem-vindo ao Vela",
+    "subtitle": "IDE de escrita de romances com IA",
+    "newProject": "Novo projeto",
+    "newProjectDesc": "Comece um novo romance",
+    "openProject": "Abrir projeto",
+    "openProjectDesc": "Abra um projeto Vela existente",
+    "importNovel": "Importar romance",
+    "importNovelDesc": "Importe uma obra existente para continuar",
+    "recentProjects": "Projetos recentes",
+    "footer": "Vela v0.1.0 · pipeline de escrita com IA em 7 etapas · segurança de dados local-first"
+  },
+  "knowledge": {
+    "title": "Visão geral da base de conhecimento",
+    "noDocuments": "Nenhum documento ainda",
+    "importPrompt": "Importe documentos para começar a usar a base de conhecimento"
+  },
+  "knowledgeOverview": {
+    "title": "Base de conhecimento",
+    "description": "Banco de dados vetorial local baseado em LanceDB. Indexado automaticamente após a finalização, fornecendo contexto de busca semântica para a escrita com IA.",
+    "openProjectFirst": "Abra um projeto primeiro",
+    "docCount": "Documentos",
+    "chunkCount": "Trechos",
+    "engine": "Mecanismo",
+    "searchMode": "Modo de busca",
+    "ftsVector": "FTS+Vetor",
+    "ftsOnly": "FTS",
+    "hybrid": "Híbrida",
+    "basic": "Básica",
+    "hybridSearch": "Busca híbrida",
+    "bm25Search": "Busca textual completa BM25",
+    "indexUpgrade": "Atualização do índice vetorial pendente",
+    "vectorlessCount": "{{count}} trechos de texto ainda não têm embeddings vetoriais. Atualize para habilitar a busca semântica aprimorada.",
+    "rebuilding": "Reconstruindo...",
+    "rebuildIndex": "Reconstruir índice vetorial",
+    "rebuildSuccess": "Índice vetorial reconstruído: {{processed}} trechos processados{{failed}}",
+    "failedCount": ", {{count}} trechos falharam",
+    "rebuildFailed": "Falha no preenchimento vetorial",
+    "semanticSearch": "Busca semântica",
+    "hybridHint": "Fusão de vizinhos BM25 + vetor",
+    "basicHint": "Configure o modelo de embedding para atualizar automaticamente para busca híbrida",
+    "searchPlaceholder": "Digite a consulta, ex.: sistema de poder do protagonista, configurações centrais da ambientação...",
+    "search": "Buscar",
+    "searchResults": "Resultados da busca ({{count}})",
+    "clear": "Limpar",
+    "fullTextMatch": "Correspondência textual completa",
+    "similarity": "Similaridade {{score}}%"
+  }
+}

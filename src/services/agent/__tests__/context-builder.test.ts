@@ -14,6 +14,7 @@ describe('agent system prompt localization', () => {
       'zh-CN': '使用中文回复。',
       en: 'Reply in English.',
       ru: 'Отвечай на русском языке.',
+      'pt-BR': 'Responda em português.',
     } as const
 
     for (const language of SUPPORTED_LANGUAGES) {
@@ -23,8 +24,8 @@ describe('agent system prompt localization', () => {
     }
   })
 
-  it('does not leak Chinese instructions into English or Russian agent prompts', async () => {
-    for (const language of ['en', 'ru'] as const) {
+  it('does not leak Chinese instructions into English, Russian, or Portuguese agent prompts', async () => {
+    for (const language of ['en', 'ru', 'pt-BR'] as const) {
       await i18n.changeLanguage(language)
       const prompt = buildAgentSystemPrompt('fast')
       expect(prompt).not.toContain('使用中文回复')

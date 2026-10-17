@@ -1,0 +1,46 @@
+{
+  "workflow": {
+    "started": "🚀 Fluxo de trabalho \"{{title}}\" iniciado",
+    "cancelled": "⏹ Fluxo de trabalho \"{{title}}\" cancelado",
+    "stepRunning": "▶ [{{title}}] Executando etapa: {{step}}",
+    "stepComplete": "✅ [{{title}}] Etapa concluída: {{step}}",
+    "waitingConfirm": "⏸ [{{title}}] Aguardando para continuar para a etapa {{index}}: {{nextStep}}",
+    "stepFailed": "❌ [{{title}}] Falha na etapa: {{step}} — {{error}}",
+    "completed": "🎉 Fluxo de trabalho \"{{title}}\" concluído",
+    "onCompleteFailed": "⚠️ onComplete falhou: {{error}}",
+    "allCancelled": "⏹ Todos os fluxos de trabalho cancelados"
+  },
+  "project": {
+    "timeout": "[{{label}}] Tempo limite excedido ({{ms}} ms)",
+    "unknownError": "Erro desconhecido",
+    "createFailed": "Falha ao criar o projeto",
+    "createError": "Erro ao criar o projeto",
+    "openFailed": "Falha ao abrir o projeto",
+    "openError": "Erro ao abrir o projeto"
+  },
+  "llm": {
+    "noDefaultModel": "Nenhum modelo padrão configurado",
+    "modelNotFound": "Modelo não encontrado ou não configurado; verifique as configurações de modelo",
+    "connectionFailed": "Falha na conexão"
+  },
+  "agentEngine": {
+    "timeout": "A execução da ferramenta excedeu o tempo limite ({{seconds}} s)",
+    "workflowCancelled": "Fluxo de trabalho cancelado",
+    "streamFailed": "Falha na geração do stream",
+    "noModel": "Nenhum modelo de IA padrão configurado"
+  },
+  "guard": {
+    "openProjectFirst": "Abra ou crie um projeto primeiro.",
+    "fillNovelConfig": "Preencha o esboço principal ou o perfil do protagonista em Configurações do romance primeiro, para que a IA possa gerar a arquitetura da história.\n\nGênero atual: {{genre}}",
+    "premiseNotGenerated": "A \"Premissa\" ainda não foi gerada. Ela é a base para os planos de capítulos.\n\nAcesse Arquitetura da história e clique em \"Gerar arquitetura com IA\" para gerar a premissa antes de criar os planos de capítulos.",
+    "missingArchitecture": "Observação: as seguintes informações da arquitetura ainda não foram geradas. A qualidade do plano pode ser afetada:\n{{items}}\n\nConsidere gerar a arquitetura completa primeiro ou continuar com o conteúdo existente.",
+    "noCharacterCards": "Nenhuma ficha de personagem encontrada (não há registros de personagens no banco de dados).\n\nGere o mapa de personagens em Arquitetura da história (que cria as fichas automaticamente) ou crie fichas de personagem manualmente em Gerenciamento de personagens.",
+    "noBlueprints": "Nenhum plano de capítulo gerado ainda (o banco de dados está vazio).\n\nAcesse Planos de capítulos e clique em \"Gerar planos com IA\" para deixar a IA planejar o conteúdo de cada capítulo antes da escrita.",
+    "prevChapterNotFinalized": "Contexto ausente: o capítulo {{chapter}} não foi finalizado!\n\nPara garantir que a IA leia um contexto coerente (fim e pontos de trama do capítulo anterior), finalize o capítulo {{chapter}} na Caixa de rascunhos primeiro.",
+    "prevPostProcessIncomplete": "O pós-processamento do capítulo finalizado {{chapter}} está incompleto!\n\nAs seguintes etapas críticas falharam:\n{{steps}}\n\nClique em \"Reparar finalizado\" na Caixa de rascunhos para completar os dados; caso contrário, o contexto de IA dos capítulos seguintes ficará incompleto.",
+    "characterCannotRegenerate": "Os planos de capítulo já existem. As fichas de personagem não podem ser regeneradas.\n\nA geração de planos depende dos dados dos personagens. Regenerar as fichas invalidaria todos os planos existentes e os capítulos já escritos.\nPara modificar personagens, edite as fichas existentes manualmente.",
+    "noFinalizedChapters": "Nenhum capítulo finalizado ainda. Não é possível executar a operação de reparo.",
+    "canOnlyRepairLatest": "O reparo de pós-processamento só é permitido para o capítulo finalizado mais recente (capítulo {{chapter}}).\n\nReparar retroativamente o capítulo {{target}} quebraria a cadeia de evolução linear dos estados dos personagens.",
+    "characterCardsMissingForWrite": "Nenhuma ficha de personagem encontrada (não há registros de personagens no banco de dados).\n\nA escrita com IA precisa dos estados dos personagens como contexto. Gere o mapa de personagens em Arquitetura da história ou crie fichas de personagem manualmente em Gerenciamento de personagens."
+  }
+}

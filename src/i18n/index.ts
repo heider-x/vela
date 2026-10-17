@@ -31,9 +31,19 @@ import ruStores from './locales/ru/stores.json'
 import ruSettings from './locales/ru/settings.json'
 import ruCommands from './locales/ru/commands.json'
 
+import ptBRCommon from './locales/pt-BR/common.json'
+import ptBRDialogs from './locales/pt-BR/dialogs.json'
+import ptBREditors from './locales/pt-BR/editors.json'
+import ptBRPanels from './locales/pt-BR/panels.json'
+import ptBRLayout from './locales/pt-BR/layout.json'
+import ptBRPages from './locales/pt-BR/pages.json'
+import ptBRStores from './locales/pt-BR/stores.json'
+import ptBRSettings from './locales/pt-BR/settings.json'
+import ptBRCommands from './locales/pt-BR/commands.json'
+
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined'
 
-export const SUPPORTED_LANGUAGES = ['zh-CN', 'en', 'ru'] as const
+export const SUPPORTED_LANGUAGES = ['zh-CN', 'en', 'ru', 'pt-BR'] as const
 export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
 
 export function normalizeLanguage(language: string | null | undefined): SupportedLanguage {
@@ -41,13 +51,18 @@ export function normalizeLanguage(language: string | null | undefined): Supporte
   if (value === 'zh-CN' || value.toLowerCase() === 'zh-cn' || value.toLowerCase().startsWith('zh')) return 'zh-CN'
   if (value === 'en' || value.toLowerCase().startsWith('en-')) return 'en'
   if (value === 'ru' || value.toLowerCase().startsWith('ru-')) return 'ru'
+  if (value.toLowerCase() === 'pt-br' || value.toLowerCase().startsWith('pt')) return 'pt-BR'
   return 'zh-CN'
 }
 
 function getStoredLanguage(): SupportedLanguage {
   if (!isBrowser) return 'zh-CN'
   try {
-    return normalizeLanguage(window.localStorage.getItem('vela-locale'))
+    const stored = window.localStorage.getItem('vela-locale')
+    if (stored) return normalizeLanguage(stored)
+    // 首次启动时若系统/浏览器语言为葡萄牙语，则直接以翻译后的界面打开
+    if (navigator.language?.toLowerCase().startsWith('pt')) return 'pt-BR'
+    return 'zh-CN'
   } catch {
     return 'zh-CN'
   }
@@ -61,6 +76,7 @@ export function getIntlLocale(language: string | null | undefined = i18n.languag
   const normalized = normalizeLanguage(language)
   if (normalized === 'en') return 'en-US'
   if (normalized === 'ru') return 'ru-RU'
+  if (normalized === 'pt-BR') return 'pt-BR'
   return 'zh-CN'
 }
 
@@ -99,6 +115,17 @@ const i18nConfig: Parameters<typeof i18n.init>[0] = {
       settings: ruSettings,
       commands: ruCommands,
     },
+    'pt-BR': {
+      common: ptBRCommon,
+      dialogs: ptBRDialogs,
+      editors: ptBREditors,
+      panels: ptBRPanels,
+      layout: ptBRLayout,
+      pages: ptBRPages,
+      stores: ptBRStores,
+      settings: ptBRSettings,
+      commands: ptBRCommands,
+    },
   },
   fallbackLng: 'zh-CN',
   lng: getStoredLanguage(),
@@ -124,6 +151,7 @@ if (isBrowser) {
     const titles: Record<string, string> = {
       'ru': 'Vela — ИИ-редактор для написания романов',
       'en': 'Vela — AI Novel Writing IDE',
+      'pt-BR': 'Vela — IDE de escrita de romances com IA',
       'zh-CN': 'Vela — AI 小说创作 IDE',
     }
     document.title = titles[normalized]
