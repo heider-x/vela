@@ -162,6 +162,7 @@ function LanguageSection() {
     { code: 'zh-CN', label: '简体中文', nativeLabel: '简体中文' },
     { code: 'en', label: 'English', nativeLabel: 'English' },
     { code: 'ru', label: 'Русский', nativeLabel: 'Русский' },
+    { code: 'pt-BR', label: 'Português', nativeLabel: 'Português (Brasil)' },
   ]
 
   const handleLanguageChange = async (langCode: SupportedLanguage) => {

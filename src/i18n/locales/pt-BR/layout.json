@@ -1,0 +1,89 @@
+{
+  "titleBar": {
+    "unsavedChanges": "Alterações não salvas",
+    "zoomOut": "Reduzir zoom (⌘+-)",
+    "zoomOutCtrl": "Reduzir zoom (Ctrl+-)",
+    "resetZoom": "Redefinir zoom (⌘+0)",
+    "resetZoomCtrl": "Redefinir zoom (Ctrl+0)",
+    "zoomIn": "Aumentar zoom (⌘+=)",
+    "zoomInCtrl": "Aumentar zoom (Ctrl+=)",
+    "settings": "Configurações",
+    "themeGalaxy": "Galáxia",
+    "themePaper": "Papel",
+    "themeDark": "Escuro",
+    "themeLight": "Claro",
+    "themeLabel": "Tema: {{theme}}"
+  },
+  "statusBar": {
+    "supportAuthor": "❤️ Apoie o autor",
+    "sponsorTooltip": "Negócios e patrocínio",
+    "currentModel": "Modelo atual: {{name}}",
+    "clickToConfigModel": "Clique para configurar o modelo",
+    "noModel": "Nenhum modelo configurado",
+    "taskComplete": " Concluído",
+    "tasksRunning": "{{count}} tarefa(s) em andamento...",
+    "viewTaskProgress": "Clique para ver o progresso da tarefa",
+    "viewAIDetails": "Clique para ver os detalhes da saída da IA",
+    "tasksLabel": "Tarefas"
+  },
+  "activityBar": {
+    "home": "Início",
+    "project": "Projeto",
+    "knowledge": "Base de conhecimento",
+    "characters": "Personagens",
+    "settings": "Configurações",
+    "agent": "Assistente de IA",
+    "projectManagement": "Gerenciamento de projetos",
+    "currentProject": "Projeto atual",
+    "newProject": "Novo projeto",
+    "openProject": "Abrir projeto...",
+    "closeProject": "Fechar projeto atual",
+    "recentProjects": "Projetos recentes",
+    "noOtherRecent": "Nenhum outro projeto recente",
+    "closeProjectTitle": "Fechar projeto",
+    "discardAndClose": "Descartar e fechar",
+    "unsavedConfirm": "Os seguintes arquivos têm alterações não salvas:\n{{names}}\n\nTem certeza de que deseja fechar o projeto? As alterações não salvas serão perdidas.",
+    "closeProjectConfirm": "Os seguintes arquivos têm alterações não salvas:\n{{names}}\n\nTem certeza de que deseja fechar o projeto? As alterações não salvas serão perdidas."
+  },
+  "featureTour": {
+    "entry": "Tour de recursos",
+    "label": "Conheça seu parceiro de escrita",
+    "skip": "Pular tour",
+    "later": "Talvez mais tarde",
+    "previous": "Voltar",
+    "next": "Próximo recurso",
+    "configure": "Configurar um modelo",
+    "finish": "Pronto para escrever",
+    "reopen": "Você pode repetir este tour em “Tour de recursos” na barra superior.",
+    "exampleLabel": "Experimente dizer isto",
+    "copy": "Copiar exemplo",
+    "copied": "Copiado. Cole no assistente e envie quando estiver pronto.",
+    "copyFailed": "Não foi possível copiar. Selecione o exemplo e copie manualmente.",
+    "agent": {
+      "title": "Dê uma nova direção à sua história",
+      "description": "Descreva sua intenção criativa. O assistente lê o projeto atual e ajusta configurações relacionadas, personagens e planos de capítulos futuros. Ele pergunta sobre incertezas importantes.",
+      "example": "Antecipe a saída do antagonista e depois ajuste a trama e os relacionamentos seguintes. Mantenha a prosa existente por enquanto e me pergunte sobre qualquer coisa incerta.",
+      "hint": "Abra o assistente de IA à direita. Um projeto e um modelo de geração são necessários. Para revisar a prosa existente, especifique o capítulo e a alteração."
+    },
+    "history": {
+      "title": "Veja o que mudou e desfaça",
+      "description": "O assistente registra suas revisões de conteúdo. Revise o impacto e o texto antes e depois, e depois desfaça uma revisão se o conteúdo afetado não tiver mudado novamente.",
+      "hint": "Use “Histórico de ajustes de trama” no cabeçalho do assistente. Para prosa, experimente “Reescreva o último rascunho não finalizado do capítulo 2 em terceira pessoa”. Rascunhos finalizados, arquivados e mais antigos são protegidos."
+    },
+    "blueprints": {
+      "title": "Saiba o que cada capítulo precisa fazer",
+      "description": "Os planos reúnem o propósito do capítulo, eventos principais, elenco e suspense. Edite-os você mesmo ou gere-os com IA, e depois peça ao assistente para conectar a próxima parte da história.",
+      "hint": "Abra um projeto → Planos de capítulos na barra lateral esquerda. Salve suas edições. Os planos são apenas planos; a prosa do capítulo fica em Rascunhos."
+    },
+    "rehearsal": {
+      "title": "Ensaiar três direções possíveis",
+      "description": "Selecione um capítulo e descreva sua intenção e restrições. Compare três direções de trama e depois experimente uma cena curta da sua favorita antes de se comprometer com ela.",
+      "hint": "Planos de capítulos → selecione um capítulo → Ensaio de trama. Acrescente sua escolha à orientação do autor e salve. Copie trechos da cena separadamente antes de sair da página."
+    },
+    "models": {
+      "title": "Dois passos para começar a escrever juntos",
+      "description": "Adicione seu próprio modelo de geração e depois crie ou abra um projeto de romance. Se você usa Ollama local, inicie o serviço primeiro.",
+      "hint": "Abra Configurações na barra superior. Modelos de geração escrevem prosa. A busca em texto completo na base de conhecimento funciona sem modelo de embedding; a busca vetorial exige um."
+    }
+  }
+}

@@ -26,7 +26,7 @@ export interface GlobalConfig {
   editorFontSize: number
   editorFontFamily: string
   autoSaveInterval: number
-  locale?: 'zh-CN' | 'en' | 'ru'
+  locale?: 'zh-CN' | 'en' | 'ru' | 'pt-BR'
   agentBasePrompt?: string
   windowState?: {
     width: number
